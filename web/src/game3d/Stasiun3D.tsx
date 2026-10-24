@@ -1,14 +1,14 @@
-// Isi dinamis toko 3D: barang di meja/mesin, sorotan stasiun di depan pemain, bar progres + gelembung status mesin, antrean pelanggan.
+// Dynamic 3D shop content: items on tables/machines, station highlight in front of the player, progress bars + machine status bubbles, customer queue.
 import { Billboard } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
-import { useRef } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Pekerja3D, TIPE_PEMBELI } from '../arena3d/Pekerja3D';
 import { Item3D } from './Item3D';
 import type { Dunia, StatusMesin } from './logika';
 import { D, ID_MESIN, MEJA_MESIN, MESIN, POS_MEJA, POS_SERAH, TINGGI_MEJA, Z_DEPAN, type IdMesin, type IdStasiun, type KodeMesin } from './peta';
 
-/** Ubah titik lokal mesin (x kanan, z ke muka) ke dunia. */
+/** Convert a machine-local point (x right, z forward) to world space. */
 function keDunia(id: IdMesin, [lx, ly, lz]: [number, number, number]): [number, number, number] {
   const m = MESIN[id];
   const c = Math.cos(m.putar);
@@ -17,7 +17,7 @@ function keDunia(id: IdMesin, [lx, ly, lz]: [number, number, number]): [number, 
 }
 const ITEM_LOKAL: Record<KodeMesin, [number, number, number]> = { 1: [0, 1.6, -0.02], 2: [0, 0.08, 0.36], 3: [0, 0.08, 0.38] };
 export const POS_ITEM_MESIN = Object.fromEntries(ID_MESIN.map((id) => [id, keDunia(id, ITEM_LOKAL[MESIN[id].kode])])) as Record<IdMesin, [number, number, number]>;
-const TINGGI_BAR: Record<KodeMesin, number> = { 1: 1.95, 2: 0.95, 3: 0.8 };
+const TINGGI_BAR: Record<KodeMesin, number> = { 1: 2.1, 2: 1.35, 3: 1.25 };
 const posBar = (id: IdMesin): [number, number, number] => {
   const m = MESIN[id];
   return [m.x, m.y + TINGGI_BAR[m.kode], m.z];
@@ -53,7 +53,7 @@ export function BarangDunia({ dunia }: { dunia: Dunia }) {
   );
 }
 
-/** Bar progres di atas mesin; dibaca langsung dari ref tiap frame. */
+/** Progress bar above the machine; read straight from the ref every frame. */
 export function BarMesin({ id, dunia }: { id: IdMesin; dunia: React.RefObject<Dunia> }) {
   const grup = useRef<THREE.Group>(null);
   const isi = useRef<THREE.Mesh>(null);
@@ -123,7 +123,7 @@ const TANDA: Partial<Record<StatusMesin, [string, string]>> = {
   macet: ['!', '#ef6a4c'],
 };
 
-/** Gelembung status di atas mesin: ✓ siap diambil, 1-3 pilih file, E tahan, ! virus. */
+/** Status bubble above the machine: ✓ ready to pick up, 1-3 pick file, E hold, ! virus. */
 export function TandaMesin({ id, status }: { id: IdMesin; status: StatusMesin }) {
   const ref = useRef<THREE.Group>(null);
   const [x, yBar, z] = posBar(id);
@@ -147,7 +147,7 @@ export function TandaMesin({ id, status }: { id: IdMesin; status: StatusMesin })
   );
 }
 
-/** Kotak sorot (x, y, z, lebar, dalam, putar) tiap stasiun. */
+/** Highlight box (x, y, z, width, depth, rotation) per station. */
 const SOROT: Record<IdStasiun, [number, number, number, number, number, number]> = {
   serah: [POS_SERAH[0], TINGGI_MEJA + 0.02, Z_DEPAN, 1.0, 0.72, 0],
   meja0: [POS_MEJA[0][0], TINGGI_MEJA + 0.02, POS_MEJA[0][2], 0.97, 0.72, 0],
@@ -188,7 +188,7 @@ const KULIT = ['#f1c9a5', '#d9a27c', '#e8b48f', '#b98262'];
 const SLOT_X = [-1.75, 0.75, -2.95, 1.95, -4.15, 3.15];
 const Z_ANTRE = D / 2 + 0.95;
 
-/** Ikon pesanan di gelembung (digambar di kanvas, di-cache per jenis). */
+/** Order icon in the bubble (drawn on canvas, cached per type). */
 const cacheIkon = new Map<number, THREE.CanvasTexture>();
 function teksturIkon(jenis: number) {
   let t = cacheIkon.get(jenis);
@@ -262,7 +262,7 @@ function teksturIkon(jenis: number) {
 
 export type DataPembeli = { id: bigint; jenis: number; sisa: number };
 
-function Pelanggan({ p, x, z, menunggu, putar = Math.PI }: { p: DataPembeli; x: number; z: number; menunggu?: boolean; putar?: number }) {
+function PelangganDasar({ p, x, z, menunggu, putar = Math.PI }: { p: DataPembeli; x: number; z: number; menunggu?: boolean; putar?: number }) {
   const n = Number(p.id % 997n);
   const tipe = TIPE_PEMBELI[n % TIPE_PEMBELI.length];
   const warnaBar = p.sisa > 0.5 ? '#5fd39a' : p.sisa > 0.25 ? '#f4b829' : '#ef6a4c';
@@ -300,13 +300,54 @@ function Pelanggan({ p, x, z, menunggu, putar = Math.PI }: { p: DataPembeli; x: 
   );
 }
 
-/** Pelanggan: yang order-nya sedang dikerjakan menunggu di loket; yang belum direbut antre di luar. Gelembung = pesanan + kesabaran. */
+/** Re-render a customer only when id/remaining (rounded to 2%) changes. */
+const Pelanggan = memo(PelangganDasar, (a, b) => a.p.id === b.p.id && a.p.jenis === b.p.jenis && Math.round(a.p.sisa * 50) === Math.round(b.p.sisa * 50) && a.x === b.x && a.z === b.z && a.menunggu === b.menunggu && a.putar === b.putar);
+
+/** Customers: the one whose order is in progress waits at the counter; unclaimed ones queue outside. Bubble = order + patience. */
+type Pergi = { p: DataPembeli; x: number; z: number; t0: number; kunci: string };
+const LAMA_PERGI = 0.7;
+
+/** Customers leaving the queue (taken by another shop / expired): jump, spin, shrink. */
+function PelangganPergi({ d, onSelesai }: { d: Pergi; onSelesai: (k: string) => void }) {
+  const g = useRef<THREE.Group>(null);
+  useFrame(({ clock }) => {
+    const u = Math.min(1, (clock.elapsedTime - d.t0) / LAMA_PERGI);
+    if (g.current) {
+      g.current.position.set(d.x, Math.sin(u * Math.PI) * 0.9, d.z + u * 1.2);
+      g.current.rotation.y = u * Math.PI * 2;
+      g.current.scale.setScalar(1 - u * 0.95);
+    }
+    if (u >= 1) onSelesai(d.kunci);
+  });
+  return (
+    <group ref={g}>
+      <Pelanggan p={d.p} x={0} z={0} />
+    </group>
+  );
+}
+
 export function Antrean({ antre, aktif }: { antre: DataPembeli[]; aktif?: DataPembeli }) {
+  const tampil = antre.slice(0, SLOT_X.length);
+  const sebelum = useRef<Map<string, { p: DataPembeli; x: number }>>(new Map());
+  const [pergi, setPergi] = useState<Pergi[]>([]);
+  useEffect(() => {
+    const kini = new Map(tampil.map((o, i) => [String(o.id), { p: o, x: SLOT_X[i] }]));
+    const baru: Pergi[] = [];
+    for (const [k, v] of sebelum.current) {
+      // moving to the counter (active) is not "leaving"
+      if (!kini.has(k) && String(aktif?.id) !== k) baru.push({ p: v.p, x: v.x, z: Z_ANTRE, t0: performance.now() / 1000, kunci: `${k}-${Date.now()}` });
+    }
+    sebelum.current = kini;
+    if (baru.length) setPergi((d) => [...d, ...baru].slice(-4));
+  }, [tampil.map((o) => String(o.id)).join(','), aktif?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <group>
       {aktif && <Pelanggan p={aktif} x={POS_SERAH[0]} z={D / 2 + 0.7} menunggu />}
-      {antre.slice(0, SLOT_X.length).map((o, i) => (
+      {tampil.map((o, i) => (
         <Pelanggan key={String(o.id)} p={o} x={SLOT_X[i]} z={Z_ANTRE} putar={((Number(o.id % 3n) - 1) * 0.35)} />
+      ))}
+      {pergi.map((d) => (
+        <PelangganPergi key={d.kunci} d={d} onSelesai={(k) => setPergi((xs) => xs.filter((x) => x.kunci !== k))} />
       ))}
     </group>
   );

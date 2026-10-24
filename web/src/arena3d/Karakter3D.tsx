@@ -1,5 +1,5 @@
-// Tukang fotokopi 3D: karakter beranimasi Delixia (Idle/Walking/Run/SambaDancing), badan diwarnai sesuai toko,
-// cincin warna di kaki ala Overcooked, bisa membawa kertas/dokumen.
+// 3D copy-shop worker: animated Delixia character (Idle/Walking/Run/SambaDancing), body tinted per shop,
+// Overcooked-style color ring at the feet, can carry paper/documents.
 import { useAnimations, useGLTF } from '@react-three/drei';
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
@@ -10,7 +10,7 @@ export type Bawaan3D = 'kertas' | 'ktp' | 'ijazah' | 'menu' | null;
 
 const WARNA_BAWAAN: Record<Exclude<Bawaan3D, null>, string> = { kertas: '#fbfaf3', ktp: '#76a0e2', ijazah: '#fbfaf3', menu: '#93d3b0' };
 const URL = '/models/delixia/character.glb';
-const TINGGI = 1.3; // m, sedikit di atas tinggi meja seperti chef Overcooked
+const TINGGI = 1.3; // m, slightly above table height like an Overcooked chef
 
 export function Karakter3D({
   warna,

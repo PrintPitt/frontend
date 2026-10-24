@@ -1,8 +1,8 @@
 export type PropsMiniGame = {
-  /** Teks custom pelanggan (muncul di dokumen / nama file). */
+  /** Customer custom text (shown on the document / file name). */
   teks: string;
-  /** Label jenis order, mis. "Menu Warung". */
+  /** Order type label, e.g. "Menu Warung". */
   label: string;
-  /** Dipanggil sekali saat mini-game lulus → runner mengirim completeStep. */
+  /** Called once when the mini-game is passed → runner sends completeStep. */
   onLulus: () => void;
 };

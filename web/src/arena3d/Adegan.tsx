@@ -1,4 +1,4 @@
-// Adegan 3D kecil untuk landing (etalase toko) dan lobi (panggung pilih karakter).
+// Small 3D scenes for the landing page (shop window) and lobby (character select stage).
 import { Float } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { useRef, type ReactNode } from 'react';
@@ -37,7 +37,7 @@ function Lompat({ children, tunda = 0, tinggi = 0.35 }: { children: ReactNode; t
   return <group ref={g}>{children}</group>;
 }
 
-/** Etalase toko: konter + mesin + dua tukang fotokopi melompat + kertas melayang. */
+/** Shop window: counter + machines + two jumping copy-shop workers + floating paper. */
 export function AdeganLanding() {
   const tMeja = 0.78;
   return (
@@ -57,10 +57,10 @@ export function AdeganLanding() {
       <Printer3D posisi={[-1, tMeja, -1.2]} skala={3} putar={0.1} />
       <Laminator3D posisi={[1.6, tMeja, -1.2]} skala={3.3} putar={-0.1} />
       <Lompat>
-        <Pekerja3D warna={UNGU.m} posisi={[-1.4, 0, 1.1]} putar={0.3} gaya="jalan" bawa="ktp" />
+        <Pekerja3D model="tukang" skala={1.15} warna={UNGU.m} posisi={[-1.4, 0, 1.1]} putar={0.3} gaya="jalan" bawa="ktp" />
       </Lompat>
       <Lompat tunda={1.3}>
-        <Pekerja3D warna="#ef6a4c" posisi={[1.5, 0, 1.2]} putar={-0.35} gaya="jalan" bawa="ijazah" fase={1} />
+        <Pekerja3D model="tukang-visor" skala={1.15} warna="#ef6a4c" posisi={[1.5, 0, 1.2]} putar={-0.35} gaya="jalan" bawa="ijazah" fase={1} />
       </Lompat>
       <KertasTerbang posisi={[-2.6, 2.4, 0.4]} />
       <KertasTerbang posisi={[2.9, 2.8, 0]} putar={1} cepat={1.3} />
@@ -71,7 +71,7 @@ export function AdeganLanding() {
   );
 }
 
-/** Panggung lobi: dua podium berwarna + tukang fotokopi. */
+/** Lobby stage: two colored podiums + copy-shop workers. */
 export function PanggungLobi({ warna }: { warna: string[] }) {
   return (
     <group>

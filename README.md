@@ -14,16 +14,18 @@
 | Live board (projector) | https://printpitt-app.vercel.app/layar |
 | Shop game (the two print shops) | https://printpitt-app.vercel.app/toko |
 | Landing page | https://printpitt-landing.vercel.app (source: [`landing/`](landing/)) |
-| Backend status (Railway) | https://backend-production-2b31.up.railway.app/status |
+| Backend status (Railway) | testnet https://backend-production-2b31.up.railway.app/status · mainnet https://backend-mainnet-production-7835.up.railway.app/status |
 
-**Contracts on Monad Testnet (chain 10143)**, contract v2.2 (deploy block 73741333). Sourcify verification: **[pending for v2.2]**
+**Contracts (v2.3), verified on Sourcify (exact match).** The app switches network with `?jaringan=mainnet` / `?jaringan=testnet` (badge in the bottom-left corner).
 
-| Contract | Address |
-|---|---|
-| `FotokopiKilat` (escrow, claim race, decaying payout, refund, NFT receipt) | [`0x08b700EEcbabcfFBe53c0dAbe4C2acF9aF4dc959`](https://testnet.monadvision.com/address/0x08b700EEcbabcfFBe53c0dAbe4C2acF9aF4dc959) |
-| `TestIDRX` (tIDRX, test Rupiah token with `permit`) | [`0x6F11E9dd404AF78522DAb5104fF0b6153c7E4841`](https://testnet.monadvision.com/address/0x6F11E9dd404AF78522DAb5104fF0b6153c7E4841) |
+| Network | `FotokopiKilat` (escrow, claim race, decaying payout, refund, NFT receipt) | `TestIDRX` (tIDRX, Rupiah token with `permit`) | Deploy tx |
+|---|---|---|---|
+| **Monad Mainnet** (chain 143, block 116137717) | [`0x4b453b395eEa830C5CB208551A0326f6cd976f12`](https://monadvision.com/address/0x4b453b395eEa830C5CB208551A0326f6cd976f12) | [`0xEf3369C083B137C0FB3Fa9424990726d424ac205`](https://monadvision.com/address/0xEf3369C083B137C0FB3Fa9424990726d424ac205) | [`0xa1b1d9dd…4144019f`](https://monadvision.com/tx/0xa1b1d9dd4a85037ef24ec8156a623c81f8b5c5d9afb8890ec9c4ebaa4144019f) |
+| **Monad Testnet** (chain 10143, block 73752547) | [`0x24b045E3B4155232F81c709dF3DD43595a5C5101`](https://testnet.monadvision.com/address/0x24b045E3B4155232F81c709dF3DD43595a5C5101) | [`0xcCf26C3b02a610fB87327f41a13384aF8ff57F45`](https://testnet.monadvision.com/address/0xcCf26C3b02a610fB87327f41a13384aF8ff57F45) | [`0x06746ec0…04e9e70f`](https://testnet.monadvision.com/tx/0x06746ec0ab0110ef87b5e6f6d05f5b8c3760b3e695062c41392c0f7204e9e70f) |
 
-Example transaction (contract deployment): [`0x3e35b5c4…6a6374f`](https://testnet.monadvision.com/tx/0x3e35b5c461622bca7e9b83e500196b045c8894ca3dc3935d1fc696b6b1a6374f). Example order transaction: **[ADD after demo]**.
+Real IDRX integration (proof only, not used by the demo app): `FotokopiKilat` on mainnet with real IDRX [`0x18Bc5bcC660cf2B9cE3cd51a404aFe1a0cBD3C22`](https://monadvision.com/address/0x18Bc5bcC660cf2B9cE3cd51a404aFe1a0cBD3C22) at [`0x1F8061d653896fF48EbFDD3Fee7C0684E2995f77`](https://monadvision.com/address/0x1F8061d653896fF48EbFDD3Fee7C0684E2995f77) (IDRX has no `permit`; the app falls back to a one-time `approve`).
+
+On mainnet, judges pay nothing: one **judge code** on `/pesan` gives 1 MON for gas and a Rp20.000 tIDRX voucher. Example order transaction: **[ADD after demo]**.
 
 **Run it locally (3 steps):**
 
@@ -70,7 +72,7 @@ Revenue model (live since contract v2.1): 3% platform fee on the shop's payout f
 |---|---|
 | Public GitHub repo | **[make repos public before submit]** |
 | README with live URL + contract address | this file, "Try it now" |
-| Contract on Monad Testnet, verified | table above (Sourcify verification pending for v2.2) |
+| Contract on Monad Testnet, verified | table above (Sourcify exact match, testnet and mainnet) |
 | Publicly hosted | `printpitt-app.vercel.app`, `printpitt-landing.vercel.app`, Railway backend |
 | Live onchain transaction in the demo | scan the QR → order → watch `/layar` and the explorer |
 | Others can run it from the README | "Run it locally" above |
@@ -78,13 +80,13 @@ Revenue model (live since contract v2.1): 3% platform fee on the shop's payout f
 
 ## Built during the event vs prepared before
 
-**[TEAM TO CONFIRM BEFORE SUBMIT]** Before 24 October: idea, research, spikes and design documents (`vault`). On 24 October: the repos in this org were created and the code was pushed (first commits 11:13 WIB). This includes contracts v2, v2.1 and v2.2, the relayer and backend, the indexer, the web app with the game, and the landing page.
+**[TEAM TO CONFIRM BEFORE SUBMIT]** Before 24 October: idea, research, spikes and design documents (`vault`). On 24 October: the repos in this org were created and the code was pushed (first commits 11:13 WIB). This includes contracts v2 to v2.3 (testnet and mainnet), the relayer and backend, the indexer, the web app with the game, and the landing page.
 
 ## Limits and what breaks first
 
 - Public RPC rate limits break first under load, so we use a keyed RPC plus a single relayer queue. More relayers are the next step.
 - tIDRX is a test token. A real launch would use IDRX with a payment-gateway top-up.
-- Mainnet deployment: **[ADD if done]**.
+- Mainnet: deployed (v2.3, tIDRX demo token + real IDRX proof contract), see the contracts table.
 
 ## Team
 
@@ -121,4 +123,4 @@ React + Vite + three.js (React Three Fiber). Pages: `/` landing, `/lobi` (lobby)
 cd web && npm install && npm run dev
 ```
 
-Note: `shared/src/` in this repo is a copy of `@printpitt/shared` from repo `PrintPitt/contracts` (folder `shared/src/`, contract v2.2 `0x08b7…c959`). After a contract redeploy, copy `index.ts` and `fotokopiKilat.generated.ts` here again.
+Note: `shared/src/` in this repo is a copy of `@printpitt/shared` from repo `PrintPitt/contracts` (folder `shared/src/`, contract v2.3: testnet `0x24b0…5101`, mainnet `0x4b45…6f12`). After a contract redeploy, copy `index.ts` and `fotokopiKilat.generated.ts` here again.

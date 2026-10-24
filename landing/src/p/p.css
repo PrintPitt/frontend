@@ -1,0 +1,88 @@
+/* PrintPitt · pre-hero P — kata raksasa PRINTPITT bergaya Kilat+ (irisan, garis kecepatan, petir),
+   figur Hans bergerak sendiri, lalu kamera menyelam ke lubang huruf P pertama sampai layar penuh warna arena (#EEF3F6) → bagian D.
+   Semua selektor diawali .P */
+.P{
+  --p-bg:#F4F5F6; --p-ink:#0E0F12; --p-muted:#5E626A; --p-line:rgba(14,15,18,.14);
+  --p-bolt:#836EF9; --p-spark:#FFD23F; --p-arena:#EEF3F6; --p-dot:rgba(28,36,48,.10); --p-a1:#EF6A4C; --p-a2:#F4B829;
+  --p-g:max(16px,env(safe-area-inset-left),3vw); --p-gr:max(16px,env(safe-area-inset-right),3vw); --p-hdr:60px;
+  --p-disp:'Anybody','Arial Black',system-ui,sans-serif;
+  --p-mono:'DM Mono','JetBrains Mono',ui-monospace,Consolas,monospace;
+  --p-ease:cubic-bezier(.22,1,.36,1);
+  position:relative;display:block;margin:0;padding:0;
+  height:240vh;height:calc(100svh + 140vh);
+  background:var(--p-bg);color:var(--p-ink);-webkit-font-smoothing:antialiased;
+}
+.P *,.P *::before,.P *::after{box-sizing:border-box}
+.P .p-sticky{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden;background:var(--p-bg);isolation:isolate}
+.P .p-layer{position:absolute;inset:0;pointer-events:none}
+
+/* garis kecepatan + petir */
+.P .p-lines{z-index:1;overflow:hidden}
+.P .p-ln{position:absolute;left:0;top:0;height:1px;background:var(--p-ink);transform-origin:0 50%;will-change:transform;opacity:.55}
+.P .p-ln.p-a{background:var(--p-bolt);height:1.5px;opacity:.9}
+.P .p-ln.p-y{background:var(--p-spark);height:2px;opacity:1}
+.P .p-bolt{display:block;overflow:visible}
+.P .p-bolt path{fill:none;stroke:var(--p-bolt);stroke-width:1.5;stroke-linejoin:miter;vector-effect:non-scaling-stroke;stroke-dasharray:1;stroke-dashoffset:0;animation:p-zap 2.4s cubic-bezier(.2,.8,.2,1) infinite}
+@keyframes p-zap{0%{stroke-dashoffset:1;opacity:1}12.5%{stroke-dashoffset:0;opacity:1}30%{opacity:1}55%,100%{stroke-dashoffset:0;opacity:.3}}
+
+/* arena: latar yang masuk lewat lubang P */
+.P .p-arena,.P .p-cover{background-color:var(--p-arena);background-image:radial-gradient(var(--p-dot) 2.4px,transparent 2.9px);background-size:36px 36px;opacity:0}
+.P .p-arena{z-index:3}
+.P .p-portal{z-index:4;opacity:0;will-change:clip-path,opacity}
+.P .p-portal svg{position:absolute;left:0;top:7%;width:100%;height:16%}
+.P .p-portal .p-floor{position:absolute;left:0;right:0;bottom:0;height:26%;opacity:.55;
+  background:repeating-conic-gradient(#E7EEF2 0 25%,#F8FAFB 0 50%) 0 0/72px 72px}
+.P .p-cover{z-index:9}
+
+/* kata raksasa */
+.P .p-center{position:absolute;left:var(--p-g);right:var(--p-gr);top:var(--p-hdr);bottom:0;z-index:5;display:flex;flex-direction:column;justify-content:center;pointer-events:none;will-change:transform}
+.P .p-word{position:relative;font-family:var(--p-disp);font-weight:900;font-stretch:112.5%;font-size:13vw;line-height:.84;letter-spacing:-.01em;white-space:nowrap;text-transform:uppercase;user-select:none;-webkit-user-select:none}
+.P .p-line{display:inline-block;position:relative}
+.P .p-ch{display:inline-block;position:relative;will-change:transform}
+.P .p-ch .p-b{visibility:hidden}
+.P .p-base{display:inline-block;width:0;height:0;vertical-align:baseline}
+.P .p-ch .p-cut{position:absolute;left:0;top:0;will-change:transform}
+.P .p-cut0{clip-path:inset(-30% -25% 63.4% -25%)}
+.P .p-cut1{clip-path:inset(36.2% -25% 29.4% -25%)}
+.P .p-cut2{clip-path:inset(70.2% -25% -30% -25%)}
+.P .p-ghost{position:absolute;left:0;top:0;color:transparent;-webkit-text-stroke:1.5px var(--p-ink);opacity:0;pointer-events:none;will-change:transform,opacity}
+.P .p-slits{position:absolute;top:-4%;bottom:-4%;left:calc(-1 * var(--p-g));width:100vw;overflow:hidden;pointer-events:none}
+.P .p-slit{position:absolute;left:0;top:0;background:var(--p-bg);will-change:transform}
+.P .p-under{display:flex;align-items:center;gap:14px;margin-top:3vh}
+.P .p-block{flex:none;display:flex;align-items:center;gap:8px;white-space:nowrap;font-family:var(--p-mono);font-size:13px;color:var(--p-muted)}
+.P .p-block i{width:7px;height:7px;background:var(--p-spark);display:inline-block}
+.P .p-block b{color:var(--p-ink);font-weight:500}
+.P .p-bolt-h{flex:1;height:46px;min-width:56px}
+.P .p-tag{margin:2.4vh 0 0;font-family:var(--p-disp);font-weight:850;font-stretch:118%;font-size:clamp(22px,2.6vw,44px);line-height:1;letter-spacing:-.01em}
+
+/* figur */
+.P .p-figs{overflow:hidden}
+.P .p-figs-back{z-index:2}
+.P .p-figs-front{z-index:6}
+.P .p-fw{position:absolute;left:0;top:0;width:300px;height:300px;transform:translate3d(-120vw,0,0);transform-origin:50% 50%;will-change:transform,opacity}
+.P .p-fbox{position:absolute;inset:0}
+.P .p-trail{position:absolute;right:50%;top:34%;height:34%;width:90%;transform-origin:100% 50%;transform:scaleX(0);opacity:0;pointer-events:none}
+.P .p-trail i{position:absolute;right:0;height:1px;background:var(--p-ink)}
+.P .p-trail i:nth-child(1){top:0;width:70%}
+.P .p-trail i:nth-child(2){top:46%;width:100%;background:var(--p-bolt);height:1.5px}
+.P .p-trail i:nth-child(3){top:92%;width:52%}
+.P .p-fhint{position:absolute;left:50%;bottom:14%;transform:translateX(-50%);pointer-events:none;z-index:2;font-family:var(--p-mono);font-size:11px;letter-spacing:.02em;color:var(--p-muted);background:var(--p-bg);border:1px solid var(--p-line);padding:4px 9px;white-space:nowrap;opacity:0;transition:opacity .5s var(--p-ease)}
+.P .p-fhint.p-on{opacity:.92}
+
+/* petunjuk gulir */
+.P .p-cue{position:absolute;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:7;transform:translateX(-50%);display:flex;align-items:center;gap:10px;font-family:var(--p-mono);font-size:12px;letter-spacing:.04em;color:var(--p-muted);white-space:nowrap;pointer-events:none}
+.P .p-cue i{position:relative;width:1px;height:28px;background:var(--p-line);overflow:hidden}
+.P .p-cue i::after{content:'';position:absolute;left:0;top:-40%;width:1px;height:40%;background:var(--p-ink);animation:p-cue 1.6s var(--p-ease) infinite}
+@keyframes p-cue{to{top:100%}}
+
+@media (max-width:699.98px){
+  .P .p-word{font-stretch:75%;line-height:.86}
+  .P .p-line{display:block;width:max-content}
+  .P .p-ghost{-webkit-text-stroke-width:1px}
+  .P .p-block{font-size:12px;white-space:normal;flex:0 1 auto;max-width:72%}
+  .P .p-cue{font-size:11px}
+  .P .p-fhint{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  .P .p-bolt path,.P .p-cue i::after{animation:none;stroke-dashoffset:0;opacity:1}
+}

@@ -189,3 +189,13 @@ body[data-halaman='main'], body[data-halaman='lobi'] { overflow: hidden; }
 .bar-timer > div { height: 100%; background: #f4b829; }
 .petunjuk-kontrol { position: absolute; bottom: 10px; left: 0; right: 0; text-align: center; font-weight: 700; font-size: 0.85rem; opacity: 0.9; z-index: 20; }
 .petunjuk-kontrol kbd { font-family: 'Lilita One', system-ui; background: #fbfaf3; color: #231e16; border: 2px solid #231e16; border-bottom-width: 4px; border-radius: 6px; padding: 0 6px; margin: 0 1px; font-size: 0.8rem; }
+
+/* ===== Model bisnis (landing) ===== */
+.bisnis { z-index: 2; position: relative; margin: 0 16px 64px; text-align: center; }
+.judul-bisnis { font: clamp(1.8rem, 4vw, 2.6rem) 'Lilita One', system-ui; color: #f4b829; -webkit-text-stroke: 2px #231e16; paint-order: stroke fill; text-shadow: 0 5px 0 #231e16; margin: 0 0 22px; }
+.grid-bisnis { display: grid; grid-template-columns: repeat(3, minmax(0, 300px)); justify-content: center; gap: 16px; }
+.kartu-bisnis { background: #fbfaf3; color: #231e16; border: 3px solid #231e16; border-radius: 18px; box-shadow: 0 8px 0 #231e16; padding: 16px; text-align: left; }
+.angka-bisnis { display: inline-block; font: 1.5rem 'Lilita One', system-ui; color: #fbfaf3; background: #836ef9; border: 3px solid #231e16; border-radius: 12px; padding: 2px 12px 4px; box-shadow: 0 4px 0 #231e16; }
+.kartu-bisnis h3 { font: 1.25rem 'Lilita One', system-ui; margin: 12px 0 4px; }
+.kartu-bisnis p { margin: 0; font-size: 0.9rem; line-height: 1.45; }
+@media (max-width: 900px) { .grid-bisnis { grid-template-columns: 1fr; } }

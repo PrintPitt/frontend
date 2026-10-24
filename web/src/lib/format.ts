@@ -1,13 +1,13 @@
-export const NAMA_LANGKAH: Record<number, string> = { 1: 'Fotokopi', 2: 'Print', 3: 'Laminating' };
+export const NAMA_LANGKAH: Record<number, string> = { 1: 'Photocopy', 2: 'Print', 3: 'Laminate' };
 
-/** Resep `bytes4` (satu byte per langkah, dari kiri) jadi daftar kode langkah. */
+/** Recipe `bytes4` (one byte per step, from the left) -> list of step codes. */
 export function bukaResep(langkah: string, jumlah: number): number[] {
   const v = BigInt(langkah);
   return Array.from({ length: jumlah }, (_, i) => Number((v >> BigInt(8 * (3 - i))) & 0xffn));
 }
 
-/** Format MON gaya Indonesia: 0,0137 */
-/** Nominal tIDRX (2 desimal) → "Rp5.000" dibulatkan ke rupiah. Nama lama `mon` dipertahankan supaya pemanggil tidak berubah. */
+/** Indonesian-style number format. */
+/** tIDRX amount (2 decimals) → "Rp5.000", rounded to whole Rupiah. Old name `mon` kept so callers don't change. */
 export function mon(v: bigint, _digit?: number): string {
   void _digit;
   return 'Rp' + Math.round(Number(v) / 100).toLocaleString('id-ID');

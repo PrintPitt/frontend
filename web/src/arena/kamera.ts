@@ -1,18 +1,18 @@
-// Kamera ala Overcooked: ortografis, menghadap lurus ke depan (yaw 0), miring dari atas (pitch 55°).
-// Dunia arena: x ke kanan, y ke arah penonton (bawah layar), z ke atas. Satuan = 1 ubin.
-// Figur Colorfigures dimuat dengan ?yaw=0&pitch=55 supaya sudutnya sama.
+// Overcooked-style camera: orthographic, facing straight ahead (yaw 0), tilted from above (pitch 55°).
+// Arena world: x to the right, y toward the viewer (bottom of screen), z up. Unit = 1 tile.
+// Colorfigures figures are loaded with ?yaw=0&pitch=55 so the angle matches.
 export const PITCH = 55;
 const rad = (PITCH * Math.PI) / 180;
 export const SP = Math.sin(rad);
 export const CP = Math.cos(rad);
-export const UNIT = 48; // px per ubin (lebar)
+export const UNIT = 48; // px per tile (width)
 
 export const px = (x: number) => x * UNIT;
 export const py = (y: number, z = 0) => (y * SP - z * CP) * UNIT;
-/** Urutan gambar: makin dekat ke penonton (y besar) makin di depan. */
+/** Draw order: the closer to the viewer (larger y), the further in front. */
 export const zIndex = (y: number) => Math.round(y * 10) + 10;
 
-/** Palet bergaya Colorfigures (l terang, m sedang, d gelap) + ungu Monad. */
+/** Colorfigures-style palette (l light, m medium, d dark) + Monad purple. */
 export const PALET = {
   ungu: { l: '#b3a4ff', m: '#836ef9', d: '#2e2461' },
   mustard: { l: '#f4b829', m: '#d49c1f', d: '#4e4a18' },

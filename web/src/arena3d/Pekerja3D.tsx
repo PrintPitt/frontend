@@ -1,6 +1,6 @@
-// Tukang fotokopi 3D prosedural ala chef Overcooked: badan bulat, kepala besar bermata ekspresif, topi toko, celemek,
-// tangan melayang, garis tinta (outline). Animasi di useFrame: jalan (lompat, squash-stretch, condong, kaki melangkah),
-// diam (napas + kedip), kerja (tangan cepat). Barang dipegang dua tangan dengan efek "pop" saat berganti.
+// Procedural 3D copy-shop worker, Overcooked-chef style: round body, big head with expressive eyes, shop cap, apron,
+// floating hands, ink outline. Animated in useFrame: walk (hop, squash-stretch, lean, stepping feet),
+// idle (breathing + blinking), work (fast hands). Items are held in both hands with a "pop" effect when they change.
 import { useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, type ReactNode, type RefObject } from 'react';
 import * as THREE from 'three';
@@ -11,7 +11,7 @@ export type Bawa = 'kertas' | 'ktp' | 'ijazah' | 'menu' | null;
 const WARNA_BAWA: Record<Exclude<Bawa, null>, string> = { kertas: '#fbfaf3', ktp: '#76a0e2', ijazah: '#fbfaf3', menu: '#93d3b0' };
 const TINTA = '#231e16';
 const GARIS = 0.024;
-/** Garis tinta ala ilustrasi: cangkang sedikit lebih besar, hanya sisi belakang yang digambar (inverted hull). */
+/** Illustration-style ink outline: a slightly larger shell, only back faces drawn (inverted hull). */
 const BAHAN_TINTA = new THREE.MeshBasicMaterial({ color: TINTA, side: THREE.BackSide });
 
 export function Pekerja3D({
@@ -32,13 +32,13 @@ export function Pekerja3D({
   model = 'topi',
   tipe = 'mahasiswa',
 }: {
-  /** Tipe pelanggan (khusus model 'pembeli'). */
+  /** Customer type (only for model 'pembeli'). */
   tipe?: TipePembeli;
-  /** Rupa karakter: topi baseball, topi kertas lipat, landak ungu, atau chibi berbandana. */
+  /** Character look: baseball cap, folded paper hat, purple hedgehog, or chibi with bandana. */
   model?: ModelKarakter;
-  /** Barang 3D di tangan (menggantikan `bawa`). */
+  /** 3D item in hand (replaces `bawa`). */
   pegang?: ReactNode;
-  /** Berubah saat barang yang dipegang berganti → efek pop. */
+  /** Changes when the held item changes → pop effect. */
   kunciPegang?: string;
   warna: string;
   posisi: [number, number, number];
@@ -51,7 +51,7 @@ export function Pekerja3D({
   cincin?: boolean;
   fase?: number;
   skala?: number;
-  /** Penanda arah hadap di cincin (untuk pemain). */
+  /** Facing-direction marker on the ring (for the player). */
   penanda?: boolean;
 }) {
   const badan = useRef<THREE.Group>(null);
@@ -89,7 +89,7 @@ export function Pekerja3D({
         b.rotation.z = 0;
       }
     }
-    // kaki melangkah
+    // stepping feet
     const langkah = gaya === 'jalan' ? Math.sin(t) : 0;
     if (kKiri.current) {
       kKiri.current.position.z = 0.03 + langkah * 0.11;
@@ -99,7 +99,7 @@ export function Pekerja3D({
       kKanan.current.position.z = 0.03 - langkah * 0.11;
       kKanan.current.position.y = 0.08 + Math.max(0, -langkah) * 0.06;
     }
-    // tangan: pegang barang (dua tangan di depan), kerja (bergantian cepat), jalan (berayun)
+    // hands: holding item (both in front), work (fast alternating), walk (swinging)
     if (tKiri.current && tKanan.current) {
       if (bawaSesuatu) {
         tKiri.current.position.set(-0.24, 0.62, 0.36);
@@ -113,11 +113,11 @@ export function Pekerja3D({
         tKanan.current.position.set(0.36, 0.52, 0.12 + ayun);
       }
     }
-    // kedip
+    // blink
     kedip.current -= dt;
     if (mata.current) mata.current.scale.y = kedip.current < 0.12 ? 0.12 : 1;
     if (kedip.current < 0) kedip.current = 2.2 + Math.random() * 2.5;
-    // pop barang
+    // item pop
     if (barang.current) {
       pop.current = Math.max(0, pop.current - dt * 4);
       const p = pop.current;
@@ -146,9 +146,9 @@ export function Pekerja3D({
         <circleGeometry args={[0.36, 32]} />
         <meshBasicMaterial color="#000000" transparent opacity={0.22} />
       </mesh>
-      {/* kaki */}
+      {/* feet */}
       {[kKiri, kKanan].map((r, i) => (
-        <mesh key={i} ref={r} position={[i ? 0.11 : -0.11, 0.08, 0.03]} castShadow>
+        <mesh key={i} ref={r} position={[i ? 0.11 : -0.11, 0.08, 0.03]}>
           <capsuleGeometry args={[0.075, 0.07, 4, 10]} />
           <meshStandardMaterial color="#3d3935" />
           <mesh material={BAHAN_TINTA}>
@@ -172,15 +172,15 @@ export function Pekerja3D({
         ) : (
           <RupaTopi warna={warna} kulit={kulit} rambut={rambut} topi={topi} mata={mata} />
         )}
-        {/* tangan melayang */}
-        <mesh ref={tKiri} position={[-0.36, 0.52, 0.12]} castShadow>
+        {/* floating hands */}
+        <mesh ref={tKiri} position={[-0.36, 0.52, 0.12]}>
           <sphereGeometry args={[0.09, 14, 10]} />
           <meshStandardMaterial color={model === 'landak' ? warna : model === 'chef-kucing' ? '#f4a259' : kulit} />
           <mesh material={BAHAN_TINTA}>
             <sphereGeometry args={[0.09 + GARIS * 0.8, 14, 10]} />
           </mesh>
         </mesh>
-        <mesh ref={tKanan} position={[0.36, 0.52, 0.12]} castShadow>
+        <mesh ref={tKanan} position={[0.36, 0.52, 0.12]}>
           <sphereGeometry args={[0.09, 14, 10]} />
           <meshStandardMaterial color={model === 'landak' ? warna : model === 'chef-kucing' ? '#f4a259' : kulit} />
           <mesh material={BAHAN_TINTA}>
@@ -193,7 +193,7 @@ export function Pekerja3D({
           </group>
         )}
         {bawa && (
-          <mesh position={[0, 0.62, 0.38]} rotation={[-0.35, 0, 0]} castShadow>
+          <mesh position={[0, 0.62, 0.38]} rotation={[-0.35, 0, 0]}>
             <boxGeometry args={[0.44, 0.025, 0.32]} />
             <meshStandardMaterial color={WARNA_BAWA[bawa]} />
           </mesh>
@@ -205,19 +205,19 @@ export function Pekerja3D({
 
 type PropsRupa = { warna: string; kulit?: string; rambut?: string; mata: RefObject<THREE.Group | null> };
 
-/** Rupa awal: badan kapsul, kepala besar, topi baseball dibalik (pelanggan: rambut). */
+/** Original look: capsule body, big head, backwards baseball cap (customers: hair). */
 function RupaTopi({ warna, kulit, rambut, topi, mata }: PropsRupa & { topi: boolean }) {
   return (
     <>
-        {/* badan bulat + celemek */}
-        <mesh position={[0, 0.5, 0]} castShadow>
+        {/* round body + apron */}
+        <mesh position={[0, 0.5, 0]}>
           <capsuleGeometry args={[0.27, 0.24, 8, 20]} />
           <meshStandardMaterial color={warna} roughness={0.7} />
           <mesh material={BAHAN_TINTA}>
             <capsuleGeometry args={[0.27 + GARIS, 0.24, 8, 20]} />
           </mesh>
         </mesh>
-        <mesh position={[0, 0.44, 0.215]} rotation={[0.1, 0, 0]} castShadow>
+        <mesh position={[0, 0.44, 0.215]} rotation={[0.1, 0, 0]}>
           <boxGeometry args={[0.32, 0.36, 0.07]} />
           <meshStandardMaterial color="#fbfaf3" />
         </mesh>
@@ -229,8 +229,8 @@ function RupaTopi({ warna, kulit, rambut, topi, mata }: PropsRupa & { topi: bool
           <boxGeometry args={[0.36, 0.035, 0.06]} />
           <meshStandardMaterial color="#fbfaf3" />
         </mesh>
-        {/* kepala */}
-        <mesh position={[0, 1.03, 0]} castShadow>
+        {/* head */}
+        <mesh position={[0, 1.03, 0]}>
           <sphereGeometry args={[0.33, 28, 20]} />
           <meshStandardMaterial color={kulit} roughness={0.8} />
           <mesh material={BAHAN_TINTA}>
@@ -271,18 +271,18 @@ function RupaTopi({ warna, kulit, rambut, topi, mata }: PropsRupa & { topi: bool
             <meshBasicMaterial color="#ef8a7a" transparent opacity={0.55} />
           </mesh>
         ))}
-        {/* topi toko (atau rambut untuk pelanggan) */}
+        {/* shop cap (or hair for customers) */}
         {topi ? (
           <group position={[0, 1.17, -0.02]}>
-            {/* topi dibalik ke belakang supaya wajah terlihat dari kamera atas */}
-            <mesh castShadow>
+            {/* cap turned backwards so the face shows from the top camera */}
+            <mesh>
               <sphereGeometry args={[0.335, 28, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
               <meshStandardMaterial color={warna} roughness={0.6} />
               <mesh material={BAHAN_TINTA}>
                 <sphereGeometry args={[0.335 + GARIS, 28, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
               </mesh>
             </mesh>
-            <mesh position={[0, 0.01, -0.3]} rotation={[-0.12, 0, 0]} castShadow>
+            <mesh position={[0, 0.01, -0.3]} rotation={[-0.12, 0, 0]}>
               <boxGeometry args={[0.38, 0.04, 0.24]} />
               <meshStandardMaterial color="#2a2163" />
             </mesh>
@@ -300,7 +300,7 @@ function RupaTopi({ warna, kulit, rambut, topi, mata }: PropsRupa & { topi: bool
             </mesh>
           </group>
         ) : (
-          <mesh position={[0, 1.11, -0.03]} castShadow>
+          <mesh position={[0, 1.11, -0.03]}>
             <sphereGeometry args={[0.345, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2.1]} />
             <meshStandardMaterial color={rambut} roughness={0.9} />
             <mesh material={BAHAN_TINTA}>
@@ -312,7 +312,7 @@ function RupaTopi({ warna, kulit, rambut, topi, mata }: PropsRupa & { topi: bool
   );
 }
 
-/** Mata titik ala Overcooked (oval hitam + kilau). */
+/** Overcooked-style dot eyes (black oval + shine). */
 function MataTitik({ mata, y, z, jarak = 0.12, besar = 0.045 }: { mata: RefObject<THREE.Group | null>; y: number; z: number; jarak?: number; besar?: number }) {
   return (
     <group ref={mata} position={[0, y, z]}>
@@ -348,7 +348,7 @@ function Pipi({ y, z, x = 0.18 }: { y: number; z: number; x?: number }) {
 function Celemek({ y, z, lebar = 0.34, tinggi = 0.32, warna }: { y: number; z: number; lebar?: number; tinggi?: number; warna: string }) {
   return (
     <group position={[0, y, z]} rotation={[0.12, 0, 0]}>
-      <mesh castShadow>
+      <mesh>
         <boxGeometry args={[lebar, tinggi, 0.06]} />
         <meshStandardMaterial color="#fbfaf3" />
       </mesh>
@@ -364,7 +364,7 @@ function Celemek({ y, z, lebar = 0.34, tinggi = 0.32, warna }: { y: number; z: n
   );
 }
 
-/** Topi kertas lipat dari koran: prisma segitiga dengan garis cetakan + pita warna toko. */
+/** Folded newspaper hat: triangular prism with print lines + shop-color band. */
 function TopiKertas({ warna }: { warna: string }) {
   const [geo, geoGaris] = useMemo(() => {
     const buat = (w: number, h: number, d: number) => {
@@ -381,7 +381,7 @@ function TopiKertas({ warna }: { warna: string }) {
   }, []);
   return (
     <group>
-      <mesh geometry={geo} castShadow>
+      <mesh geometry={geo}>
         <meshStandardMaterial color="#f3efe4" roughness={0.9} />
       </mesh>
       <mesh geometry={geoGaris} material={BAHAN_TINTA} position={[0, -GARIS * 0.6, 0]} />
@@ -403,11 +403,11 @@ function TopiKertas({ warna }: { warna: string }) {
   );
 }
 
-/** Mirip chef Overcooked: kepala menempel ke badan tanpa leher, mata titik, topi kertas lipat. */
+/** Like an Overcooked chef: head sits on the body with no neck, dot eyes, folded paper hat. */
 function RupaKertas({ warna, kulit, mata }: PropsRupa) {
   return (
     <>
-      <mesh position={[0, 0.42, 0]} castShadow>
+      <mesh position={[0, 0.42, 0]}>
         <capsuleGeometry args={[0.31, 0.1, 8, 20]} />
         <meshStandardMaterial color={warna} roughness={0.7} />
         <mesh material={BAHAN_TINTA}>
@@ -415,7 +415,7 @@ function RupaKertas({ warna, kulit, mata }: PropsRupa) {
         </mesh>
       </mesh>
       <Celemek y={0.38} z={0.25} lebar={0.36} tinggi={0.34} warna={warna} />
-      <mesh position={[0, 0.88, 0]} castShadow>
+      <mesh position={[0, 0.88, 0]}>
         <sphereGeometry args={[0.32, 28, 20]} />
         <meshStandardMaterial color={kulit} roughness={0.8} />
         <mesh material={BAHAN_TINTA}>
@@ -435,7 +435,7 @@ function RupaKertas({ warna, kulit, mata }: PropsRupa) {
   );
 }
 
-/** Maskot landak ungu bercelemek: badan bulat berbulu, duri di punggung & kepala, moncong krem. */
+/** Purple hedgehog mascot in an apron: round furry body, spikes on back & head, cream snout. */
 function RupaLandak({ warna, mata }: PropsRupa) {
   const duri = useMemo(() => {
     const hasil: { p: [number, number, number]; q: [number, number, number, number] }[] = [];
@@ -457,7 +457,7 @@ function RupaLandak({ warna, mata }: PropsRupa) {
   const gelap = useMemo(() => '#' + new THREE.Color(warna).lerp(new THREE.Color('#1a1238'), 0.55).getHexString(), [warna]);
   return (
     <>
-      <mesh position={[0, 0.55, 0]} castShadow>
+      <mesh position={[0, 0.55, 0]}>
         <capsuleGeometry args={[0.34, 0.16, 8, 20]} />
         <meshStandardMaterial color={warna} roughness={0.85} />
         <mesh material={BAHAN_TINTA}>
@@ -465,7 +465,7 @@ function RupaLandak({ warna, mata }: PropsRupa) {
         </mesh>
       </mesh>
       {duri.map((d, i) => (
-        <mesh key={i} position={d.p} quaternion={d.q} castShadow>
+        <mesh key={i} position={d.p} quaternion={d.q}>
           <coneGeometry args={[0.075, 0.24, 5]} />
           <meshStandardMaterial color={gelap} flatShading />
         </mesh>
@@ -501,11 +501,11 @@ function RupaLandak({ warna, mata }: PropsRupa) {
   );
 }
 
-/** Chibi: kepala besar, rambut berponi, bandana warna toko, mata besar berkilau. */
+/** Chibi: big head, hair with bangs, shop-color bandana, big shiny eyes. */
 function RupaChibi({ warna, kulit, rambut = '#2d2440', mata }: PropsRupa) {
   return (
     <>
-      <mesh position={[0, 0.4, 0]} castShadow>
+      <mesh position={[0, 0.4, 0]}>
         <capsuleGeometry args={[0.23, 0.16, 8, 18]} />
         <meshStandardMaterial color={warna} roughness={0.7} />
         <mesh material={BAHAN_TINTA}>
@@ -513,14 +513,14 @@ function RupaChibi({ warna, kulit, rambut = '#2d2440', mata }: PropsRupa) {
         </mesh>
       </mesh>
       <Celemek y={0.37} z={0.2} lebar={0.28} tinggi={0.28} warna={warna} />
-      <mesh position={[0, 0.95, 0]} castShadow>
+      <mesh position={[0, 0.95, 0]}>
         <sphereGeometry args={[0.39, 28, 20]} />
         <meshStandardMaterial color={kulit} roughness={0.8} />
         <mesh material={BAHAN_TINTA}>
           <sphereGeometry args={[0.39 + GARIS, 28, 20]} />
         </mesh>
       </mesh>
-      <mesh position={[0, 1.0, -0.04]} castShadow>
+      <mesh position={[0, 1.0, -0.04]}>
         <sphereGeometry args={[0.405, 28, 14, 0, Math.PI * 2, 0, Math.PI / 1.9]} />
         <meshStandardMaterial color={rambut} roughness={0.9} />
         <mesh material={BAHAN_TINTA}>
@@ -570,7 +570,7 @@ function RupaChibi({ warna, kulit, rambut = '#2d2440', mata }: PropsRupa) {
   );
 }
 
-/** Topi chef Overcooked: pita silinder + puncak menggembung dari beberapa bola. */
+/** Overcooked chef hat: cylinder band + puffy top made of several spheres. */
 function TopiChef() {
   const putih = '#fbfaf3';
   const bola: [number, number, number, number][] = [
@@ -583,7 +583,7 @@ function TopiChef() {
   ];
   return (
     <group>
-      <mesh position={[0, 0.07, 0]} castShadow>
+      <mesh position={[0, 0.07, 0]}>
         <cylinderGeometry args={[0.25, 0.27, 0.16, 24]} />
         <meshStandardMaterial color={putih} roughness={0.85} />
         <mesh material={BAHAN_TINTA}>
@@ -591,7 +591,7 @@ function TopiChef() {
         </mesh>
       </mesh>
       {bola.map(([x, y, z, r], i) => (
-        <mesh key={i} position={[x, y, z]} castShadow>
+        <mesh key={i} position={[x, y, z]}>
           <sphereGeometry args={[r, 18, 14]} />
           <meshStandardMaterial color={putih} roughness={0.85} />
           <mesh material={BAHAN_TINTA}>
@@ -614,7 +614,7 @@ const PROFIL_LONCENG = [
   [0.0, 0.74],
 ] as const;
 
-/** Chef ala Overcooked: badan lonceng berjaket putih, slayer warna toko, kepala bulat besar, topi chef menggembung. */
+/** Overcooked-style chef: bell body in a white jacket, shop-color neckerchief, big round head, puffy chef hat. */
 function RupaChef({ warna, kulit = '#f1c9a5', mata, varian = 'kumis' }: PropsRupa & { varian?: 'kumis' | 'polos' | 'kucing' }) {
   const [geo, geoGaris] = useMemo(() => {
     const titik = (tambah: number) => PROFIL_LONCENG.map(([r, y]) => new THREE.Vector2(r > 0 ? r + tambah : 0, y));
@@ -624,17 +624,17 @@ function RupaChef({ warna, kulit = '#f1c9a5', mata, varian = 'kumis' }: PropsRup
   const kepala = kucing ? '#f4a259' : kulit;
   return (
     <>
-      {/* badan lonceng: jaket chef putih */}
-      <mesh geometry={geo} castShadow>
+      {/* bell body: white chef jacket */}
+      <mesh geometry={geo}>
         <meshStandardMaterial color="#f4f1ea" roughness={0.75} side={THREE.DoubleSide} />
       </mesh>
       <mesh geometry={geoGaris} material={BAHAN_TINTA} />
-      {/* lis bawah warna toko */}
+      {/* shop-color bottom trim */}
       <mesh position={[0, 0.09, 0]}>
         <cylinderGeometry args={[0.305, 0.215, 0.07, 32, 1, true]} />
         <meshStandardMaterial color={warna} side={THREE.DoubleSide} />
       </mesh>
-      {/* kancing dua baris */}
+      {/* double-breasted buttons */}
       {[-0.09, 0.09].flatMap((x) =>
         [0.24, 0.38, 0.52].map((y) => (
           <mesh key={`${x}${y}`} position={[x, y, Math.sqrt(Math.max(0, 0.33 ** 2 - x * x)) - (y > 0.45 ? 0.04 : 0.005)]}>
@@ -643,7 +643,7 @@ function RupaChef({ warna, kulit = '#f1c9a5', mata, varian = 'kumis' }: PropsRup
           </mesh>
         )),
       )}
-      {/* slayer di leher */}
+      {/* neckerchief */}
       <mesh position={[0, 0.7, 0]} rotation={[Math.PI / 2, 0, 0]}>
         <torusGeometry args={[0.2, 0.055, 10, 24]} />
         <meshStandardMaterial color={warna} />
@@ -656,8 +656,8 @@ function RupaChef({ warna, kulit = '#f1c9a5', mata, varian = 'kumis' }: PropsRup
         <boxGeometry args={[0.1, 0.12, 0.04]} />
         <meshStandardMaterial color={warna} />
       </mesh>
-      {/* kepala */}
-      <mesh position={[0, 0.98, 0]} castShadow>
+      {/* head */}
+      <mesh position={[0, 0.98, 0]}>
         <sphereGeometry args={[0.3, 28, 20]} />
         <meshStandardMaterial color={kepala} roughness={0.8} />
         <mesh material={BAHAN_TINTA}>
@@ -690,7 +690,7 @@ function RupaChef({ warna, kulit = '#f1c9a5', mata, varian = 'kumis' }: PropsRup
         </>
       ) : (
         <>
-          <mesh position={[0, 0.95, 0.3]} castShadow>
+          <mesh position={[0, 0.95, 0.3]}>
             <sphereGeometry args={[0.065, 14, 10]} />
             <meshStandardMaterial color={kulit} roughness={0.7} />
             <mesh material={BAHAN_TINTA}>
@@ -714,7 +714,7 @@ function RupaChef({ warna, kulit = '#f1c9a5', mata, varian = 'kumis' }: PropsRup
   );
 }
 
-/** Tekstur koran (judul + kolom teks) untuk topi kertas tukang cetak. */
+/** Newspaper texture (headline + text columns) for the printer's paper hat. */
 let teksturKoran: THREE.CanvasTexture | null = null;
 function koran() {
   if (teksturKoran) return teksturKoran;
@@ -738,7 +738,7 @@ function koran() {
   return teksturKoran;
 }
 
-/** Topi kertas kotak ala pekerja percetakan (pressman's hat): kotak koran + lipatan bubungan di atas. */
+/** Boxy paper hat like print workers wear (pressman's hat): newspaper box + ridge fold on top. */
 function TopiPressman({ warna }: { warna: string }) {
   const tex = koran();
   const lipat = useMemo(() => {
@@ -754,17 +754,17 @@ function TopiPressman({ warna }: { warna: string }) {
   }, []);
   return (
     <group>
-      <mesh position={[0, 0.1, 0]} castShadow>
+      <mesh position={[0, 0.1, 0]}>
         <boxGeometry args={[0.58, 0.2, 0.52]} />
         <meshStandardMaterial map={tex} roughness={0.95} />
         <mesh material={BAHAN_TINTA}>
           <boxGeometry args={[0.58 + GARIS * 2, 0.2 + GARIS * 2, 0.52 + GARIS * 2]} />
         </mesh>
       </mesh>
-      <mesh geometry={lipat} position={[0, 0.2, 0]} rotation={[0, Math.PI / 2, 0]} castShadow>
+      <mesh geometry={lipat} position={[0, 0.2, 0]} rotation={[0, Math.PI / 2, 0]}>
         <meshStandardMaterial map={tex} roughness={0.95} />
       </mesh>
-      {/* pita lipatan depan warna toko */}
+      {/* shop-color front fold band */}
       <mesh position={[0, 0.035, 0.265]}>
         <boxGeometry args={[0.6, 0.07, 0.02]} />
         <meshStandardMaterial color={warna} />
@@ -773,7 +773,7 @@ function TopiPressman({ warna }: { warna: string }) {
   );
 }
 
-/** Pensil kuning (diselipkan di telinga). */
+/** Yellow pencil (tucked behind the ear). */
 function Pensil() {
   return (
     <group rotation={[0, 0, Math.PI / 2]}>
@@ -793,8 +793,8 @@ function Pensil() {
   );
 }
 
-/** Tukang cetak ala Overcooked: badan lonceng berkaos warna toko, celemek bernoda tinta + saku pulpen,
- *  kepala bulat besar, pensil di telinga, topi kertas koran. Varian 'visor': rambut + pelindung mata hijau khas percetakan. */
+/** Overcooked-style printer: bell body in a shop-color shirt, ink-stained apron + pen pocket,
+ *  big round head, pencil behind the ear, newspaper hat. Variant 'visor': hair + classic green printer's eyeshade. */
 function RupaTukang({ warna, kulit = '#f1c9a5', rambut = '#3d2a1e', mata, varian = 'koran' }: PropsRupa & { varian?: 'koran' | 'visor' }) {
   const [geo, geoGaris, geoCelemek] = useMemo(() => {
     const titik = (tambah: number) => PROFIL_LONCENG.map(([r, y]) => new THREE.Vector2(r > 0 ? r + tambah : 0, y));
@@ -808,12 +808,12 @@ function RupaTukang({ warna, kulit = '#f1c9a5', rambut = '#3d2a1e', mata, varian
   }, []);
   return (
     <>
-      {/* badan lonceng: kaos kerja warna toko */}
-      <mesh geometry={geo} castShadow>
+      {/* bell body: shop-color work shirt */}
+      <mesh geometry={geo}>
         <meshStandardMaterial color={warna} roughness={0.75} side={THREE.DoubleSide} />
       </mesh>
       <mesh geometry={geoGaris} material={BAHAN_TINTA} />
-      {/* celemek krem melengkung + noda tinta + saku pulpen */}
+      {/* curved cream apron + ink stains + pen pocket */}
       <mesh geometry={geoCelemek}>
         <meshStandardMaterial color="#f4ecd8" roughness={0.85} side={THREE.DoubleSide} />
       </mesh>
@@ -838,13 +838,13 @@ function RupaTukang({ warna, kulit = '#f1c9a5', rambut = '#3d2a1e', mata, varian
           <meshStandardMaterial color={c as string} />
         </mesh>
       ))}
-      {/* kerah */}
+      {/* collar */}
       <mesh position={[0, 0.7, 0]} rotation={[Math.PI / 2, 0, 0]}>
         <torusGeometry args={[0.19, 0.04, 8, 24]} />
         <meshStandardMaterial color="#fbfaf3" />
       </mesh>
-      {/* kepala */}
-      <mesh position={[0, 0.98, 0]} castShadow>
+      {/* head */}
+      <mesh position={[0, 0.98, 0]}>
         <sphereGeometry args={[0.3, 28, 20]} />
         <meshStandardMaterial color={kulit} roughness={0.8} />
         <mesh material={BAHAN_TINTA}>
@@ -870,7 +870,7 @@ function RupaTukang({ warna, kulit = '#f1c9a5', rambut = '#3d2a1e', mata, varian
         <meshBasicMaterial color={TINTA} />
       </mesh>
       <Pipi y={0.92} z={0.245} x={0.17} />
-      {/* telinga + pensil */}
+      {/* ears + pencil */}
       {[-0.29, 0.29].map((x) => (
         <mesh key={x} position={[x, 0.98, 0.0]}>
           <sphereGeometry args={[0.06, 10, 8]} />
@@ -886,7 +886,7 @@ function RupaTukang({ warna, kulit = '#f1c9a5', rambut = '#3d2a1e', mata, varian
         </group>
       ) : (
         <>
-          <mesh position={[0, 1.04, -0.03]} castShadow>
+          <mesh position={[0, 1.04, -0.03]}>
             <sphereGeometry args={[0.315, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2.15]} />
             <meshStandardMaterial color={rambut} roughness={0.9} />
             <mesh material={BAHAN_TINTA}>
@@ -910,7 +910,7 @@ function RupaTukang({ warna, kulit = '#f1c9a5', rambut = '#3d2a1e', mata, varian
 export type TipePembeli = 'mahasiswa' | 'hijab' | 'kantoran' | 'ojol' | 'anak' | 'nenek';
 export const TIPE_PEMBELI: TipePembeli[] = ['mahasiswa', 'hijab', 'kantoran', 'ojol', 'anak', 'nenek'];
 
-/** Badan lonceng sederhana dengan warna baju + garis tinta. */
+/** Simple bell body with shirt color + ink outline. */
 function BadanLonceng({ warna, bawah }: { warna: string; bawah?: string }) {
   const [geo, geoGaris] = useMemo(() => {
     const titik = (tambah: number) => PROFIL_LONCENG.map(([r, y]) => new THREE.Vector2(r > 0 ? r + tambah : 0, y));
@@ -918,7 +918,7 @@ function BadanLonceng({ warna, bawah }: { warna: string; bawah?: string }) {
   }, []);
   return (
     <>
-      <mesh geometry={geo} castShadow>
+      <mesh geometry={geo}>
         <meshStandardMaterial color={warna} roughness={0.8} side={THREE.DoubleSide} />
       </mesh>
       <mesh geometry={geoGaris} material={BAHAN_TINTA} />
@@ -935,7 +935,7 @@ function BadanLonceng({ warna, bawah }: { warna: string; bawah?: string }) {
 function Kepala({ kulit, mata, kacamata }: { kulit: string; mata: RefObject<THREE.Group | null>; kacamata?: boolean }) {
   return (
     <>
-      <mesh position={[0, 0.98, 0]} castShadow>
+      <mesh position={[0, 0.98, 0]}>
         <sphereGeometry args={[0.3, 26, 18]} />
         <meshStandardMaterial color={kulit} roughness={0.8} />
         <mesh material={BAHAN_TINTA}>
@@ -959,19 +959,19 @@ function Kepala({ kulit, mata, kacamata }: { kulit: string; mata: RefObject<THRE
   );
 }
 
-/** Pelanggan fotokopian khas Indonesia, proporsi sama dengan tukang (badan lonceng + kepala bulat). */
+/** Typical Indonesian copy-shop customer, same proportions as the worker (bell body + round head). */
 function RupaPembeli({ warna, kulit = '#f1c9a5', rambut = '#3d2a1e', mata, tipe }: PropsRupa & { tipe: TipePembeli }) {
   switch (tipe) {
     case 'mahasiswa':
       return (
         <>
           <BadanLonceng warna={warna} />
-          {/* tudung hoodie + ransel */}
+          {/* hoodie hood + backpack */}
           <mesh position={[0, 0.72, -0.12]} rotation={[Math.PI / 2 + 0.4, 0, 0]}>
             <torusGeometry args={[0.17, 0.07, 8, 18]} />
             <meshStandardMaterial color={warna} />
           </mesh>
-          <mesh position={[0, 0.45, -0.33]} castShadow>
+          <mesh position={[0, 0.45, -0.33]}>
             <boxGeometry args={[0.4, 0.42, 0.18]} />
             <meshStandardMaterial color="#2a2163" />
             <mesh material={BAHAN_TINTA}>
@@ -983,7 +983,7 @@ function RupaPembeli({ warna, kulit = '#f1c9a5', rambut = '#3d2a1e', mata, tipe 
             <meshStandardMaterial color="#f4b829" />
           </mesh>
           <Kepala kulit={kulit} mata={mata} />
-          <mesh position={[0, 1.03, -0.02]} castShadow>
+          <mesh position={[0, 1.03, -0.02]}>
             <sphereGeometry args={[0.315, 22, 12, 0, Math.PI * 2, 0, Math.PI / 2.2]} />
             <meshStandardMaterial color={rambut} roughness={0.9} />
             <mesh material={BAHAN_TINTA}>
@@ -1003,8 +1003,8 @@ function RupaPembeli({ warna, kulit = '#f1c9a5', rambut = '#3d2a1e', mata, tipe 
         <>
           <BadanLonceng warna={warna} />
           <Kepala kulit={kulit} mata={mata} />
-          {/* hijab: menutup kepala kecuali jendela wajah, menjuntai ke bahu */}
-          <mesh position={[0, 0.99, -0.01]} castShadow>
+          {/* hijab: covers the head except the face opening, drapes to the shoulders */}
+          <mesh position={[0, 0.99, -0.01]}>
             <sphereGeometry args={[0.335, 26, 18, Math.PI / 2 + 0.85, Math.PI * 2 - 1.7, 0, Math.PI * 0.82]} />
             <meshStandardMaterial color={rambut} roughness={0.85} side={THREE.DoubleSide} />
             <mesh material={BAHAN_TINTA}>
@@ -1034,15 +1034,15 @@ function RupaPembeli({ warna, kulit = '#f1c9a5', rambut = '#3d2a1e', mata, tipe 
             <meshStandardMaterial color={warna} />
           </mesh>
           <Kepala kulit={kulit} mata={mata} kacamata />
-          <mesh position={[0, 1.02, -0.04]} castShadow>
+          <mesh position={[0, 1.02, -0.04]}>
             <sphereGeometry args={[0.31, 22, 12, 0, Math.PI * 2, 0, Math.PI / 2.6]} />
             <meshStandardMaterial color={rambut} roughness={0.7} />
             <mesh material={BAHAN_TINTA}>
               <sphereGeometry args={[0.31 + GARIS, 22, 12, 0, Math.PI * 2, 0, Math.PI / 2.6]} />
             </mesh>
           </mesh>
-          {/* map dokumen di ketiak */}
-          <mesh position={[0.32, 0.5, -0.05]} rotation={[0, 0, 0.1]} castShadow>
+          {/* document folder under the arm */}
+          <mesh position={[0.32, 0.5, -0.05]} rotation={[0, 0, 0.1]}>
             <boxGeometry args={[0.05, 0.34, 0.26]} />
             <meshStandardMaterial color="#76a0e2" />
           </mesh>
@@ -1057,8 +1057,8 @@ function RupaPembeli({ warna, kulit = '#f1c9a5', rambut = '#3d2a1e', mata, tipe 
             <meshStandardMaterial color="#fbfaf3" />
           </mesh>
           <Kepala kulit={kulit} mata={mata} />
-          {/* helm */}
-          <mesh position={[0, 1.02, -0.02]} castShadow>
+          {/* helmet */}
+          <mesh position={[0, 1.02, -0.02]}>
             <sphereGeometry args={[0.345, 26, 14, 0, Math.PI * 2, 0, Math.PI / 1.85]} />
             <meshStandardMaterial color="#3fae5a" roughness={0.3} metalness={0.1} />
             <mesh material={BAHAN_TINTA}>
@@ -1084,7 +1084,7 @@ function RupaPembeli({ warna, kulit = '#f1c9a5', rambut = '#3d2a1e', mata, tipe 
             <meshStandardMaterial color="#ef6a4c" />
           </mesh>
           <Kepala kulit={kulit} mata={mata} />
-          <mesh position={[0, 1.0, -0.03]} castShadow>
+          <mesh position={[0, 1.0, -0.03]}>
             <sphereGeometry args={[0.33, 24, 14, 0, Math.PI * 2, 0, Math.PI / 1.75]} />
             <meshStandardMaterial color={rambut} roughness={0.9} side={THREE.DoubleSide} />
             <mesh material={BAHAN_TINTA}>
@@ -1112,14 +1112,14 @@ function RupaPembeli({ warna, kulit = '#f1c9a5', rambut = '#3d2a1e', mata, tipe 
             <meshStandardMaterial color="#fbfaf3" />
           </mesh>
           <Kepala kulit={kulit} mata={mata} kacamata />
-          <mesh position={[0, 1.02, -0.03]} castShadow>
+          <mesh position={[0, 1.02, -0.03]}>
             <sphereGeometry args={[0.315, 22, 12, 0, Math.PI * 2, 0, Math.PI / 2.1]} />
             <meshStandardMaterial color="#e4e1dc" roughness={0.9} />
             <mesh material={BAHAN_TINTA}>
               <sphereGeometry args={[0.315 + GARIS, 22, 12, 0, Math.PI * 2, 0, Math.PI / 2.1]} />
             </mesh>
           </mesh>
-          <mesh position={[0, 1.2, -0.26]} castShadow>
+          <mesh position={[0, 1.2, -0.26]}>
             <sphereGeometry args={[0.13, 14, 10]} />
             <meshStandardMaterial color="#e4e1dc" roughness={0.9} />
             <mesh material={BAHAN_TINTA}>

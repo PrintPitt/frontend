@@ -1,13 +1,13 @@
-// State live untuk /layar dan /toko (BLZ-12.T1): snapshot awal + event lewat satu koneksi WebSocket.
-// Transisi status hanya maju, jadi event yang datang tidak berurutan (snapshot vs langganan) tetap aman.
+// Live state for /layar and /toko (BLZ-12.T1): initial snapshot + events over one WebSocket connection.
+// Status only moves forward, so out-of-order events (snapshot vs subscription) are still safe.
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import type { Hex } from 'viem';
-import { hitungPayout } from '../../../shared/src/index.ts';
+import { hitungPayout, NOL32 } from '../../../shared/src/index.ts';
 import { kontrak, offsetChain, PAKAI_WS, pub, pubLive } from './chain';
 import { bukaResep } from './format';
-import { bacaKatalog, bacaOrder, bacaToko, type Katalog, type Order, type StatusOrder } from './katalog';
+import { bacaFeePlatform, bacaKatalog, bacaOrder, bacaToko, payoutBersih, type Katalog, type Order, type StatusOrder } from './katalog';
 
-export type TokoLive = { alamat: Hex; nama: string; orderAktif: bigint; omzet: bigint };
+export type TokoLive = { alamat: Hex; nama: string; orderAktif: bigint; omzet: bigint; aktif: boolean };
 export type Kejadian = {
   kunci: string;
   jenis: 'baru' | 'claim' | 'selesai' | 'expire';
@@ -16,7 +16,7 @@ export type Kejadian = {
   payout?: bigint;
   refund?: bigint;
   kerja?: number;
-  waktu: number; // ms lokal
+  waktu: number; // local ms
 };
 export type LiveState = {
   siap: boolean;
@@ -24,6 +24,8 @@ export type LiveState = {
   sesiId: number;
   sesiAktif: boolean;
   batasAntre: number;
+  /** v2.1: platform fee (bps) taken from shop payout; events/revenue are net, hitungPayout is still gross. */
+  feeBps: number;
   katalog: Record<number, Katalog>;
   toko: TokoLive[];
   order: Record<string, Order>;
@@ -38,6 +40,7 @@ let state: LiveState = {
   sesiId: 0,
   sesiAktif: false,
   batasAntre: 45,
+  feeBps: 0,
   katalog: {},
   toko: [],
   order: {},
@@ -109,12 +112,13 @@ function terapkan(logs: LogAny[]) {
                 teks: a.teks,
                 halaman: 1,
                 siapPada: 0,
-                kodeHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
+                dokumen: NOL32,
+                kodeHash: NOL32,
               }),
               { kunci, jenis: 'baru', id, waktu },
             ),
           );
-        segarkanOrder(id); // salinan resep yang pasti dari storage
+        segarkanOrder(id); // exact recipe copy from storage
         break;
       }
       case 'OrderClaimed': {
@@ -127,13 +131,15 @@ function terapkan(logs: LogAny[]) {
       }
       case 'OrderDetail': {
         const o = state.order[String(a.id)];
-        if (o) ubah((s) => pasangOrder(s, { ...o, halaman: Number(a.halaman), batasKerja: Number(a.batasKerja), kodeHash: a.kodeHash }));
+        if (o) ubah((s) => pasangOrder(s, { ...o, halaman: Number(a.halaman), batasKerja: Number(a.batasKerja), dokumen: a.dokumen, kodeHash: a.kodeHash }));
         break;
       }
       case 'OrderReady': {
         const o = state.order[String(a.id)];
         if (!o) segarkanOrder(a.id);
         else ubah((s) => pasangOrder(s, { ...o, status: 'Siap', kerja: Number(a.kerja), siapPada: Number(a.siapPada), langkahSelesai: o.langkah.length }));
+        // payout is locked at Siap (Ready); the shop can take another order right away
+        ubah((s) => ({ ...s, toko: s.toko.map((t) => (t.alamat.toLowerCase() === String(a.toko).toLowerCase() ? { ...t, orderAktif: 0n } : t)) }));
         break;
       }
       case 'StepCompleted': {
@@ -174,6 +180,27 @@ function terapkan(logs: LogAny[]) {
         } else if (!o) segarkanOrder(id);
         break;
       }
+      case 'OrderDisputed': {
+        const o = state.order[String(a.id)];
+        if (!o) segarkanOrder(a.id);
+        else ubah((s) => pasangOrder(s, { ...o, status: 'Sengketa' }));
+        break;
+      }
+      case 'DisputeResolved': {
+        const id = a.id as bigint;
+        const o = state.order[String(id)];
+        if (o && o.status !== 'Diputuskan') {
+          ubah((s) => {
+            let n = pasangOrder(s, { ...o, status: 'Diputuskan' });
+            n = { ...n, toko: n.toko.map((t) => (t.alamat.toLowerCase() === String(a.toko).toLowerCase() ? { ...t, omzet: t.omzet + (a.payout as bigint) } : t)) };
+            return catat(n, { kunci, jenis: 'selesai', id, toko: a.toko, payout: a.payout, refund: a.refund, kerja: o.kerja, waktu });
+          });
+        } else if (!o) segarkanOrder(id);
+        break;
+      }
+      case 'PlatformSet':
+        ubah((s) => ({ ...s, feeBps: Number(a.feeBps) }));
+        break;
       case 'SessionStarted':
         ubah((s) => ({ ...s, sesiId: Number(a.sesiId), sesiAktif: true, toko: s.toko.map((t) => ({ ...t, omzet: 0n })) }));
         break;
@@ -181,6 +208,8 @@ function terapkan(logs: LogAny[]) {
         ubah((s) => ({ ...s, sesiAktif: false }));
         break;
       case 'ShopRegistered':
+      case 'ShopRenamed':
+      case 'ShopStatusSet':
         segarkanToko();
         break;
       case 'KatalogSet':
@@ -208,24 +237,25 @@ function terapkan(logs: LogAny[]) {
 
 async function snapshot(): Promise<bigint> {
   const blok = await pub.getBlock();
-  const [sesiId, sesiAktif, batasAntre, nextId, katalog, offset] = await Promise.all([
+  const [sesiId, sesiAktif, batasAntre, nextId, katalog, offset, feeBps] = await Promise.all([
     pub.readContract({ ...kontrak, functionName: 'sesiId' }),
     pub.readContract({ ...kontrak, functionName: 'sesiAktif' }),
     pub.readContract({ ...kontrak, functionName: 'batasAntre' }),
     pub.readContract({ ...kontrak, functionName: 'nextId' }),
     bacaKatalog(),
     offsetChain(),
+    bacaFeePlatform(),
   ]);
   const ids: bigint[] = [];
   for (let id = nextId - 1n; id >= 1n && ids.length < 80; id--) ids.push(id);
   const orders = await Promise.all(ids.map(bacaOrder));
-  // Riwayat sesi ini dari storage, supaya reload layar tidak mengosongkan riwayat (waktu 0 = bukan kejadian live).
+  // This session's history from storage, so reloading the screen keeps the history (waktu 0 = not a live event).
   const lampau: Kejadian[] = orders
     .filter((o) => o.sesi === sesiId && (o.status === 'Finished' || o.status === 'Expired'))
     .map((o) => {
       if (o.status === 'Expired') return { kunci: `snap:${o.id}`, jenis: 'expire', id: o.id, toko: o.toko, refund: o.harga, waktu: 0 };
-      const payout = hitungPayout(o.harga, o.batasKerja, o.kerja);
-      return { kunci: `snap:${o.id}`, jenis: 'selesai', id: o.id, toko: o.toko, payout, refund: o.harga - payout, kerja: o.kerja, waktu: 0 };
+      const kotor = hitungPayout(o.harga, o.batasKerja, o.kerja);
+      return { kunci: `snap:${o.id}`, jenis: 'selesai', id: o.id, toko: o.toko, payout: payoutBersih(kotor, feeBps), refund: o.harga - kotor, kerja: o.kerja, waktu: 0 };
     });
   ubah((s) => ({
     ...s,
@@ -233,6 +263,7 @@ async function snapshot(): Promise<bigint> {
     sesiAktif,
     batasAntre,
     offset,
+    feeBps,
     katalog: Object.fromEntries(katalog.map((k) => [k.jenis, k])),
     order: Object.fromEntries(orders.map((o) => [String(o.id), o])),
     kejadian: [...s.kejadian.filter((k) => k.waktu > 0), ...lampau].slice(0, 40),
@@ -252,7 +283,7 @@ async function jalankan() {
       onError: (e) => ubah((s) => ({ ...s, galat: e.message.split('\n')[0] })),
       ...(PAKAI_WS ? {} : { poll: true, pollingInterval: 700 }),
     });
-    // Tutup celah antara snapshot dan langganan (dedupe lewat txHash:logIndex).
+    // Close the gap between snapshot and subscription (dedupe by txHash:logIndex).
     try {
       const ketinggalan = await pub.getContractEvents({ ...kontrak, fromBlock: dariBlok + 1n, toBlock: 'latest' });
       terapkan(ketinggalan as unknown as LogAny[]);
@@ -269,7 +300,7 @@ async function jalankan() {
   }
 }
 
-/** State terkini di luar render (mis. di dalam handler async). */
+/** Current state outside render (e.g. inside an async handler). */
 export const bacaLive = () => state;
 if (import.meta.env.DEV) (window as unknown as { __live: () => LiveState }).__live = bacaLive;
 
@@ -289,7 +320,7 @@ export function useLive(): LiveState {
   );
 }
 
-/** Jam chain (detik, pecahan) yang berdetak tiap `ms`; pakai `offset` dari useLive atau offsetChain(). */
+/** Chain clock (seconds, fractional) that ticks every `ms`; use `offset` from useLive or offsetChain(). */
 export function useJamChain(offset: number, ms = 250): number {
   const [t, setT] = useState(() => Date.now() / 1000 + offset);
   useEffect(() => {

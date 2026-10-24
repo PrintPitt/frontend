@@ -1,4 +1,4 @@
-// /layar — layar proyektor (BLZ-12): antrean, dua toko live, omzet, payout yang turun tiap detik, uang mengalir, pemenang, QR.
+// /layar — projector screen (BLZ-12): queue, two live shops, revenue, payout dropping every second, money flow, winner, QR.
 import confetti from 'canvas-confetti';
 import { AnimatePresence, motion } from 'motion/react';
 import QRCode from 'qrcode';
@@ -6,13 +6,15 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { hitungPayout } from '../../../shared/src/index.ts';
 import MesinFigur from '../components/MesinFigur';
 import { sfx } from '../game/sfx';
+import { IS_MAINNET } from '../lib/chain';
 import { mon, NAMA_LANGKAH } from '../lib/format';
 import { NAMA } from '../lib/merek';
-import type { Katalog, Order } from '../lib/katalog';
+import { payoutBersih, type Katalog, type Order } from '../lib/katalog';
 import { useJamChain, useLive, type Kejadian, type TokoLive } from '../lib/live';
 
 const sama = (a?: string, b?: string) => !!a && !!b && a.toLowerCase() === b.toLowerCase();
-const URL_PESAN = `${(import.meta.env.VITE_PUBLIC_URL || location.origin).replace(/\/+$/, '')}/pesan`;
+// QR membawa jaringan yang sedang ditampilkan, supaya HP penonton memesan di chain yang sama dengan layar
+const URL_PESAN = `${(import.meta.env.VITE_PUBLIC_URL || location.origin).replace(/\/+$/, '')}/pesan${IS_MAINNET ? '?jaringan=mainnet' : ''}`;
 
 export default function Layar() {
   const s = useLive();
@@ -21,7 +23,7 @@ export default function Layar() {
   const refQR = useRef<HTMLElement | null>(null);
   const refEscrow = useRef<HTMLDivElement | null>(null);
   const terakhir = useRef<string | undefined>(undefined);
-  const [suara, setSuara] = useState(false); // browser butuh satu klik sebelum audio boleh bunyi
+  const [suara, setSuara] = useState(false); // browser needs one click before audio may play
   const bunyiDilihat = useRef(new Set<string>());
   const bunyiMulai = useRef(Date.now());
 
@@ -54,12 +56,12 @@ export default function Layar() {
     return () => t.forEach(clearTimeout);
   }, [tampilJuara]);
 
-  // Confetti di atas toko yang baru menyelesaikan order.
+  // Confetti over the shop that just finished an order.
   useEffect(() => {
     const k = s.kejadian.find((x) => x.jenis === 'selesai');
     if (!k || k.kunci === terakhir.current) return;
     terakhir.current = k.kunci;
-    if (k.waktu === 0) return; // riwayat dari snapshot, bukan kejadian baru
+    if (k.waktu === 0) return; // history from snapshot, not a new event
     const el = k.toko ? refToko.current[k.toko.toLowerCase()] : null;
     const r = el?.getBoundingClientRect();
     confetti({
@@ -76,7 +78,7 @@ export default function Layar() {
       <header className="layar-head">
         <div>
           <div className="brand besar">{NAMA}</div>
-          <div className="muted">Rebutan order on Monad · makin kilat, makin cuan</div>
+          <div className="muted">Race for orders on Monad · faster means more profit</div>
         </div>
         <div className="statistik">
           <button
@@ -85,13 +87,13 @@ export default function Layar() {
               setSuara((v) => !v);
               if (!suara) sfx('ding');
             }}
-            title="Suara layar"
+            title="Screen sound"
           >
             {suara ? '🔊' : '🔈'}
           </button>
-          <Stat label="Sesi" nilai={s.sesiId ? `#${s.sesiId} ${s.sesiAktif ? 'BUKA' : 'TUTUP'}` : '—'} nyala={s.sesiAktif} />
-          <Stat label="Order selesai" nilai={String(jmlSelesai)} />
-          <Stat label="Di escrow" nilai={mon(escrow)} refEl={refEscrow} />
+          <Stat label="Session" nilai={s.sesiId ? `#${s.sesiId} ${s.sesiAktif ? 'OPEN' : 'CLOSED'}` : '—'} nyala={s.sesiAktif} />
+          <Stat label="Orders done" nilai={String(jmlSelesai)} />
+          <Stat label="In escrow" nilai={mon(escrow)} refEl={refEscrow} />
         </div>
       </header>
 
@@ -102,14 +104,14 @@ export default function Layar() {
           <KartuQR refEl={refQR} />
           <section className="antrean">
             <h3 className="judul-bagian">
-              Antrean <span className="muted">{antre.length}</span>
+              Queue <span className="muted">{antre.length}</span>
             </h3>
             <AnimatePresence initial={false}>
               {antre.map((o) => (
                 <ItemAntre key={String(o.id)} o={o} k={s.katalog[o.jenis]} sisa={s.batasAntre - (now - o.dibuatPada)} batas={s.batasAntre} />
               ))}
             </AnimatePresence>
-            {antre.length === 0 && <p className="muted kosong">{s.siap ? 'Belum ada order. Scan QR untuk pesan!' : 'Menyambung ke chain…'}</p>}
+            {antre.length === 0 && <p className="muted kosong">{s.siap ? 'No orders yet. Scan the QR to order!' : 'Connecting to chain…'}</p>}
           </section>
         </aside>
 
@@ -121,6 +123,7 @@ export default function Layar() {
               urut={i}
               o={t.orderAktif ? s.order[String(t.orderAktif)] : undefined}
               katalog={s.katalog}
+              feeBps={s.feeBps}
               now={now}
               kejadian={s.kejadian}
               refEl={(el) => (refToko.current[t.alamat.toLowerCase()] = el)}
@@ -131,17 +134,17 @@ export default function Layar() {
       </div>
 
       <footer className="riwayat">
-        <span className="muted">Riwayat</span>
+        <span className="muted">History</span>
         <AnimatePresence initial={false}>
           {riwayat.map((k) => (
             <motion.span key={k.kunci} className={`chip-riwayat ${k.jenis}`} layout initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
               #{String(k.id)} {s.katalog[s.order[String(k.id)]?.jenis]?.label ?? ''}{' '}
               {k.jenis === 'selesai' ? (
                 <>
-                  · {namaToko(s.toko, k.toko)} {k.kerja} dtk · <b>+{mon(k.payout ?? 0n)}</b> · kembali {mon(k.refund ?? 0n)}
+                  · {namaToko(s.toko, k.toko)} {k.kerja}s · <b>+{mon(k.payout ?? 0n)}</b> · refund {mon(k.refund ?? 0n)}
                 </>
               ) : (
-                <>· kedaluwarsa · refund {mon(k.refund ?? 0n)}</>
+                <>· expired · refund {mon(k.refund ?? 0n)}</>
               )}
             </motion.span>
           ))}
@@ -154,7 +157,7 @@ export default function Layar() {
         {tampilJuara && (
           <motion.div className="juara" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <motion.div initial={{ scale: 0.8, y: 30 }} animate={{ scale: 1, y: 0 }} transition={{ type: 'spring', bounce: 0.4 }}>
-              <div className="muted">Toko terkilat sesi #{s.sesiId}</div>
+              <div className="muted">Fastest shop of session #{s.sesiId}</div>
               <div className="nama-juara">{juara!.nama}</div>
               <div className="omzet-juara">{mon(juara!.omzet)}</div>
               <div className="peringkat">
@@ -168,7 +171,7 @@ export default function Layar() {
                 ))}
               </div>
               <div className="muted kecil">
-                {jmlSelesai} order selesai · {jmlKembali} dana dikembalikan · uang penonton hanya bisa jadi bayaran toko atau kembali ke penonton
+                {jmlSelesai} orders done · {jmlKembali} refunded · audience money can only pay a shop or go back to the audience
               </div>
             </motion.div>
           </motion.div>
@@ -186,7 +189,7 @@ const pusat = (el: Element | null | undefined) => {
   return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null;
 };
 
-/** Koin terbang: pelanggan (QR) → escrow saat order masuk; escrow → toko (bayaran) dan → pelanggan (refund) saat selesai/expire. */
+/** Flying coins: customer (QR) → escrow on new order; escrow → shop (payout) and → customer (refund) on finish/expire. */
 function AliranUang(p: {
   kejadian: Kejadian[];
   refQR: React.RefObject<HTMLElement | null>;
@@ -209,7 +212,7 @@ function AliranUang(p: {
       dilihat.current.add(k.kunci);
       const qr = pusat(p.refQR.current);
       const escrow = pusat(p.refEscrow.current);
-      if (k.jenis === 'baru') semprot(k.kunci, qr, escrow, 'bayar', 'var(--aksen)');
+      if (k.jenis === 'baru') semprot(k.kunci, qr, escrow, 'pay', 'var(--aksen)');
       if (k.jenis === 'selesai') {
         semprot(k.kunci, escrow, pusat(k.toko ? p.refToko.current[k.toko.toLowerCase()] : null), `+${mon(k.payout ?? 0n)}`, 'var(--ok)');
         if ((k.refund ?? 0n) > 0n) semprot(k.kunci, escrow, qr, `refund ${mon(k.refund ?? 0n)}`, 'var(--kuning)', 0.35);
@@ -262,9 +265,9 @@ function KartuQR({ refEl }: { refEl?: React.Ref<HTMLElement> }) {
     <section ref={refEl} className="kartu-qr">
       <div className="qr" dangerouslySetInnerHTML={{ __html: svg }} />
       <div>
-        <b>Scan untuk pesan</b>
+        <b>Scan to order</b>
         <div className="muted kecil">{URL_PESAN.replace(/^https?:\/\//, '')}</div>
-        {lokal && <div className="galat kecil">Set VITE_PUBLIC_URL supaya HP bisa membuka</div>}
+        {lokal && <div className="galat kecil">Set VITE_PUBLIC_URL so phones can open it</div>}
       </div>
     </section>
   );
@@ -274,7 +277,7 @@ function ItemAntre({ o, k, sisa, batas }: { o: Order; k?: Katalog; sisa: number;
   return (
     <motion.div className="item-antre" layout initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, scale: 0.9 }}>
       <div className="baris">
-        <b>{k?.label ?? `Jenis ${o.jenis}`}</b>
+        <b>{k?.label ?? `Type ${o.jenis}`}</b>
         <span className="harga">{mon(o.harga)}</span>
       </div>
       <div className="teks-kecil">“{o.teks}”</div>
@@ -290,6 +293,7 @@ function PanelToko(p: {
   urut: number;
   o?: Order;
   katalog: Record<number, Katalog>;
+  feeBps: number;
   now: number;
   kejadian: Kejadian[];
   refEl: (el: HTMLElement | null) => void;
@@ -298,8 +302,9 @@ function PanelToko(p: {
   const { t, o, now } = p;
   const aktif = o && o.status === 'Claimed' ? o : undefined;
   const kerja = aktif ? Math.max(0, now - aktif.diclaimPada) : 0;
-  const payout = aktif ? hitungPayout(aktif.harga, aktif.batasKerja, kerja) : 0n;
-  const frac = aktif ? Number((payout * 1000n) / aktif.harga) / 1000 : 0;
+  const kotor = aktif ? hitungPayout(aktif.harga, aktif.batasKerja, kerja) : 0n;
+  const payout = payoutBersih(kotor, p.feeBps); // what the shop receives (v2.1: after platform fee)
+  const frac = aktif ? Number((kotor * 1000n) / aktif.harga) / 1000 : 0;
   const kodeSekarang = aktif ? aktif.langkah[Math.min(aktif.langkahSelesai, aktif.langkah.length - 1)] : 0;
   const kilatan = p.kejadian.filter((k) => k.jenis === 'selesai' && sama(k.toko, t.alamat) && Date.now() - k.waktu < 3500);
 
@@ -308,8 +313,8 @@ function PanelToko(p: {
       <header>
         <div className="nama-toko">{t.nama}</div>
         <div className="omzet">
-          <span className="muted kecil">Omzet</span>
-          <motion.span key={String(t.omzet)} initial={{ y: -14, opacity: 0, color: '#5fd39a' }} animate={{ y: 0, opacity: 1, color: '#e9eaea' }} transition={{ duration: 0.8 }}>
+          <span className="muted kecil">Revenue</span>
+          <motion.span key={String(t.omzet)} initial={{ y: -14, opacity: 0, color: '#5fd39a' }} animate={{ y: 0, opacity: 1, color: '#231e16' }} transition={{ duration: 0.8 }}>
             {mon(t.omzet)}
           </motion.span>
         </div>
@@ -335,10 +340,10 @@ function PanelToko(p: {
             </div>
             <div className="payout">
               {kerja >= aktif.batasKerja ? (
-                <span className="angka-payout telat">Waktu habis · dana kembali ke pelanggan</span>
+                <span className="angka-payout telat">Time's up · money back to customer</span>
               ) : (
                 <>
-                  <span className="muted kecil">Bayaran kalau selesai sekarang</span>
+                  <span className="muted kecil">Payout if done now</span>
                   <span className="angka-payout">{mon(payout, 5)}</span>
                 </>
               )}
@@ -348,7 +353,7 @@ function PanelToko(p: {
                     <div style={{ width: `${frac * 100}%` }} />
                   </div>
                   <span className="muted kecil">
-                    {kerja} / {aktif.batasKerja} dtk · sisanya kembali ke pelanggan
+                    {kerja} / {aktif.batasKerja}s · the rest goes back to the customer
                   </span>
                 </>
               )}
@@ -356,7 +361,7 @@ function PanelToko(p: {
           </motion.div>
         ) : (
           <motion.div key="kosong" className="order-kosong" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            Menunggu rebutan order…
+            Waiting for an order…
           </motion.div>
         )}
       </AnimatePresence>
@@ -372,7 +377,7 @@ function PanelToko(p: {
             transition={{ duration: 0.9 }}
           >
             +{mon(k.payout ?? 0n)}
-            <span className="kecil"> · kembali ke pelanggan {mon(k.refund ?? 0n)}</span>
+            <span className="kecil"> · back to customer {mon(k.refund ?? 0n)}</span>
           </motion.div>
         ))}
       </AnimatePresence>
