@@ -252,6 +252,8 @@ body[data-halaman='layar'] { overflow: hidden; }
 .akun-baris-info { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .akun-baris-info > div { display: grid; gap: 2px; }
 @media (max-width: 420px) { .akun-baris-info { grid-template-columns: 1fr 1fr; } }
-.tombol-akun-apung { position: fixed; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 50; font: 600 13px/1 system-ui, sans-serif; padding: 9px 13px; border-radius: 999px; border: 2px solid #231e16; background: #fbfaf3; color: #231e16; box-shadow: 0 3px 0 #231e16; cursor: pointer; }
+.tombol-akun-apung { position: fixed; right: 12px; top: calc(10px + env(safe-area-inset-top)); z-index: 50; font: 600 13px/1 system-ui, sans-serif; padding: 9px 13px; border-radius: 999px; border: 2px solid #231e16; background: #fbfaf3; color: #231e16; box-shadow: 0 3px 0 #231e16; cursor: pointer; }
 .tombol-akun-apung.masuk { background: #f4b829; }
 .lencana-jaringan { bottom: calc(10px + env(safe-area-inset-bottom)); }
+/* tombol akun di kanan atas: header halaman memberi ruang supaya chip saldo / skor tidak tertutup */
+body:has(.tombol-akun-apung) .pesan-head, body:has(.tombol-akun-apung) .toko-head, body:has(.tombol-akun-apung) .kepala-beranda { padding-right: 96px; }
