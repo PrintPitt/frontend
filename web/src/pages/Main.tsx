@@ -32,6 +32,7 @@ import {
 } from '../game3d/logika';
 import { PemainGame, useTombol, type PosPemain } from '../game3d/PemainGame';
 import { adalahMesin, ID_MESIN, MESIN, type IdMesin, type IdStasiun } from '../game3d/peta';
+import { LayarMuat, PanahPetunjuk, SemburanHati } from '../game3d/Bantuan3D';
 import { EfekMesin, TeksMelayang, type Melayang } from '../game3d/Efek3D';
 import { Antrean, BarangDunia, BarMesin, Sorotan, TandaMesin } from '../game3d/Stasiun3D';
 import { POS_SERAH } from '../game3d/peta';
@@ -127,6 +128,10 @@ export default function Main() {
   const toastT = useRef<ReturnType<typeof setTimeout>>(undefined);
   const melayang = useRef<Melayang[]>([]);
   const [goyang, setGoyang] = useState(0);
+  const [tutorial, setTutorial] = useState(() => !localStorage.getItem('pp.tutorial'));
+  const [menu, setMenu] = useState(false);
+  const [hati, setHati] = useState(0);
+  const diamSejak = useRef(performance.now());
   const [ringan, setRingan] = useState(() => new URLSearchParams(location.search).has('ringan'));
   const terbang = (teks: string, warna: string, x: number, z: number, y = 1.3) => melayang.current.push({ teks, warna, x, y, z, t0: performance.now() / 1000 });
   const dingTerakhir = useRef('');
@@ -267,6 +272,7 @@ export default function Main() {
       sfx('selesai');
       confetti({ particleCount: 150, spread: 95, startVelocity: 45, origin: { x: 0.5, y: 0.78 }, colors: ['#836ef9', '#fbfaf3', '#f4b829', '#5fd39a'] });
       if (h) terbang(`+${rp(h.payout)}`, '#5fd39a', POS_SERAH[0], POS_SERAH[2]);
+      setHati((n) => n + 1);
       tampil(h ? `Beres! +${rp(h.payout)} bersih (fee platform 3% sudah dipotong) · NFT terkirim` : 'Beres! NFT terkirim ke pelanggan', 'ok', 3400);
     } catch (e) {
       const pesan = pesanError(e);
@@ -381,12 +387,27 @@ export default function Main() {
   useEffect(() => {
     const f = (e: KeyboardEvent) => {
       if (e.repeat) return;
+      diamSejak.current = performance.now();
+      if (e.key === 'Escape') return setMenu((m) => !m);
       if (e.key === ' ' || e.key === 'Enter') aksiRef.current();
       else if (e.key === '1' || e.key === '2' || e.key === '3') pilihRef.current(Number(e.key) - 1);
     };
     addEventListener('keydown', f);
     return () => removeEventListener('keydown', f);
   }, []);
+
+  const tutupTutorial = useCallback(() => {
+    setTutorial(false);
+    try {
+      localStorage.setItem('pp.tutorial', '1');
+    } catch {}
+  }, []);
+  useEffect(() => {
+    if (!tutorial) return;
+    const f = (e: KeyboardEvent) => e.key !== 'Escape' && tutupTutorial();
+    addEventListener('keydown', f);
+    return () => removeEventListener('keydown', f);
+  }, [tutorial, tutupTutorial]);
 
   const onFokus = useCallback((id: IdStasiun | null) => {
     fokusRef.current = id;
@@ -473,6 +494,8 @@ export default function Main() {
             <TandaMesin key={id} id={id} status={d.mesin[id].status} />
           ))}
           <Sorotan id={fokus} />
+          <PanahPetunjuk x={POS_SERAH[0]} z={POS_SERAH[2] - 0.9} aktif={!!akun && !tutorial && !aktif && !d.pegang && antre.length > 0 && performance.now() - diamSejak.current > 6000} />
+          <SemburanHati x={POS_SERAH[0]} z={POS_SERAH[2] + 0.6} kunci={hati} />
           {ID_MESIN.map((id) => (
             <EfekMesin key={id} id={id} dunia={dunia} />
           ))}
@@ -592,6 +615,32 @@ export default function Main() {
             <button className="tautan" disabled={masukJalan} onClick={() => mulai(true)}>
               Pakai akun sementara
             </button>
+          </div>
+        </div>
+      )}
+      <LayarMuat />
+      {akun && tutorial && (
+        <div className="tutorial" onClick={tutupTutorial}>
+          <div className="kartu-tutorial">
+            <h2>CARA MAIN</h2>
+            <ol className="langkah-tutorial">
+              <li><span className="no">1</span><span>Lari ke loket <b>SERAH</b>, tekan <kbd>Spasi</kbd> untuk merebut order pelanggan (rebutan dengan toko lawan!)</span></li>
+              <li><span className="no">2</span><span>Bawa dokumen ke mesin yang diminta tiket: <b>fotokopi</b> otomatis, <b>printer</b> pilih file asli <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> (awas virus), <b>laminator</b> tahan <kbd>E</kbd></span></li>
+              <li><span className="no">3</span><span>Ambil hasilnya, serahkan di loket. Makin cepat, makin besar bayarannya. Telat = hangus</span></li>
+            </ol>
+            <div className="kecil-akun" style={{ textAlign: 'center', marginBottom: 10 }}>Gerak <kbd>WASD</kbd> · lari <kbd>Shift</kbd> · menu <kbd>Esc</kbd></div>
+            <button className="tombol-game kuning besar" onClick={tutupTutorial}>SIAP, GAS!</button>
+          </div>
+        </div>
+      )}
+      {menu && (
+        <div className="menu-esc" onClick={() => setMenu(false)}>
+          <div className="kartu-menu" onClick={(e) => e.stopPropagation()}>
+            <h2>JEDA</h2>
+            <button className="tombol-game kuning besar" onClick={() => setMenu(false)}>LANJUT</button>
+            <button className="tombol-game putih" onClick={() => (setMenu(false), setTutorial(true))}>CARA MAIN</button>
+            <button className="tombol-game putih" onClick={() => pindah('/lobi')}>KEMBALI KE LOBI</button>
+            <span className="kecil-akun">Order yang sedang dikerjakan tetap jalan di chain.</span>
           </div>
         </div>
       )}

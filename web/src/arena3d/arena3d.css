@@ -143,3 +143,23 @@
 .lawan-hud { flex-direction: column; align-items: flex-end; gap: 0; border-radius: 18px; padding: 6px 16px 9px; }
 .lawan-order { font: 700 0.72rem 'Fredoka', system-ui; opacity: 0.75; }
 .mode-ringan { position: absolute; left: 22px; top: 150px; z-index: 20; background: #231e16; color: #fbfaf3; border-radius: 999px; padding: 3px 10px; font: 700 0.7rem 'Fredoka', system-ui; opacity: 0.7; }
+
+/* ---------- layar muat, tutorial, menu esc ---------- */
+.layar-muat { position: absolute; inset: 0; z-index: 60; display: grid; place-items: center; background: #241a52; }
+.kartu-muat { width: min(420px, 88vw); text-align: center; background: #fbfaf3; color: #231e16; border: 3px solid #231e16; border-radius: 22px; box-shadow: 0 8px 0 #231e16; padding: 22px 26px; font-family: 'Fredoka', system-ui; }
+.judul-muat { font: 2rem 'Lilita One', system-ui; color: #836ef9; -webkit-text-stroke: 1px #231e16; }
+.bar-muat { height: 18px; margin: 12px 0 8px; background: #231e16; border-radius: 999px; padding: 3px; }
+.bar-muat div { height: 100%; background: linear-gradient(90deg, #f4b829, #5fd39a); border-radius: 999px; transition: width 0.3s; }
+.kecil-muat { font-size: 0.85rem; opacity: 0.7; }
+.tutorial { position: absolute; inset: 0; z-index: 45; display: grid; place-items: center; background: rgba(36, 26, 82, 0.55); }
+.kartu-tutorial { width: min(560px, 92vw); background: #fbfaf3; color: #231e16; border: 3px solid #231e16; border-radius: 22px; box-shadow: 0 8px 0 #231e16; padding: 22px 26px; font-family: 'Fredoka', system-ui; }
+.kartu-tutorial h2 { margin: 0 0 12px; font: 2rem 'Lilita One', system-ui; color: #836ef9; -webkit-text-stroke: 1px #231e16; text-align: center; }
+.langkah-tutorial { display: grid; gap: 8px; margin: 0 0 14px; padding: 0; list-style: none; }
+.langkah-tutorial li { display: flex; align-items: center; gap: 12px; background: #fff; border: 2px solid #231e16; border-radius: 12px; padding: 8px 12px; font-weight: 700; }
+.langkah-tutorial .no { width: 32px; height: 32px; display: grid; place-items: center; background: #f4b829; border: 2px solid #231e16; border-radius: 50%; font: 1.1rem 'Lilita One', system-ui; flex-shrink: 0; }
+.langkah-tutorial kbd { background: #231e16; color: #fbfaf3; border-radius: 6px; padding: 1px 8px 3px; font: 0.9rem 'Lilita One', system-ui; }
+.kartu-tutorial .tombol-game { width: 100%; text-align: center; }
+.menu-esc { position: absolute; inset: 0; z-index: 50; display: grid; place-items: center; background: rgba(36, 26, 82, 0.6); }
+.kartu-menu { width: min(360px, 88vw); display: grid; gap: 10px; background: #fbfaf3; color: #231e16; border: 3px solid #231e16; border-radius: 22px; box-shadow: 0 8px 0 #231e16; padding: 22px 26px; font-family: 'Fredoka', system-ui; text-align: center; }
+.kartu-menu h2 { margin: 0 0 4px; font: 2rem 'Lilita One', system-ui; color: #836ef9; -webkit-text-stroke: 1px #231e16; }
+.kartu-menu .tombol-game { text-align: center; }
