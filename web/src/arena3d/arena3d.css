@@ -85,3 +85,52 @@
 .kaki-lobi button.tombol-game { cursor: pointer; }
 .kaki-lobi button.tombol-game:disabled { cursor: not-allowed; }
 .nama-di-kepala { position: absolute; }
+
+/* ---------- hasil sesi ---------- */
+.kartu-hasil { width: min(440px, 92vw); }
+.hasil-judul { font: 1.5rem 'Lilita One', system-ui; color: #ef6a4c; -webkit-text-stroke: 0.5px #231e16; }
+.peringkat { list-style: none; margin: 4px 0 8px; padding: 0; display: grid; gap: 6px; text-align: left; }
+.peringkat li { display: flex; justify-content: space-between; background: #fff; border: 2px solid #231e16; border-radius: 10px; padding: 7px 12px; font-weight: 700; }
+.peringkat li.saya { background: #f4b829; }
+.peringkat b { font-family: 'Lilita One', system-ui; }
+
+/* ---------- lobi di HP / layar sempit ---------- */
+@media (max-width: 900px) {
+  .lobi { height: auto; min-height: 100vh; padding: 12px 14px 20px; gap: 12px; }
+  .lobi .judul-game { font-size: 2rem; }
+  .lobi .pil-live { display: none; }
+  .lobi-profil .isi-lobi { grid-template-columns: 1fr; }
+  .panggung-profil { height: 300px; }
+  .papan-nama-pemain { font-size: 1.5rem; padding: 4px 18px 8px; }
+  .panel-profil { overflow: visible; }
+  .pilih-rupa button { font-size: 0.95rem; padding: 8px 4px 10px; }
+  .kaki-lobi { flex-direction: column; align-items: stretch; text-align: center; }
+  .kaki-lobi .tombol-game.besar { font-size: 1.3rem; }
+}
+
+/* ---------- matchmaking ---------- */
+.cari { display: flex; flex-direction: column; height: 100vh; padding: 18px 28px 22px; gap: 18px; }
+.cari-isi { flex: 1; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 20px; min-height: 0; z-index: 2; }
+.kartu-petarung { position: relative; height: min(62vh, 520px); border-radius: 22px; border: 3px solid #231e16; box-shadow: 0 10px 0 #231e16; overflow: hidden; background: #2c2170; }
+.kartu-petarung canvas { position: absolute !important; inset: 0; }
+.kartu-petarung .nama-petarung { position: absolute; top: 16px; left: 50%; translate: -50% 0; background: #fbfaf3; color: #231e16; border: 3px solid #231e16; border-radius: 14px; box-shadow: 0 5px 0 #231e16, inset 0 -6px 0 var(--warna); padding: 5px 22px 10px; font: 1.8rem 'Lilita One', system-ui; white-space: nowrap; }
+.kartu-petarung .toko-petarung { position: absolute; bottom: 16px; left: 50%; translate: -50% 0; background: var(--warna); color: #fbfaf3; border: 3px solid #231e16; border-radius: 999px; padding: 4px 18px 6px; font: 1.05rem 'Lilita One', system-ui; -webkit-text-stroke: 0.5px #231e16; white-space: nowrap; }
+.kartu-petarung.kosong { display: grid; place-items: center; border-style: dashed; border-color: #ffffff55; background: #241a52; color: #fbfaf3; font: 1.3rem 'Lilita One', system-ui; text-align: center; padding: 20px; }
+.kartu-petarung .tanya { font-size: 6rem; line-height: 1; opacity: 0.35; }
+.vs-besar { font: clamp(60px, 9vw, 120px) 'Lilita One', system-ui; color: #f4b829; -webkit-text-stroke: 6px #231e16; paint-order: stroke fill; text-shadow: 0 8px 0 #231e16; }
+.status-cari { text-align: center; font: 700 1.15rem 'Fredoka', system-ui; color: #e9e4ff; }
+.hitung-mundur { position: absolute; inset: 0; z-index: 30; display: grid; place-items: center; pointer-events: none; }
+.hitung-mundur span { font: clamp(140px, 30vw, 320px) 'Lilita One', system-ui; color: #fbfaf3; -webkit-text-stroke: 10px #231e16; paint-order: stroke fill; text-shadow: 0 14px 0 #231e16; }
+@media (max-width: 900px) {
+  .cari { height: auto; min-height: 100vh; padding: 12px 14px 20px; }
+  .cari-isi { grid-template-columns: 1fr; }
+  .kartu-petarung { height: 300px; }
+  .vs-besar { text-align: center; }
+}
+.hitung-mundur { background: rgba(36, 26, 82, 0.5); }
+.lobi, .cari { overflow-x: hidden; }
+.isi-lobi > *, .cari-isi > * { min-width: 0; }
+@media (max-width: 900px) {
+  .fitur { grid-template-columns: 1fr; margin: 28px 16px 40px; }
+  .kepala-lobi .judul-game { font-size: 1.8rem; }
+}

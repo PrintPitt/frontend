@@ -235,7 +235,7 @@ export default function Lobi() {
 
       <footer className="kaki-lobi">
         <span className="muted-game">{alasan ?? 'Profil tersimpan di perangkat ini. Siap merebut order?'}</span>
-        <button className={`tombol-game kuning besar ${akun ? '' : 'redup'}`} disabled={!akun} onClick={() => pindah('/main')}>
+        <button className={`tombol-game kuning besar ${akun ? '' : 'redup'}`} disabled={!akun} onClick={() => pindah('/cari')}>
           CARI LAWAN ▸
         </button>
       </footer>

@@ -34,6 +34,7 @@ import { PemainGame, useTombol, type PosPemain } from '../game3d/PemainGame';
 import { adalahMesin, ID_MESIN, MESIN, type IdMesin, type IdStasiun } from '../game3d/peta';
 import { Antrean, BarangDunia, BarMesin, Sorotan, TandaMesin } from '../game3d/Stasiun3D';
 import { akunAktif, akunBurner, masuk, pakaiAkun, passkeyMungkin, type Akun } from '../lib/akun';
+import { pindah } from '../lib/navigasi';
 import { bacaProfil, namaTampil } from '../lib/profil';
 import { NAMA_LANGKAH, ZERO } from '../lib/format';
 import type { Order } from '../lib/katalog';
@@ -119,7 +120,9 @@ export default function Main() {
   }, []);
 
   const saya = akun ? s.toko.find((t) => sama(t.alamat, akun.address)) : undefined;
-  const lawan = s.toko.filter((t) => !akun || !sama(t.alamat, akun.address));
+  const lawan = s.toko.filter((t) => (akun ? !sama(t.alamat, akun.address) : t !== s.toko[0]));
+  const peringkat = [...s.toko].sort((a, b) => (b.omzet > a.omzet ? 1 : b.omzet < a.omzet ? -1 : 0));
+  const sesiUsai = s.siap && !s.sesiAktif && s.sesiId > 0 && !!akun;
   const aktifMentah = saya && saya.orderAktif ? s.order[String(saya.orderAktif)] : undefined;
   const aktif = aktifMentah?.status === 'Claimed' && !beres.current.has(String(aktifMentah.id)) ? aktifMentah : undefined;
   const antre = Object.values(s.order)
@@ -547,6 +550,30 @@ export default function Main() {
         </div>
       )}
       {(!s.siap || s.galat) && <div className="status-3d">{s.galat ?? 'Menyambung ke Monad…'}</div>}
+      {s.siap && !s.galat && !s.sesiAktif && s.sesiId === 0 && <div className="status-3d">Menunggu operator membuka sesi… pelanggan belum bisa memesan</div>}
+      {sesiUsai && (
+        <div className="masuk-3d">
+          <motion.div className="kartu-masuk kartu-hasil" initial={{ scale: 0.7, rotate: -4, opacity: 0 }} animate={{ scale: 1, rotate: 0, opacity: 1 }} transition={{ type: 'spring', bounce: 0.45 }}>
+            <h2>SESI #{s.sesiId} SELESAI</h2>
+            <div className="hasil-judul">
+              {!saya ? 'Kamu menonton' : peringkat[0] && sama(peringkat[0].alamat, saya.alamat) && (peringkat[1]?.omzet ?? 0n) < peringkat[0].omzet ? '🏆 TOKOMU JUARA!' : peringkat[0] && peringkat[0].omzet === (saya.omzet ?? 0n) ? 'SERI' : 'Kalah cepat, lain kali!'}
+            </div>
+            <ol className="peringkat">
+              {peringkat.map((t, i) => (
+                <li key={t.alamat} className={saya && sama(t.alamat, saya.alamat) ? 'saya' : ''}>
+                  <span>
+                    {i + 1}. {t.nama}
+                  </span>
+                  <b>{rp(t.omzet)}</b>
+                </li>
+              ))}
+            </ol>
+            <button className="tombol utama besar" onClick={() => pindah('/lobi')}>
+              Kembali ke lobi
+            </button>
+          </motion.div>
+        </div>
+      )}
     </main>
   );
 }

@@ -73,6 +73,26 @@ export default function Landing() {
           <p>Order selesai, contract langsung membayar toko dan mengirim NFT berisi teks pelanggan.</p>
         </div>
       </section>
+
+      <section id="bisnis" className="bisnis">
+        <h2 className="judul-bisnis">DARI MANA CUANNYA?</h2>
+        <div className="grid-bisnis">
+          {[
+            ['3%', 'Platform fee', 'Dipotong dari payout toko hanya saat order selesai. Dana sudah lewat escrow: satu baris di contract. Order Rp5.000 → toko Rp4.850, platform Rp150.'],
+            ['Rp100–500', 'Fee layanan relayer', 'Per pesanan, menutup gas Monad supaya pelanggan tanpa crypto tetap bisa pesan; sisanya margin.'],
+            ['0,7%', 'Convenience fee top-up', 'Biaya IDRX (QRIS 0,7%, VA Rp3.000–4.000) diteruskan ke pelanggan plus markup kecil.'],
+            ['Toko Pro', 'Langganan toko', 'Radius lebih luas, badge, statistik omzet, prioritas leaderboard. Tanpa akses order lebih awal: rebutan tetap adil.'],
+            ['Sponsor', 'Musim & leaderboard', 'Brand kertas/tinta mensponsori hadiah toko tercepat per sesi.'],
+            ['B2B', 'Kampus & kantor', 'Akun massal untuk skripsi dan berkas CPNS, bayar langganan atau per volume. Plus margin ongkir antar.'],
+          ].map(([angka, judul, isi]) => (
+            <div key={judul} className="kartu-bisnis">
+              <div className="angka-bisnis">{angka}</div>
+              <h3>{judul}</h3>
+              <p>{isi}</p>
+            </div>
+          ))}
+        </div>
+      </section>
     </main>
   );
 }
