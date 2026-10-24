@@ -91,7 +91,7 @@ Revenue model (live since contract v2.1): 3% platform fee on the shop's payout f
 ## Team
 
 - **Hans Gunawan**: smart contracts, backend, indexer, architecture
-- **Dave**: web app, `/pesan`, `/layar`, shop game
+- **Dave Aryanda Agape**: web app, `/pesan`, `/layar`, shop game
 - **Dex Bennett**: product, landing page, pitch
 
 ---
