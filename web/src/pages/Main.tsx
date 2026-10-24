@@ -32,7 +32,9 @@ import {
 } from '../game3d/logika';
 import { PemainGame, useTombol, type PosPemain } from '../game3d/PemainGame';
 import { adalahMesin, ID_MESIN, MESIN, type IdMesin, type IdStasiun } from '../game3d/peta';
+import { EfekMesin, TeksMelayang, type Melayang } from '../game3d/Efek3D';
 import { Antrean, BarangDunia, BarMesin, Sorotan, TandaMesin } from '../game3d/Stasiun3D';
+import { POS_SERAH } from '../game3d/peta';
 import { akunAktif, akunBurner, masuk, pakaiAkun, passkeyMungkin, type Akun } from '../lib/akun';
 import { pindah } from '../lib/navigasi';
 import { bacaProfil, namaTampil } from '../lib/profil';
@@ -106,6 +108,9 @@ export default function Main() {
   const antrian = useRef<Promise<unknown>>(Promise.resolve()); // completeStep dikirim berurutan
   const menyerahkan = useRef(false);
   const toastT = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const melayang = useRef<Melayang[]>([]);
+  const [goyang, setGoyang] = useState(0);
+  const terbang = (teks: string, warna: string, x: number, z: number, y = 1.3) => melayang.current.push({ teks, warna, x, y, z, t0: performance.now() / 1000 });
   const dingTerakhir = useRef('');
   const rebutTerakhir = useRef('');
 
@@ -175,6 +180,8 @@ export default function Main() {
       beres.current.add(String(id));
       buangItem(dunia.current, id);
       sfx('kalah');
+      terbang('HANGUS', '#ef6a4c', POS_SERAH[0], POS_SERAH[2] - 1, 1.2);
+      setGoyang((g) => g + 1);
       tampil(teks, 'kalah', 3400);
       if (akun) kirim(akun, 'expire', [id]).catch(() => {}); // bebaskan toko; boleh gagal kalau keeper sudah duluan
       ubah();
@@ -241,6 +248,7 @@ export default function Main() {
       buangItem(d, it.id);
       sfx('selesai');
       confetti({ particleCount: 150, spread: 95, startVelocity: 45, origin: { x: 0.5, y: 0.78 }, colors: ['#836ef9', '#fbfaf3', '#f4b829', '#5fd39a'] });
+      if (h) terbang(`+${rp(h.payout)}`, '#5fd39a', POS_SERAH[0], POS_SERAH[2]);
       tampil(h ? `Beres! +${rp(h.payout)} bersih (fee platform 3% sudah dipotong) · NFT terkirim` : 'Beres! NFT terkirim ke pelanggan', 'ok', 3400);
     } catch (e) {
       const pesan = pesanError(e);
@@ -264,6 +272,7 @@ export default function Main() {
       m.progres = 1;
       m.item = { ...m.item, tahap: m.item.tahap + 1, wujud: k === 3 ? 'laminasi' : 'kertas' };
       sfx('lulus');
+      terbang('\u2713', '#5fd39a', MESIN[id].x, MESIN[id].z, MESIN[id].y + 1.1);
       // Langkah tengah dicatat sekarang; langkah terakhir dicatat saat diserahkan di loket.
       if (m.item.tahap < m.item.langkah.length) catat(m.item, m.item.tahap).catch((e) => tampil(pesanError(e), 'kalah'));
       ubah();
@@ -338,6 +347,8 @@ export default function Main() {
       m.status = 'macet';
       m.macetSampai = performance.now() + MACET_MS;
       sfx('gagal');
+      terbang('VIRUS!', '#ef6a4c', MESIN[f].x, MESIN[f].z + 0.3, 1.5);
+      setGoyang((g) => g + 1);
       tampil(`VIRUS! ${m.file[i]} bikin printer macet`, 'kalah');
     }
     ubah();
@@ -408,15 +419,15 @@ export default function Main() {
   const bekerja = adalahMesin(fokus) && d.mesin[fokus].status === 'tahan';
 
   return (
-    <main className="halaman-game main-3d">
+    <main key={goyang} className={`halaman-game main-3d ${goyang ? 'goyang' : ''}`}>
       <Canvas
         shadows
         flat
-        dpr={[1, 2]}
+        dpr={[1, 1.5]}
         camera={{ fov: 30, position: [0, 14.8, 11.3], near: 0.5, far: 80 }}
-        onCreated={({ camera }) => {
+        onCreated={({ camera, gl, scene }) => {
           camera.lookAt(0, 0, 0.55);
-          if (import.meta.env.DEV) Object.assign(window, { __kamera: camera });
+          if (import.meta.env.DEV) Object.assign(window, { __kamera: camera, __gl: gl, __scene: scene });
         }}
       >
         <color attach="background" args={['#8cc07a']} />
@@ -427,7 +438,7 @@ export default function Main() {
           intensity={2.2}
           color="#fff1d6"
           castShadow
-          shadow-mapSize={[2048, 2048]}
+          shadow-mapSize={[1536, 1536]}
           shadow-camera-left={-10}
           shadow-camera-right={10}
           shadow-camera-top={9}
@@ -444,6 +455,10 @@ export default function Main() {
             <TandaMesin key={id} id={id} status={d.mesin[id].status} />
           ))}
           <Sorotan id={fokus} />
+          {ID_MESIN.map((id) => (
+            <EfekMesin key={id} id={id} dunia={dunia} />
+          ))}
+          <TeksMelayang daftar={melayang} />
           <Antrean
             antre={antre.map((o) => ({ id: o.id, jenis: o.jenis, sisa: batas01(1 - (now - o.dibuatPada) / s.batasAntre) }))}
             aktif={aktif ? { id: aktif.id, jenis: aktif.jenis, sisa: batas01(1 - (now - aktif.diclaimPada) / aktif.batasKerja) } : undefined}

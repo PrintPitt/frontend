@@ -4,7 +4,9 @@ import { useMemo, type ReactNode } from 'react';
 import * as THREE from 'three';
 import { Fotokopi3D, Laminator3D, Printer3D, UNGU } from './Mesin3D';
 import { Model, MODEL } from './Model';
-import { Dispenser, JamDinding, Kasir, Konter, KursiTunggu, PermukaanSerah, RakBinder, Tanaman } from './Perabot3D';
+import { Dispenser, GelasPulpen, JamDinding, Karpet, Kasir, KonterGabung, KursiTunggu, PermukaanSerah, RakBinder, Selotip, Sobekan, Stapler, Tanaman, type SpecKonter } from './Perabot3D';
+
+type V3 = [number, number, number];
 import { Pekerja3D, type Bawa, type Gaya } from './Pekerja3D';
 import { D, DALAM_MEJA, ID_MESIN, L, MEJA_MESIN, MESIN, TINGGI_MEJA, Z_BELAKANG, Z_DEPAN } from '../game3d/peta';
 
@@ -238,6 +240,18 @@ export function Toko3D({
   const zDepan = Z_DEPAN;
 
   const papanNama = useMemo(() => gambarPapan(`PRINTPITT · ${nama}`, warna), [nama, warna]);
+  // semua konter + meja mesin dalam satu daftar → digabung jadi beberapa mesh
+  const daftarKonter = useMemo<SpecKonter[]>(
+    () => [
+      ...ID_MESIN.filter((id) => MESIN[id].kode !== 1).map((id) => ({ posisi: [MESIN[id].x, 0, MESIN[id].z] as V3, putar: MESIN[id].putar, lebar: MEJA_MESIN.lebar, dalam: MEJA_MESIN.dalam, muka: 'laci' as const, les: warna, atas: '#e9d2a6' })),
+      ...[2.6, 3.6, 4.6].map((x, i) => ({ posisi: [x, 0, Z_BELAKANG] as V3, muka: (i === 1 ? 'laci' : 'pintu') as 'laci' | 'pintu', les: warna })),
+      ...[-4.5, -3.5, -2.5].map((x, i) => ({ posisi: [x, 0, Z_BELAKANG] as V3, muka: (i === 1 ? 'laci' : 'pintu') as 'laci' | 'pintu', les: warna })),
+      ...[-1.5, -0.5, 0.5, 1.5].map((x) => ({ posisi: [x, 0, 0.6] as V3, muka: 'polos' as const, badan: '#e9e1f9', atas: '#f7ead0', les: warna })),
+      ...[-5.5, -4.5, -3.5, -2.5, 1.5, 2.5, 3.5, 4.5, 5.5].map((x, i) => ({ posisi: [x, 0, Z_DEPAN] as V3, muka: (i % 4 === 2 ? 'laci' : 'pintu') as 'laci' | 'pintu', les: warna })),
+      ...[-1.5, -0.5, 0.5].map((x) => ({ posisi: [x, 0, Z_DEPAN] as V3, muka: 'polos' as const, badan: UNGU.l, atas: '#f7ead0', les: UNGU.d })),
+    ],
+    [warna],
+  );
 
   return (
     <group>
@@ -286,44 +300,29 @@ export function Toko3D({
           );
         return (
           <group key={id} position={[m.x, 0, m.z]} rotation={[0, m.putar, 0]}>
-            <Konter posisi={[0, 0, 0]} lebar={MEJA_MESIN.lebar} dalam={MEJA_MESIN.dalam} muka="laci" les={warna} atas="#e9d2a6" />
             {m.kode === 2 ? <Printer3D posisi={[0, tMeja, -0.08]} skala={2.4} /> : <Laminator3D posisi={[0, tMeja, -0.04]} skala={2.6} />}
           </group>
         );
       })}
       {/* konter belakang kanan: stok rim kertas */}
-      {[2.6, 3.6, 4.6].map((x, i) => (
-        <Konter key={x} posisi={[x, 0, zBelakang]} muka={i === 1 ? 'laci' : 'pintu'} les={warna} />
-      ))}
       <Rim posisi={[2.6, tMeja, zBelakang]} tumpuk={3} />
       <Rim posisi={[4.6, tMeja, zBelakang]} tumpuk={4} warna="#fdf3c4" />
       <Dispenser posisi={[5.45, 0, -3.45]} />
 
       {/* rak kertas (gudang) di pojok kiri belakang */}
-      {[-4.5, -3.5, -2.5].map((x, i) => (
-        <Konter key={x} posisi={[x, 0, zBelakang]} muka={i === 1 ? 'laci' : 'pintu'} les={warna} />
-      ))}
       <Rim posisi={[-4.5, tMeja, zBelakang]} tumpuk={5} />
       <Rim posisi={[-3.5, tMeja, zBelakang]} tumpuk={4} warna="#fdf3c4" />
       <Rim posisi={[-2.5, tMeja, zBelakang]} tumpuk={3} />
       <Tanaman posisi={[-5.45, 0, 2.75]} s={0.95} />
 
       {/* meja kerja di tengah: 4 ubin, semua bisa ditaruhi barang */}
-      {[-1.5, -0.5, 0.5, 1.5].map((x) => (
-        <Konter key={x} posisi={[x, 0, 0.6]} muka="polos" badan="#e9e1f9" atas="#f7ead0" les={warna} />
-      ))}
 
       {/* sisi kanan depan: kardus */}
       <Model url={MODEL('Crate')} lebar={0.7} posisi={[LEBAR_TOKO / 2 - 0.6, 0, 1.45]} />
       <Model url={MODEL('Crate')} lebar={0.6} posisi={[LEBAR_TOKO / 2 - 0.65, 0, 2.2]} putar={0.3} />
 
       {/* konter depan + loket SERAH */}
-      {[-5.5, -4.5, -3.5, -2.5, 1.5, 2.5, 3.5, 4.5, 5.5].map((x, i) => (
-        <Konter key={x} posisi={[x, 0, zDepan]} muka={i % 4 === 2 ? 'laci' : 'pintu'} les={warna} />
-      ))}
-      {[-1.5, -0.5, 0.5].map((x) => (
-        <Konter key={x} posisi={[x, 0, zDepan]} muka="polos" badan={UNGU.l} atas="#f7ead0" les={UNGU.d} />
-      ))}
+      <KonterGabung daftar={daftarKonter} />
       <PermukaanSerah posisi={[-0.5, tMeja + 0.006, zDepan]} warna={warna} />
       <mesh position={[0.65, tMeja + 0.02, zDepan + 0.1]} castShadow>
         <sphereGeometry args={[0.1, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
@@ -336,6 +335,18 @@ export function Toko3D({
 
       {/* papan nama toko di dinding belakang */}
       <PapanKanvas posisi={[-0.4, 2.85, -DALAM_TOKO / 2 + 0.05]} lebar={3.2} tinggi={0.62} px={900} miring={-0.5} gambar={papanNama} />
+
+      {/* perabot kecil di meja + lantai, kanopi teras, lampu gantung */}
+      <Stapler posisi={[-1.55, tMeja, 0.5]} putar={0.4} />
+      <GelasPulpen posisi={[1.75, tMeja, 0.45]} />
+      <Selotip posisi={[0.2, tMeja, 0.8]} />
+      <Stapler posisi={[3.3, tMeja, zBelakang + 0.15]} putar={-0.3} />
+      <GelasPulpen posisi={[-4.95, tMeja, zBelakang - 0.2]} />
+      <Selotip posisi={[2.9, tMeja, zDepan - 0.1]} />
+      <Karpet posisi={[-0.5, 0.004, Z_DEPAN - 1.35]} teks="SERAH DI SINI" warna={warna} lebar={2.2} dalam={0.8} />
+      <Sobekan posisi={[-3.2, 0, 1.4]} putar={0.4} />
+      <Sobekan posisi={[2.6, 0, -1.2]} putar={1.3} s={0.8} />
+      <Sobekan posisi={[-1.8, 0, -1.9]} putar={2.2} s={0.9} />
 
       {children}
 

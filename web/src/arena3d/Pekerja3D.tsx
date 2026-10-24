@@ -148,7 +148,7 @@ export function Pekerja3D({
       </mesh>
       {/* kaki */}
       {[kKiri, kKanan].map((r, i) => (
-        <mesh key={i} ref={r} position={[i ? 0.11 : -0.11, 0.08, 0.03]} castShadow>
+        <mesh key={i} ref={r} position={[i ? 0.11 : -0.11, 0.08, 0.03]}>
           <capsuleGeometry args={[0.075, 0.07, 4, 10]} />
           <meshStandardMaterial color="#3d3935" />
           <mesh material={BAHAN_TINTA}>
@@ -173,14 +173,14 @@ export function Pekerja3D({
           <RupaTopi warna={warna} kulit={kulit} rambut={rambut} topi={topi} mata={mata} />
         )}
         {/* tangan melayang */}
-        <mesh ref={tKiri} position={[-0.36, 0.52, 0.12]} castShadow>
+        <mesh ref={tKiri} position={[-0.36, 0.52, 0.12]}>
           <sphereGeometry args={[0.09, 14, 10]} />
           <meshStandardMaterial color={model === 'landak' ? warna : model === 'chef-kucing' ? '#f4a259' : kulit} />
           <mesh material={BAHAN_TINTA}>
             <sphereGeometry args={[0.09 + GARIS * 0.8, 14, 10]} />
           </mesh>
         </mesh>
-        <mesh ref={tKanan} position={[0.36, 0.52, 0.12]} castShadow>
+        <mesh ref={tKanan} position={[0.36, 0.52, 0.12]}>
           <sphereGeometry args={[0.09, 14, 10]} />
           <meshStandardMaterial color={model === 'landak' ? warna : model === 'chef-kucing' ? '#f4a259' : kulit} />
           <mesh material={BAHAN_TINTA}>
@@ -193,7 +193,7 @@ export function Pekerja3D({
           </group>
         )}
         {bawa && (
-          <mesh position={[0, 0.62, 0.38]} rotation={[-0.35, 0, 0]} castShadow>
+          <mesh position={[0, 0.62, 0.38]} rotation={[-0.35, 0, 0]}>
             <boxGeometry args={[0.44, 0.025, 0.32]} />
             <meshStandardMaterial color={WARNA_BAWA[bawa]} />
           </mesh>
@@ -210,14 +210,14 @@ function RupaTopi({ warna, kulit, rambut, topi, mata }: PropsRupa & { topi: bool
   return (
     <>
         {/* badan bulat + celemek */}
-        <mesh position={[0, 0.5, 0]} castShadow>
+        <mesh position={[0, 0.5, 0]}>
           <capsuleGeometry args={[0.27, 0.24, 8, 20]} />
           <meshStandardMaterial color={warna} roughness={0.7} />
           <mesh material={BAHAN_TINTA}>
             <capsuleGeometry args={[0.27 + GARIS, 0.24, 8, 20]} />
           </mesh>
         </mesh>
-        <mesh position={[0, 0.44, 0.215]} rotation={[0.1, 0, 0]} castShadow>
+        <mesh position={[0, 0.44, 0.215]} rotation={[0.1, 0, 0]}>
           <boxGeometry args={[0.32, 0.36, 0.07]} />
           <meshStandardMaterial color="#fbfaf3" />
         </mesh>
@@ -230,7 +230,7 @@ function RupaTopi({ warna, kulit, rambut, topi, mata }: PropsRupa & { topi: bool
           <meshStandardMaterial color="#fbfaf3" />
         </mesh>
         {/* kepala */}
-        <mesh position={[0, 1.03, 0]} castShadow>
+        <mesh position={[0, 1.03, 0]}>
           <sphereGeometry args={[0.33, 28, 20]} />
           <meshStandardMaterial color={kulit} roughness={0.8} />
           <mesh material={BAHAN_TINTA}>
@@ -275,14 +275,14 @@ function RupaTopi({ warna, kulit, rambut, topi, mata }: PropsRupa & { topi: bool
         {topi ? (
           <group position={[0, 1.17, -0.02]}>
             {/* topi dibalik ke belakang supaya wajah terlihat dari kamera atas */}
-            <mesh castShadow>
+            <mesh>
               <sphereGeometry args={[0.335, 28, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
               <meshStandardMaterial color={warna} roughness={0.6} />
               <mesh material={BAHAN_TINTA}>
                 <sphereGeometry args={[0.335 + GARIS, 28, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
               </mesh>
             </mesh>
-            <mesh position={[0, 0.01, -0.3]} rotation={[-0.12, 0, 0]} castShadow>
+            <mesh position={[0, 0.01, -0.3]} rotation={[-0.12, 0, 0]}>
               <boxGeometry args={[0.38, 0.04, 0.24]} />
               <meshStandardMaterial color="#2a2163" />
             </mesh>
@@ -300,7 +300,7 @@ function RupaTopi({ warna, kulit, rambut, topi, mata }: PropsRupa & { topi: bool
             </mesh>
           </group>
         ) : (
-          <mesh position={[0, 1.11, -0.03]} castShadow>
+          <mesh position={[0, 1.11, -0.03]}>
             <sphereGeometry args={[0.345, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2.1]} />
             <meshStandardMaterial color={rambut} roughness={0.9} />
             <mesh material={BAHAN_TINTA}>
@@ -348,7 +348,7 @@ function Pipi({ y, z, x = 0.18 }: { y: number; z: number; x?: number }) {
 function Celemek({ y, z, lebar = 0.34, tinggi = 0.32, warna }: { y: number; z: number; lebar?: number; tinggi?: number; warna: string }) {
   return (
     <group position={[0, y, z]} rotation={[0.12, 0, 0]}>
-      <mesh castShadow>
+      <mesh>
         <boxGeometry args={[lebar, tinggi, 0.06]} />
         <meshStandardMaterial color="#fbfaf3" />
       </mesh>
@@ -381,7 +381,7 @@ function TopiKertas({ warna }: { warna: string }) {
   }, []);
   return (
     <group>
-      <mesh geometry={geo} castShadow>
+      <mesh geometry={geo}>
         <meshStandardMaterial color="#f3efe4" roughness={0.9} />
       </mesh>
       <mesh geometry={geoGaris} material={BAHAN_TINTA} position={[0, -GARIS * 0.6, 0]} />
@@ -407,7 +407,7 @@ function TopiKertas({ warna }: { warna: string }) {
 function RupaKertas({ warna, kulit, mata }: PropsRupa) {
   return (
     <>
-      <mesh position={[0, 0.42, 0]} castShadow>
+      <mesh position={[0, 0.42, 0]}>
         <capsuleGeometry args={[0.31, 0.1, 8, 20]} />
         <meshStandardMaterial color={warna} roughness={0.7} />
         <mesh material={BAHAN_TINTA}>
@@ -415,7 +415,7 @@ function RupaKertas({ warna, kulit, mata }: PropsRupa) {
         </mesh>
       </mesh>
       <Celemek y={0.38} z={0.25} lebar={0.36} tinggi={0.34} warna={warna} />
-      <mesh position={[0, 0.88, 0]} castShadow>
+      <mesh position={[0, 0.88, 0]}>
         <sphereGeometry args={[0.32, 28, 20]} />
         <meshStandardMaterial color={kulit} roughness={0.8} />
         <mesh material={BAHAN_TINTA}>
@@ -457,7 +457,7 @@ function RupaLandak({ warna, mata }: PropsRupa) {
   const gelap = useMemo(() => '#' + new THREE.Color(warna).lerp(new THREE.Color('#1a1238'), 0.55).getHexString(), [warna]);
   return (
     <>
-      <mesh position={[0, 0.55, 0]} castShadow>
+      <mesh position={[0, 0.55, 0]}>
         <capsuleGeometry args={[0.34, 0.16, 8, 20]} />
         <meshStandardMaterial color={warna} roughness={0.85} />
         <mesh material={BAHAN_TINTA}>
@@ -465,7 +465,7 @@ function RupaLandak({ warna, mata }: PropsRupa) {
         </mesh>
       </mesh>
       {duri.map((d, i) => (
-        <mesh key={i} position={d.p} quaternion={d.q} castShadow>
+        <mesh key={i} position={d.p} quaternion={d.q}>
           <coneGeometry args={[0.075, 0.24, 5]} />
           <meshStandardMaterial color={gelap} flatShading />
         </mesh>
@@ -505,7 +505,7 @@ function RupaLandak({ warna, mata }: PropsRupa) {
 function RupaChibi({ warna, kulit, rambut = '#2d2440', mata }: PropsRupa) {
   return (
     <>
-      <mesh position={[0, 0.4, 0]} castShadow>
+      <mesh position={[0, 0.4, 0]}>
         <capsuleGeometry args={[0.23, 0.16, 8, 18]} />
         <meshStandardMaterial color={warna} roughness={0.7} />
         <mesh material={BAHAN_TINTA}>
@@ -513,14 +513,14 @@ function RupaChibi({ warna, kulit, rambut = '#2d2440', mata }: PropsRupa) {
         </mesh>
       </mesh>
       <Celemek y={0.37} z={0.2} lebar={0.28} tinggi={0.28} warna={warna} />
-      <mesh position={[0, 0.95, 0]} castShadow>
+      <mesh position={[0, 0.95, 0]}>
         <sphereGeometry args={[0.39, 28, 20]} />
         <meshStandardMaterial color={kulit} roughness={0.8} />
         <mesh material={BAHAN_TINTA}>
           <sphereGeometry args={[0.39 + GARIS, 28, 20]} />
         </mesh>
       </mesh>
-      <mesh position={[0, 1.0, -0.04]} castShadow>
+      <mesh position={[0, 1.0, -0.04]}>
         <sphereGeometry args={[0.405, 28, 14, 0, Math.PI * 2, 0, Math.PI / 1.9]} />
         <meshStandardMaterial color={rambut} roughness={0.9} />
         <mesh material={BAHAN_TINTA}>
@@ -583,7 +583,7 @@ function TopiChef() {
   ];
   return (
     <group>
-      <mesh position={[0, 0.07, 0]} castShadow>
+      <mesh position={[0, 0.07, 0]}>
         <cylinderGeometry args={[0.25, 0.27, 0.16, 24]} />
         <meshStandardMaterial color={putih} roughness={0.85} />
         <mesh material={BAHAN_TINTA}>
@@ -591,7 +591,7 @@ function TopiChef() {
         </mesh>
       </mesh>
       {bola.map(([x, y, z, r], i) => (
-        <mesh key={i} position={[x, y, z]} castShadow>
+        <mesh key={i} position={[x, y, z]}>
           <sphereGeometry args={[r, 18, 14]} />
           <meshStandardMaterial color={putih} roughness={0.85} />
           <mesh material={BAHAN_TINTA}>
@@ -625,7 +625,7 @@ function RupaChef({ warna, kulit = '#f1c9a5', mata, varian = 'kumis' }: PropsRup
   return (
     <>
       {/* badan lonceng: jaket chef putih */}
-      <mesh geometry={geo} castShadow>
+      <mesh geometry={geo}>
         <meshStandardMaterial color="#f4f1ea" roughness={0.75} side={THREE.DoubleSide} />
       </mesh>
       <mesh geometry={geoGaris} material={BAHAN_TINTA} />
@@ -657,7 +657,7 @@ function RupaChef({ warna, kulit = '#f1c9a5', mata, varian = 'kumis' }: PropsRup
         <meshStandardMaterial color={warna} />
       </mesh>
       {/* kepala */}
-      <mesh position={[0, 0.98, 0]} castShadow>
+      <mesh position={[0, 0.98, 0]}>
         <sphereGeometry args={[0.3, 28, 20]} />
         <meshStandardMaterial color={kepala} roughness={0.8} />
         <mesh material={BAHAN_TINTA}>
@@ -690,7 +690,7 @@ function RupaChef({ warna, kulit = '#f1c9a5', mata, varian = 'kumis' }: PropsRup
         </>
       ) : (
         <>
-          <mesh position={[0, 0.95, 0.3]} castShadow>
+          <mesh position={[0, 0.95, 0.3]}>
             <sphereGeometry args={[0.065, 14, 10]} />
             <meshStandardMaterial color={kulit} roughness={0.7} />
             <mesh material={BAHAN_TINTA}>
@@ -754,14 +754,14 @@ function TopiPressman({ warna }: { warna: string }) {
   }, []);
   return (
     <group>
-      <mesh position={[0, 0.1, 0]} castShadow>
+      <mesh position={[0, 0.1, 0]}>
         <boxGeometry args={[0.58, 0.2, 0.52]} />
         <meshStandardMaterial map={tex} roughness={0.95} />
         <mesh material={BAHAN_TINTA}>
           <boxGeometry args={[0.58 + GARIS * 2, 0.2 + GARIS * 2, 0.52 + GARIS * 2]} />
         </mesh>
       </mesh>
-      <mesh geometry={lipat} position={[0, 0.2, 0]} rotation={[0, Math.PI / 2, 0]} castShadow>
+      <mesh geometry={lipat} position={[0, 0.2, 0]} rotation={[0, Math.PI / 2, 0]}>
         <meshStandardMaterial map={tex} roughness={0.95} />
       </mesh>
       {/* pita lipatan depan warna toko */}
@@ -809,7 +809,7 @@ function RupaTukang({ warna, kulit = '#f1c9a5', rambut = '#3d2a1e', mata, varian
   return (
     <>
       {/* badan lonceng: kaos kerja warna toko */}
-      <mesh geometry={geo} castShadow>
+      <mesh geometry={geo}>
         <meshStandardMaterial color={warna} roughness={0.75} side={THREE.DoubleSide} />
       </mesh>
       <mesh geometry={geoGaris} material={BAHAN_TINTA} />
@@ -844,7 +844,7 @@ function RupaTukang({ warna, kulit = '#f1c9a5', rambut = '#3d2a1e', mata, varian
         <meshStandardMaterial color="#fbfaf3" />
       </mesh>
       {/* kepala */}
-      <mesh position={[0, 0.98, 0]} castShadow>
+      <mesh position={[0, 0.98, 0]}>
         <sphereGeometry args={[0.3, 28, 20]} />
         <meshStandardMaterial color={kulit} roughness={0.8} />
         <mesh material={BAHAN_TINTA}>
@@ -886,7 +886,7 @@ function RupaTukang({ warna, kulit = '#f1c9a5', rambut = '#3d2a1e', mata, varian
         </group>
       ) : (
         <>
-          <mesh position={[0, 1.04, -0.03]} castShadow>
+          <mesh position={[0, 1.04, -0.03]}>
             <sphereGeometry args={[0.315, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2.15]} />
             <meshStandardMaterial color={rambut} roughness={0.9} />
             <mesh material={BAHAN_TINTA}>
@@ -918,7 +918,7 @@ function BadanLonceng({ warna, bawah }: { warna: string; bawah?: string }) {
   }, []);
   return (
     <>
-      <mesh geometry={geo} castShadow>
+      <mesh geometry={geo}>
         <meshStandardMaterial color={warna} roughness={0.8} side={THREE.DoubleSide} />
       </mesh>
       <mesh geometry={geoGaris} material={BAHAN_TINTA} />
@@ -935,7 +935,7 @@ function BadanLonceng({ warna, bawah }: { warna: string; bawah?: string }) {
 function Kepala({ kulit, mata, kacamata }: { kulit: string; mata: RefObject<THREE.Group | null>; kacamata?: boolean }) {
   return (
     <>
-      <mesh position={[0, 0.98, 0]} castShadow>
+      <mesh position={[0, 0.98, 0]}>
         <sphereGeometry args={[0.3, 26, 18]} />
         <meshStandardMaterial color={kulit} roughness={0.8} />
         <mesh material={BAHAN_TINTA}>
@@ -971,7 +971,7 @@ function RupaPembeli({ warna, kulit = '#f1c9a5', rambut = '#3d2a1e', mata, tipe 
             <torusGeometry args={[0.17, 0.07, 8, 18]} />
             <meshStandardMaterial color={warna} />
           </mesh>
-          <mesh position={[0, 0.45, -0.33]} castShadow>
+          <mesh position={[0, 0.45, -0.33]}>
             <boxGeometry args={[0.4, 0.42, 0.18]} />
             <meshStandardMaterial color="#2a2163" />
             <mesh material={BAHAN_TINTA}>
@@ -983,7 +983,7 @@ function RupaPembeli({ warna, kulit = '#f1c9a5', rambut = '#3d2a1e', mata, tipe 
             <meshStandardMaterial color="#f4b829" />
           </mesh>
           <Kepala kulit={kulit} mata={mata} />
-          <mesh position={[0, 1.03, -0.02]} castShadow>
+          <mesh position={[0, 1.03, -0.02]}>
             <sphereGeometry args={[0.315, 22, 12, 0, Math.PI * 2, 0, Math.PI / 2.2]} />
             <meshStandardMaterial color={rambut} roughness={0.9} />
             <mesh material={BAHAN_TINTA}>
@@ -1004,7 +1004,7 @@ function RupaPembeli({ warna, kulit = '#f1c9a5', rambut = '#3d2a1e', mata, tipe 
           <BadanLonceng warna={warna} />
           <Kepala kulit={kulit} mata={mata} />
           {/* hijab: menutup kepala kecuali jendela wajah, menjuntai ke bahu */}
-          <mesh position={[0, 0.99, -0.01]} castShadow>
+          <mesh position={[0, 0.99, -0.01]}>
             <sphereGeometry args={[0.335, 26, 18, Math.PI / 2 + 0.85, Math.PI * 2 - 1.7, 0, Math.PI * 0.82]} />
             <meshStandardMaterial color={rambut} roughness={0.85} side={THREE.DoubleSide} />
             <mesh material={BAHAN_TINTA}>
@@ -1034,7 +1034,7 @@ function RupaPembeli({ warna, kulit = '#f1c9a5', rambut = '#3d2a1e', mata, tipe 
             <meshStandardMaterial color={warna} />
           </mesh>
           <Kepala kulit={kulit} mata={mata} kacamata />
-          <mesh position={[0, 1.02, -0.04]} castShadow>
+          <mesh position={[0, 1.02, -0.04]}>
             <sphereGeometry args={[0.31, 22, 12, 0, Math.PI * 2, 0, Math.PI / 2.6]} />
             <meshStandardMaterial color={rambut} roughness={0.7} />
             <mesh material={BAHAN_TINTA}>
@@ -1042,7 +1042,7 @@ function RupaPembeli({ warna, kulit = '#f1c9a5', rambut = '#3d2a1e', mata, tipe 
             </mesh>
           </mesh>
           {/* map dokumen di ketiak */}
-          <mesh position={[0.32, 0.5, -0.05]} rotation={[0, 0, 0.1]} castShadow>
+          <mesh position={[0.32, 0.5, -0.05]} rotation={[0, 0, 0.1]}>
             <boxGeometry args={[0.05, 0.34, 0.26]} />
             <meshStandardMaterial color="#76a0e2" />
           </mesh>
@@ -1058,7 +1058,7 @@ function RupaPembeli({ warna, kulit = '#f1c9a5', rambut = '#3d2a1e', mata, tipe 
           </mesh>
           <Kepala kulit={kulit} mata={mata} />
           {/* helm */}
-          <mesh position={[0, 1.02, -0.02]} castShadow>
+          <mesh position={[0, 1.02, -0.02]}>
             <sphereGeometry args={[0.345, 26, 14, 0, Math.PI * 2, 0, Math.PI / 1.85]} />
             <meshStandardMaterial color="#3fae5a" roughness={0.3} metalness={0.1} />
             <mesh material={BAHAN_TINTA}>
@@ -1084,7 +1084,7 @@ function RupaPembeli({ warna, kulit = '#f1c9a5', rambut = '#3d2a1e', mata, tipe 
             <meshStandardMaterial color="#ef6a4c" />
           </mesh>
           <Kepala kulit={kulit} mata={mata} />
-          <mesh position={[0, 1.0, -0.03]} castShadow>
+          <mesh position={[0, 1.0, -0.03]}>
             <sphereGeometry args={[0.33, 24, 14, 0, Math.PI * 2, 0, Math.PI / 1.75]} />
             <meshStandardMaterial color={rambut} roughness={0.9} side={THREE.DoubleSide} />
             <mesh material={BAHAN_TINTA}>
@@ -1112,14 +1112,14 @@ function RupaPembeli({ warna, kulit = '#f1c9a5', rambut = '#3d2a1e', mata, tipe 
             <meshStandardMaterial color="#fbfaf3" />
           </mesh>
           <Kepala kulit={kulit} mata={mata} kacamata />
-          <mesh position={[0, 1.02, -0.03]} castShadow>
+          <mesh position={[0, 1.02, -0.03]}>
             <sphereGeometry args={[0.315, 22, 12, 0, Math.PI * 2, 0, Math.PI / 2.1]} />
             <meshStandardMaterial color="#e4e1dc" roughness={0.9} />
             <mesh material={BAHAN_TINTA}>
               <sphereGeometry args={[0.315 + GARIS, 22, 12, 0, Math.PI * 2, 0, Math.PI / 2.1]} />
             </mesh>
           </mesh>
-          <mesh position={[0, 1.2, -0.26]} castShadow>
+          <mesh position={[0, 1.2, -0.26]}>
             <sphereGeometry args={[0.13, 14, 10]} />
             <meshStandardMaterial color="#e4e1dc" roughness={0.9} />
             <mesh material={BAHAN_TINTA}>

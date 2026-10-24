@@ -1,7 +1,7 @@
 // Isi dinamis toko 3D: barang di meja/mesin, sorotan stasiun di depan pemain, bar progres + gelembung status mesin, antrean pelanggan.
 import { Billboard } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
-import { useRef } from 'react';
+import { memo, useRef } from 'react';
 import * as THREE from 'three';
 import { Pekerja3D, TIPE_PEMBELI } from '../arena3d/Pekerja3D';
 import { Item3D } from './Item3D';
@@ -17,7 +17,7 @@ function keDunia(id: IdMesin, [lx, ly, lz]: [number, number, number]): [number, 
 }
 const ITEM_LOKAL: Record<KodeMesin, [number, number, number]> = { 1: [0, 1.6, -0.02], 2: [0, 0.08, 0.36], 3: [0, 0.08, 0.38] };
 export const POS_ITEM_MESIN = Object.fromEntries(ID_MESIN.map((id) => [id, keDunia(id, ITEM_LOKAL[MESIN[id].kode])])) as Record<IdMesin, [number, number, number]>;
-const TINGGI_BAR: Record<KodeMesin, number> = { 1: 1.95, 2: 0.95, 3: 0.8 };
+const TINGGI_BAR: Record<KodeMesin, number> = { 1: 2.1, 2: 1.35, 3: 1.25 };
 const posBar = (id: IdMesin): [number, number, number] => {
   const m = MESIN[id];
   return [m.x, m.y + TINGGI_BAR[m.kode], m.z];
@@ -262,7 +262,7 @@ function teksturIkon(jenis: number) {
 
 export type DataPembeli = { id: bigint; jenis: number; sisa: number };
 
-function Pelanggan({ p, x, z, menunggu, putar = Math.PI }: { p: DataPembeli; x: number; z: number; menunggu?: boolean; putar?: number }) {
+function PelangganDasar({ p, x, z, menunggu, putar = Math.PI }: { p: DataPembeli; x: number; z: number; menunggu?: boolean; putar?: number }) {
   const n = Number(p.id % 997n);
   const tipe = TIPE_PEMBELI[n % TIPE_PEMBELI.length];
   const warnaBar = p.sisa > 0.5 ? '#5fd39a' : p.sisa > 0.25 ? '#f4b829' : '#ef6a4c';
@@ -299,6 +299,9 @@ function Pelanggan({ p, x, z, menunggu, putar = Math.PI }: { p: DataPembeli; x: 
     </group>
   );
 }
+
+/** Render ulang pelanggan hanya bila id/sisa (dibulatkan 2%) berubah. */
+const Pelanggan = memo(PelangganDasar, (a, b) => a.p.id === b.p.id && a.p.jenis === b.p.jenis && Math.round(a.p.sisa * 50) === Math.round(b.p.sisa * 50) && a.x === b.x && a.z === b.z && a.menunggu === b.menunggu && a.putar === b.putar);
 
 /** Pelanggan: yang order-nya sedang dikerjakan menunggu di loket; yang belum direbut antre di luar. Gelembung = pesanan + kesabaran. */
 export function Antrean({ antre, aktif }: { antre: DataPembeli[]; aktif?: DataPembeli }) {

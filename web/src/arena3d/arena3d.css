@@ -136,3 +136,6 @@
 }
 .baris-pro { display: grid; gap: 4px; margin-top: 6px; padding-top: 6px; border-top: 2px dashed #c9bfe8; }
 .badge-pro { align-self: start; background: #f4b829; border: 2px solid #231e16; border-radius: 999px; padding: 2px 10px; font: 0.9rem 'Lilita One', system-ui; }
+
+@keyframes goyang { 0%, 100% { transform: translate(0, 0); } 20% { transform: translate(-7px, 4px); } 40% { transform: translate(6px, -5px); } 60% { transform: translate(-5px, 3px); } 80% { transform: translate(4px, -2px); } }
+.main-3d.goyang { animation: goyang 0.4s; }
