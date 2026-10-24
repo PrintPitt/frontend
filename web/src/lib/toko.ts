@@ -4,7 +4,7 @@ import { teksValid } from '../../../shared/src/index.ts';
 import type { Akun } from './akun';
 import { bacaKode, mintaMon } from './backend';
 import { dompet, kontrak, pub } from './chain';
-import { pesanError } from './tx';
+import { kirimTahanLag, pesanError } from './tx';
 
 async function pastikanMon(akun: Akun) {
   const saldo = await pub.getBalance({ address: akun.address });
@@ -23,7 +23,7 @@ async function tulisToko(akun: Akun, functionName: 'daftarkanToko' | 'ubahNamaTo
   const args = [nama] as const;
   const perkiraan = await pub.estimateContractGas({ ...kontrak, functionName, args, account: akun.account });
   const w = dompet(akun);
-  const hash = await w.writeContract({ ...kontrak, functionName, args, account: akun.account, chain: w.chain, gas: (perkiraan * 125n) / 100n });
+  const hash = await kirimTahanLag(() => w.writeContract({ ...kontrak, functionName, args, account: akun.account, chain: w.chain, gas: (perkiraan * 125n) / 100n }));
   const r = await pub.waitForTransactionReceipt({ hash, pollingInterval: 200 });
   if (r.status !== 'success') throw new Error('Transaction failed on chain');
   return hash;

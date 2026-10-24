@@ -76,9 +76,25 @@ export async function biayaMaks(fn: FnTulis, value = 0n): Promise<bigint> {
 
 export type HasilTx = { hash: Hash; receipt: TransactionReceipt; events: { eventName: string; args: Record<string, unknown> }[] };
 
+/**
+ * Send a tx, retrying briefly when the RPC rejects it with "insufficient balance" although the balance is there:
+ * seen on Monad mainnet right after a faucet top-up (public RPC nodes behind a load balancer can lag a few blocks).
+ */
+export async function kirimTahanLag<T>(kirimTx: () => Promise<T>, coba = 4): Promise<T> {
+  for (let i = 0; ; i++) {
+    try {
+      return await kirimTx();
+    } catch (e) {
+      const teks = e instanceof BaseError ? `${e.shortMessage} ${e.details ?? ''}` : String(e);
+      if (i >= coba - 1 || !/insufficient balance/i.test(teks)) throw e;
+      await new Promise((r) => setTimeout(r, 2000));
+    }
+  }
+}
+
 export async function kirim(akun: Akun, fn: FnTulis, args: readonly unknown[], value?: bigint): Promise<HasilTx> {
   const w = dompet(akun);
-  const hash = await w.writeContract({ ...kontrak, account: akun.account, chain: w.chain, functionName: fn, args, value, gas: GAS_LIMIT[fn] } as never);
+  const hash = await kirimTahanLag(() => w.writeContract({ ...kontrak, account: akun.account, chain: w.chain, functionName: fn, args, value, gas: GAS_LIMIT[fn] } as never));
   const receipt = await pub.waitForTransactionReceipt({ hash, pollingInterval: 200 });
   if (receipt.status !== 'success') {
     // No pre-simulation (saves time during the race); look up the error name after a revert.
