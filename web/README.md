@@ -30,6 +30,7 @@ npm run dev                          # http://localhost:5173
   - `Print.tsx`: pilih `<teks>.pdf` dari flashdisk penuh umpan `.exe` (salah = layar virus), lalu kertas macet: tap TARIK 5x.
   - `Laminating.tsx`: TAHAN (atau Spasi) supaya jarum di zona hijau; terlalu cepat = kusut, terlalu pelan = gosong.
 - SFX ZzFX di `src/game/sfx.ts` (tanpa file audio).
+- Order dokumen nyata (jenis 5+, contract v2.1): tombol **Atur lokasi toko** (feed radius backend 1,5 km, Toko Pro 3 km), unduh dokumen, langkah ditandai dengan tombol, order Siap → **Pindai QR** pelanggan (`src/components/PindaiQr.tsx`) → `serahkan`. Langganan Toko Pro dari header.
 - Figur mesin Colorfigures (MIT, dari `figures/`) disalin ke `public/figures/` dan tampil di panel toko `/layar` lewat `src/components/MesinFigur.tsx`: iframe same-origin, bingkai halaman disembunyikan, mesin digerakkan sesuai langkah (termasuk kertas macet, isi kertas, ganti tinta).
 
 ## Layar (`/layar`)

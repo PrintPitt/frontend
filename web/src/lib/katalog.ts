@@ -34,6 +34,7 @@ export type Order = {
   teks: string;
   halaman: number;
   siapPada: number;
+  dokumen: Hex;
   kodeHash: Hex;
 };
 
@@ -67,8 +68,29 @@ export async function bacaOrder(id: bigint): Promise<Order> {
     teks: o.teks,
     halaman: Number(o.halaman),
     siapPada: Number(o.siapPada),
+    dokumen: o.dokumen,
     kodeHash: o.kodeHash,
   };
+}
+
+/** Harga dan batas kerja dari contract (`hargaUntuk`), sumber kebenaran untuk order per halaman. */
+export async function bacaHarga(jenis: number, halaman: number): Promise<{ harga: bigint; batasKerja: number }> {
+  const [harga, batasKerja] = await pub.readContract({ ...kontrak, functionName: 'hargaUntuk', args: [jenis, halaman] });
+  return { harga, batasKerja: Number(batasKerja) };
+}
+
+/** v2.1: potongan platform (basis poin) dari payout toko. Event OrderFinished/omzet sudah bersih; hitungPayout masih kotor. */
+export const bacaFeePlatform = () => pub.readContract({ ...kontrak, functionName: 'platformFeeBps' });
+export const payoutBersih = (kotor: bigint, feeBps: number) => kotor - (kotor * BigInt(feeBps)) / 10_000n;
+
+/** Toko Pro (v2.1): aktif sampai `proSampai` (detik chain). */
+export async function bacaPro(toko: Hex): Promise<{ pro: boolean; sampai: number; harga: bigint }> {
+  const [pro, sampai, harga] = await Promise.all([
+    pub.readContract({ ...kontrak, functionName: 'isPro', args: [toko] }),
+    pub.readContract({ ...kontrak, functionName: 'proSampai', args: [toko] }),
+    pub.readContract({ ...kontrak, functionName: 'hargaPro' }),
+  ]);
+  return { pro, sampai: Number(sampai), harga };
 }
 
 export type TokoInfo = { alamat: Hex; nama: string; orderAktif: bigint };
