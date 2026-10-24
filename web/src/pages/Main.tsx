@@ -238,7 +238,8 @@ export default function Main() {
 
   async function rebut(o: Order | undefined) {
     if (!akun || d.merebut !== null) return;
-    if (!saya) return tampil('Alamat ini belum terdaftar sebagai toko', 'kalah');
+    if (!saya) return tampil('Kamu belum punya toko. Daftarkan di lobi dulu', 'kalah');
+    if (!saya.aktif) return tampil('Toko ini dinonaktifkan operator', 'kalah');
     if (!s.sesiAktif) return tampil('Sesi belum dibuka operator', 'info');
     if (!o) return tampil('Belum ada pelanggan. Tunggu order masuk!', 'info');
     d.merebut = o.id;

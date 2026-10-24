@@ -255,7 +255,7 @@ export default function Toko() {
 
       {s.siap && !saya && (
         <div className="kartu galat kecil">
-          Alamat ini belum terdaftar sebagai toko. Kirim ke operator untuk registerShop: <code>{akun.address}</code>
+          Alamat ini belum punya toko. Daftarkan toko sendiri di <a href="/lobi">lobi</a> (v2.3: tanpa operator). Alamat: <code>{akun.address}</code>
         </div>
       )}
       {s.siap && !s.sesiAktif && <div className="kartu muted kecil">Sesi belum dibuka operator.</div>}

@@ -7,7 +7,7 @@ import { kontrak, offsetChain, PAKAI_WS, pub, pubLive } from './chain';
 import { bukaResep } from './format';
 import { bacaFeePlatform, bacaKatalog, bacaOrder, bacaToko, payoutBersih, type Katalog, type Order, type StatusOrder } from './katalog';
 
-export type TokoLive = { alamat: Hex; nama: string; orderAktif: bigint; omzet: bigint };
+export type TokoLive = { alamat: Hex; nama: string; orderAktif: bigint; omzet: bigint; aktif: boolean };
 export type Kejadian = {
   kunci: string;
   jenis: 'baru' | 'claim' | 'selesai' | 'expire';
@@ -208,6 +208,8 @@ function terapkan(logs: LogAny[]) {
         ubah((s) => ({ ...s, sesiAktif: false }));
         break;
       case 'ShopRegistered':
+      case 'ShopRenamed':
+      case 'ShopStatusSet':
         segarkanToko();
         break;
       case 'KatalogSet':

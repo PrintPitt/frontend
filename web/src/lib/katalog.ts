@@ -84,10 +84,11 @@ export const bacaFeePlatform = () => pub.readContract({ ...kontrak, functionName
 export const payoutBersih = (kotor: bigint, feeBps: number) => kotor - (kotor * BigInt(feeBps)) / 10_000n;
 
 
-export type TokoInfo = { alamat: Hex; nama: string; orderAktif: bigint };
+/** v2.3: `aktif` false = dinonaktifkan operator (tidak bisa claim). */
+export type TokoInfo = { alamat: Hex; nama: string; orderAktif: bigint; aktif: boolean };
 
-/** Nama tampilan toko demo. Di kontrak keduanya terdaftar sebagai "Toko A"/"Toko B" (tidak bisa diganti tanpa deploy ulang);
- *  landing dan naskah pitch memakai nama ini, jadi layar, game, dan HP pelanggan ikut. Alamat lain tetap memakai nama dari kontrak. */
+/** Nama tampilan toko demo (landing + naskah pitch). Hanya dipakai selama nama on-chain masih default "Toko A"/"Toko B";
+ *  sejak v2.3 toko bisa `ubahNamaToko`, dan nama hasil ganti itu yang tampil. */
 const NAMA_TAMPIL: Record<string, string> = {
   '0xd9b470dd86e9876b59ec4ccd797811d5a8f293e0': 'Fotokopi Jaya',
   '0x8b0a62ca2523e33a1b51e28069613f6039ea1c7f': 'Sinar Copy',
@@ -99,7 +100,12 @@ export async function bacaToko(): Promise<TokoInfo[]> {
     Array.from({ length: Number(n) }, (_, i) => pub.readContract({ ...kontrak, functionName: 'daftarToko', args: [BigInt(i)] })),
   );
   const info = await Promise.all(alamat.map((a) => pub.readContract({ ...kontrak, functionName: 'toko', args: [a] })));
-  return alamat.map((a, i) => ({ alamat: a, nama: NAMA_TAMPIL[a.toLowerCase()] ?? info[i][2], orderAktif: info[i][1] }));
+  // v2.3: toko(a) = [terdaftar, aktif, orderAktif, nama]
+  return alamat.map((a, i) => {
+    const [, aktif, orderAktif, namaChain] = info[i];
+    const bawaan = /^Toko [AB]$/.test(namaChain);
+    return { alamat: a, nama: (bawaan && NAMA_TAMPIL[a.toLowerCase()]) || namaChain, orderAktif, aktif };
+  });
 }
 
 /** NFT hasil cetakan: decode tokenURI (JSON base64) jadi nama + gambar SVG (data URI). */

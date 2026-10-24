@@ -87,7 +87,7 @@ export default function Cari() {
   const status = !s.siap
     ? 'Menyambung ke Monad…'
     : !saya
-      ? 'Alamatmu belum terdaftar sebagai toko. Minta operator mendaftarkan, lalu kembali ke sini.'
+      ? 'Kamu belum punya toko. Daftarkan toko dulu di lobi (gratis, langsung di contract).'
       : !lawan
         ? 'Mencari lawan… menunggu toko lain terdaftar'
         : !s.sesiAktif

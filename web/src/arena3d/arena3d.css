@@ -189,3 +189,7 @@
 .galat-masuk { margin: 0; color: #ef6a4c; font-weight: 700; }
 .kecil-masuk { margin: 0; font-size: 0.75rem; opacity: 0.6; }
 .tautan-masuk { border: 0; background: none; color: #2a2163; font: 700 0.9rem 'Fredoka', system-ui; cursor: pointer; text-decoration: underline; justify-self: center; }
+.form-toko { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.form-toko input { flex: 1 1 160px; min-width: 0; border: 3px solid #231e16; border-radius: 10px; padding: 6px 10px; font: 700 0.95rem 'Fredoka', system-ui; background: #fff; color: #231e16; }
+.tautan-kecil { margin-left: 8px; border: 0; background: none; color: #2a2163; font: 700 0.75rem 'Fredoka', system-ui; text-decoration: underline; cursor: pointer; }
+.galat-teks { color: #ef6a4c; font-weight: 700; opacity: 1; }

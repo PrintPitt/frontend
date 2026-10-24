@@ -20,6 +20,8 @@ const PESAN: Record<string, string> = {
   AlreadyClaimed: 'Diambil toko lain',
   ShopBusy: 'Toko masih mengerjakan order lain',
   NotShop: 'Alamat ini bukan toko terdaftar',
+  ShopInactive: 'Toko ini dinonaktifkan operator',
+  ShopExists: 'Alamat ini sudah terdaftar sebagai toko',
   SessionClosed: 'Sesi belum dibuka atau sudah ditutup',
   BadKind: 'Jenis order tidak tersedia',
   BadValue: 'Nominal bayar tidak sesuai harga',

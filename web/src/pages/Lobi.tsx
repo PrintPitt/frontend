@@ -22,6 +22,7 @@ import { useLive } from '../lib/live';
 import { NAMA } from '../lib/merek';
 import { pindah } from '../lib/navigasi';
 import { bacaPro, langgananPro, tanggalPro, type InfoPro } from '../lib/pro';
+import { daftarkanToko, ubahNamaToko } from '../lib/toko';
 import { bacaProfil, MAKS_NAMA, rapikanNama, simpanProfil, WARNA_BAJU, WARNA_KULIT, WARNA_RAMBUT, type Profil } from '../lib/profil';
 import { formatRupiah } from '../../../shared/src/index.ts';
 import { pesanError } from '../lib/tx';
@@ -103,6 +104,10 @@ export default function Lobi() {
   const [pro, setPro] = useState<InfoPro | null>(null);
   const [proJalan, setProJalan] = useState(false);
   const [proPesan, setProPesan] = useState('');
+  const [namaTokoBaru, setNamaTokoBaru] = useState('');
+  const [tokoJalan, setTokoJalan] = useState(false);
+  const [tokoPesan, setTokoPesan] = useState('');
+  const [gantiNama, setGantiNama] = useState(false);
 
   useEffect(() => {
     if (!akun && new URLSearchParams(location.search).has('dev')) masuk().then(setAkun);
@@ -112,6 +117,25 @@ export default function Lobi() {
     if (akun) bacaPro(akun.address).then(setPro).catch(() => setPro(null));
   }, [akun]);
   useEffect(segarkanPro, [segarkanPro]);
+
+  async function simpanToko(daftar: boolean) {
+    if (!akun) return;
+    const nama = namaTokoBaru.trim() || (profil.nama.trim() ? `Toko ${profil.nama.trim()}` : '');
+    if (!nama) return setTokoPesan('Isi nama toko dulu');
+    setTokoJalan(true);
+    setTokoPesan(daftar ? 'Mendaftarkan toko di Monad…' : 'Mengganti nama toko…');
+    try {
+      await (daftar ? daftarkanToko(akun, nama) : ubahNamaToko(akun, nama));
+      setTokoPesan(daftar ? `Toko "${nama}" terdaftar!` : 'Nama toko diganti');
+      setGantiNama(false);
+      setNamaTokoBaru('');
+      segarkanPro();
+    } catch (e) {
+      setTokoPesan(e instanceof Error ? e.message : String(e));
+    } finally {
+      setTokoJalan(false);
+    }
+  }
 
   async function beliPro() {
     if (!akun || !pro) return;
@@ -156,7 +180,7 @@ export default function Lobi() {
     });
   }
 
-  const alasan = !akun ? 'Masuk dulu untuk main' : !saya ? 'Alamatmu belum terdaftar sebagai toko' : !s.sesiAktif ? 'Sesi belum dibuka operator' : null;
+  const alasan = !akun ? 'Masuk dulu untuk main' : !saya ? 'Daftarkan tokomu dulu di kartu akun' : !s.sesiAktif ? 'Sesi belum dibuka operator' : null;
 
   return (
     <main className="halaman-game lobi lobi-profil">
@@ -246,12 +270,40 @@ export default function Lobi() {
               </>
             ) : (
               <>
-                <b>{saya ? `✓ ${saya.nama.toUpperCase()}` : 'Belum terdaftar sebagai toko'}</b>
+                <b>
+                  {saya ? `✓ ${saya.nama.toUpperCase()}` : 'Belum punya toko'}
+                  {saya && !gantiNama && (
+                    <button className="tautan-kecil" onClick={() => (setGantiNama(true), setNamaTokoBaru(saya.nama))}>
+                      ganti nama
+                    </button>
+                  )}
+                </b>
+                {saya && !saya.aktif && <span className="kecil-akun galat-teks">Toko ini dinonaktifkan operator, tidak bisa merebut order.</span>}
                 <button className="alamat-akun" onClick={salinAlamat} title="Salin alamat">
                   {pendek(akun.address)} · {disalin ? 'tersalin!' : 'salin'}
                 </button>
                 <span className="kecil-akun">{akun.jenis === 'privy' ? (akun.label ?? 'Akun Privy') : akun.jenis === 'mera' ? 'Passkey' : akun.jenis === 'dev' ? 'Akun dev anvil' : 'Akun tamu'}</span>
-                {!saya && <span className="kecil-akun">Kirim alamat ini ke operator supaya didaftarkan sebagai toko.</span>}
+                {(!saya || gantiNama) && (
+                  <div className="form-toko">
+                    <input
+                      value={namaTokoBaru}
+                      maxLength={40}
+                      placeholder={profil.nama.trim() ? `Toko ${profil.nama.trim()}` : 'Nama tokomu, mis. Fotokopi Berkah'}
+                      onChange={(e) => setNamaTokoBaru(e.target.value)}
+                      aria-label="Nama toko"
+                    />
+                    <button className="tombol-game kuning kecil" disabled={tokoJalan} onClick={() => simpanToko(!saya)}>
+                      {tokoJalan ? '…' : saya ? 'SIMPAN' : 'DAFTARKAN TOKO'}
+                    </button>
+                    {saya && (
+                      <button className="tombol-game putih kecil" disabled={tokoJalan} onClick={() => setGantiNama(false)}>
+                        BATAL
+                      </button>
+                    )}
+                  </div>
+                )}
+                {!saya && !tokoPesan && <span className="kecil-akun">Daftar toko gratis, langsung di contract. Gas pertama dibantu faucet.</span>}
+                {tokoPesan && <span className="kecil-akun">{tokoPesan}</span>}
                 {saya && pro && (
                   <div className="baris-pro">
                     {pro.proSampai * 1000 > Date.now() ? (
