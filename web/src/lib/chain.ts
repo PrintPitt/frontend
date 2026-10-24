@@ -1,16 +1,43 @@
 // Konfigurasi chain, client viem, dan contract untuk semua halaman.
 import { createPublicClient, createWalletClient, http, webSocket, type Account, type Chain, type Hex, type Transport, type WalletClient } from 'viem';
-import { anvil, monadTestnet } from 'viem/chains';
+import { anvil, monad, monadTestnet } from 'viem/chains';
 import { deploymentUntuk, fotokopiKilatAbi } from '../../../shared/src/index.ts';
 
 const env = import.meta.env;
-const CHAIN_ID = Number(env.VITE_CHAIN_ID || 31337);
-const dasar = CHAIN_ID === monadTestnet.id ? monadTestnet : anvil;
+const CHAIN_BAWAAN = Number(env.VITE_CHAIN_ID || 31337);
 
-export const RPC_URL: string = env.VITE_RPC_URL || dasar.rpcUrls.default.http[0];
+/**
+ * Satu build melayani testnet dan mainnet: `?jaringan=mainnet` / `?jaringan=testnet` memilih jaringan dan diingat di
+ * perangkat ini (localStorage); tanpa itu dipakai VITE_CHAIN_ID. Ganti jaringan = muat ulang halaman.
+ */
+export type Jaringan = 'mainnet' | 'testnet';
+const KUNCI_JARINGAN = 'pp.jaringan';
+function pilihChainId(): number {
+  let pilih: string | null = null;
+  try {
+    const q = new URLSearchParams(location.search).get('jaringan');
+    if (q === 'mainnet' || q === 'testnet') localStorage.setItem(KUNCI_JARINGAN, q);
+    pilih = q ?? localStorage.getItem(KUNCI_JARINGAN);
+  } catch {
+    /* tanpa storage: pakai bawaan */
+  }
+  return pilih === 'mainnet' ? monad.id : pilih === 'testnet' ? monadTestnet.id : CHAIN_BAWAAN;
+}
+const CHAIN_ID = pilihChainId();
+/** Env per-chain (alamat, RPC, WS) hanya berlaku untuk jaringan bawaan build; jaringan pilihan memakai shared + default. */
+const PAKAI_ENV = CHAIN_ID === CHAIN_BAWAAN;
+// 143 = Monad mainnet (IDRX asli), 10143 = testnet (tIDRX), lainnya = anvil lokal
+const dasar = CHAIN_ID === monad.id ? monad : CHAIN_ID === monadTestnet.id ? monadTestnet : anvil;
+
+export const RPC_URL: string =
+  (dasar.id === monad.id ? env.VITE_RPC_URL_MAINNET : undefined) || (PAKAI_ENV && env.VITE_RPC_URL) || dasar.rpcUrls.default.http[0];
 export const WS_URL: string | undefined =
-  env.VITE_WS_URL || (dasar.id === anvil.id ? 'ws://127.0.0.1:8545' : undefined);
+  (PAKAI_ENV && env.VITE_WS_URL) || (dasar.id === anvil.id ? 'ws://127.0.0.1:8545' : undefined);
 export const IS_ANVIL = dasar.id === anvil.id;
+export const IS_MAINNET = dasar.id === monad.id;
+export const JARINGAN: Jaringan = IS_MAINNET ? 'mainnet' : 'testnet';
+/** IDRX asli (mainnet) tidak punya EIP-2612 `permit`: pesan tanpa gas butuh `approve` sekali dari wallet pengguna. */
+export const TOKEN_PUNYA_PERMIT = !IS_MAINNET;
 
 export const chain: Chain = {
   ...dasar,
@@ -26,12 +53,12 @@ function cariDeployment(): Deployment | undefined {
   }
 }
 const dep = cariDeployment();
-const alamat = (env.VITE_CONTRACT_ADDRESS || dep?.address) as Hex | undefined;
+const alamat = ((PAKAI_ENV && env.VITE_CONTRACT_ADDRESS) || dep?.address) as Hex | undefined;
 if (!alamat) throw new Error(`Belum ada alamat contract untuk chain ${chain.id}. Isi VITE_CONTRACT_ADDRESS atau ekspor deployment.`);
 
 export const kontrak = { address: alamat, abi: fotokopiKilatAbi } as const;
-/** Token Rupiah (tIDRX) untuk pembayaran escrow. */
-export const TIDRX = (env.VITE_TIDRX_ADDRESS || dep?.tidrx) as Hex;
+/** Token Rupiah untuk escrow: tIDRX di testnet, IDRX asli di mainnet (nama variabel lama dipertahankan). */
+export const TIDRX = ((PAKAI_ENV && env.VITE_TIDRX_ADDRESS) || dep?.tidrx) as Hex;
 export const DEPLOY_BLOCK = BigInt(dep?.deployBlock ?? 0);
 /** Detik setelah Siap sebelum order bisa ditutup tanpa serah terima (immutable di contract v2). */
 export const BATAS_JEMPUT = dep?.batasJemput ?? 600;

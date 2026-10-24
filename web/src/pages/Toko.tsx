@@ -6,6 +6,7 @@ import confetti from 'canvas-confetti';
 import { AnimatePresence, motion } from 'motion/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { formatRupiah, hitungPayout } from '../../../shared/src/index.ts';
+import DaftarToko from '../components/DaftarToko';
 import PindaiQr from '../components/PindaiQr';
 import Fotokopi from '../game/Fotokopi';
 import '../game/game.css';
@@ -286,8 +287,9 @@ export default function Toko() {
       </header>
 
       {s.siap && !saya && (
-        <div className="kartu galat kecil">
-          Alamat ini belum punya toko. <a href="/lobi">Daftarkan toko</a> dulu (gratis, langsung di contract). Alamat: <code>{akun.address}</code>
+        <div className="kartu kecil">
+          Alamat ini belum punya toko. Daftarkan sekarang (gratis, langsung di contract):
+          <DaftarToko akun={akun} />
         </div>
       )}
       {s.siap && !s.sesiAktif && <div className="kartu muted kecil">Sesi belum dibuka operator: order baru belum bisa direbut.</div>}

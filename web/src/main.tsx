@@ -5,6 +5,7 @@ import '@fontsource/fredoka/700.css';
 import '@fontsource/lilita-one';
 import './styles.css';
 import { NAMA } from './lib/merek';
+import LencanaJaringan from './components/LencanaJaringan';
 import { RequireAuth, RUTE_PUBLIK } from './lib/auth';
 import { useJalur } from './lib/navigasi';
 import { PenyediaAuth } from './lib/privy';
@@ -53,6 +54,7 @@ createRoot(document.getElementById('root')!).render(
     <Suspense fallback={<p className="muted" style={{ padding: 24 }}>Memuat…</p>}>
       <PenyediaAuth>
         <Router />
+        <LencanaJaringan />
       </PenyediaAuth>
     </Suspense>
   </StrictMode>,

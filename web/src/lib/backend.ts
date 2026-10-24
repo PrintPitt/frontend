@@ -1,11 +1,12 @@
 // Klien backend PrintPitt (Railway; lokal :8787 saat anvil): config, top-up Rupiah → tIDRX (simulasi IDRX), relayer pesanan tanpa gas.
 // Kontrak API: repo PrintPitt/backend src/server.ts + vault 04-Architecture/Desain Backend.md.
-import { decodeEventLog, parseSignature, type Hash, type Hex } from 'viem';
+import { decodeEventLog, maxUint256, parseSignature, type Hash, type Hex } from 'viem';
 import {
   bulatkanKoordinat,
   domainPesanan,
   domainTidrx,
   fotokopiKilatAbi,
+  GAS_LIMIT,
   NOL32,
   PERMIT_TYPES,
   PESANAN_TYPES,
@@ -15,14 +16,19 @@ import {
   tidrxAbi,
 } from '../../../shared/src/index.ts';
 import type { Akun } from './akun';
-import { chain, dompet, IS_ANVIL, kontrak, offsetChain, pub, TIDRX } from './chain';
+import { chain, dompet, IS_ANVIL, IS_MAINNET, kontrak, offsetChain, pub, TIDRX, TOKEN_PUNYA_PERMIT } from './chain';
 
 const env = import.meta.env;
-export const BACKEND_URL: string = (env.VITE_BACKEND_URL || (IS_ANVIL ? 'http://127.0.0.1:8787' : 'https://backend-production-2b31.up.railway.app')).replace(/\/$/, '');
+// Backend per jaringan: mainnet → VITE_BACKEND_URL_MAINNET (bawaan Railway mainnet); testnet/anvil → VITE_BACKEND_URL
+// (bawaan: anvil lokal, testnet Railway).
+export const BACKEND_URL: string = (
+  IS_MAINNET
+    ? env.VITE_BACKEND_URL_MAINNET || 'https://backend-mainnet-production-7835.up.railway.app'
+    : env.VITE_BACKEND_URL || (IS_ANVIL ? 'http://127.0.0.1:8787' : 'https://backend-production-2b31.up.railway.app')
+).replace(/\/$/, '');
 
 const PESAN_BACKEND: Record<string, string> = {
   PENDING_ORDER: 'Pesananmu sebelumnya masih diproses, tunggu sebentar',
-  BAD_CODE: 'Faucet butuh kode akses (lihat layar panggung)',
   RATE_LIMITED: 'Terlalu banyak permintaan dari jaringan ini, coba lagi sebentar',
   AMOUNT_TOO_LOW: 'Minimal isi saldo Rp20.000',
   AMOUNT_TOO_HIGH: 'Nominal isi saldo terlalu besar',
@@ -52,6 +58,11 @@ const PESAN_BACKEND: Record<string, string> = {
   ALREADY_FUNDED: 'Alamat ini sudah pernah dapat MON',
   FAUCET_EMPTY: 'Faucet MON sedang kosong',
   FAUCET_DISABLED: 'Faucet MON sedang mati',
+  BAD_CODE: 'Kode juri salah',
+  ALREADY_CLAIMED: 'Kode juri sudah dipakai untuk akun ini',
+  VOUCHER_HABIS: 'Saldo voucher panitia sedang kosong. Panitia sedang mengisi ulang, coba lagi sebentar lagi',
+  FAUCET_LIMIT: 'Jatah MON panitia habis, hubungi panitia',
+  KAS_DISABLED: 'Layanan voucher sedang mati',
   ERC20InsufficientBalance: 'Saldo tIDRX kurang. Isi saldo dulu',
   ERC20InsufficientAllowance: 'Izin pembayaran kurang, coba pesan lagi',
   RPC_ERROR: 'Jaringan Monad sedang sibuk, coba lagi',
@@ -67,6 +78,7 @@ export class GalatBackend extends Error {
 async function ambil(jalur: string, init?: RequestInit): Promise<Response> {
   let r: Response;
   try {
+    if (!BACKEND_URL) throw new Error('URL backend belum diatur untuk jaringan ini (VITE_BACKEND_URL_MAINNET)');
     r = await fetch(BACKEND_URL + jalur, init);
   } catch {
     throw new Error('Server PrintPitt tidak bisa dihubungi');
@@ -92,7 +104,8 @@ export type Config = {
   platformFeeBps?: number;
   treasury?: Hex;
   hargaPro?: string;
-  topupMode: string;
+  /** simulasi (testnet), live, atau voucher (mainnet: kode juri, tanpa checkout) */
+  topupMode: 'simulasi' | 'live' | 'voucher' | string;
   radiusKm?: number;
   radiusProKm?: number;
 };
@@ -101,8 +114,8 @@ export const ambilConfig = () => api<Config>('/config');
 export type TopUp = {
   id: string;
   reference: string;
-  paymentMethod: 'va' | 'qris';
-  channelId: 'MANDIRI' | 'BRI' | 'QRIS';
+  paymentMethod: 'va' | 'qris' | 'voucher';
+  channelId: 'MANDIRI' | 'BRI' | 'QRIS' | 'VOUCHER';
   baseAmount: number;
   amount: number;
   fees: { name: string; amount: number }[];
@@ -123,7 +136,63 @@ export const bayarTopup = (id: string) => api<TopUp>(`/topup/${id}/bayar`, {});
 export const saldoTidrx = (alamat: Hex) => pub.readContract({ address: TIDRX, abi: tidrxAbi, functionName: 'balanceOf', args: [alamat] });
 
 /** Saldo awal MON (untuk tx yang dibayar sendiri, mis. `komplain`). Backend menolak alamat yang sudah pernah didanai. */
-export const mintaMon = (alamat: Hex) => api<{ hash: Hash; amount: string }>('/faucet', { address: alamat });
+export const mintaMon = (alamat: Hex, kode = bacaKode()) => api<{ hash: Hash; amount: string }>('/faucet', { address: alamat, kode: kode || undefined });
+
+// ---------------------------------------------------------------- kode juri (mainnet: faucet + voucher pakai kode akses)
+
+const KUNCI_KODE = 'pp.kode.juri';
+export const bacaKode = () => {
+  try {
+    return localStorage.getItem(KUNCI_KODE) ?? '';
+  } catch {
+    return '';
+  }
+};
+export const simpanKode = (kode: string) => {
+  try {
+    localStorage.setItem(KUNCI_KODE, kode);
+  } catch {}
+};
+
+/** Mode voucher (`/config.topupMode === 'voucher'`): saldo gratis untuk juri, jumlah ditentukan backend, langsung PAID. */
+export const buatVoucher = (alamat: Hex, kode: string) => api<TopUp>('/topup', { destinationWalletAddress: alamat, kode });
+
+/**
+ * Pastikan akun punya MON untuk tx yang dibayar sendiri (approve IDRX, komplain, daftar toko). Bila kurang, minta faucet
+ * (dengan kode juri bila ada) dan tunggu receipt. Faucet hanya untuk alamat baru (saldo 0 dan nonce 0).
+ */
+export async function pastikanMon(akun: Akun, perlu: bigint) {
+  if ((await pub.getBalance({ address: akun.address })) >= perlu) return;
+  try {
+    const { hash } = await mintaMon(akun.address);
+    await pub.waitForTransactionReceipt({ hash, timeout: 60_000 });
+  } catch (e) {
+    if (e instanceof GalatBackend && e.kode === 'ALREADY_FUNDED') throw new Error('Saldo MON untuk gas kurang, dan akun ini sudah pernah dapat MON dari faucet');
+    throw e;
+  }
+}
+
+/** Satu langkah "kode juri": MON dari faucet + IDRX dari voucher, lalu tunggu saldo masuk. */
+export async function klaimKodeJuri(akun: Akun, kode: string): Promise<TopUp> {
+  try {
+    const { hash } = await mintaMon(akun.address, kode);
+    simpanKode(kode); // faucet menerima kode → simpan untuk faucet berikutnya (komplain, daftar toko)
+    void pub.waitForTransactionReceipt({ hash, timeout: 60_000 }).catch(() => {});
+  } catch (e) {
+    // akun lama (sudah punya MON/nonce) tetap boleh klaim voucher; kode salah / jatah habis dilaporkan.
+    // ALREADY_FUNDED baru dicek setelah kode, jadi kodenya benar.
+    if (!(e instanceof GalatBackend) || !['ALREADY_FUNDED', 'FAUCET_DISABLED'].includes(e.kode)) throw e;
+    if (e.kode === 'ALREADY_FUNDED') simpanKode(kode);
+  }
+  let t = await buatVoucher(akun.address, kode);
+  simpanKode(kode);
+  for (let i = 0; i < 60 && t.userMintStatus !== 'MINTED' && t.userMintStatus !== 'FAILED'; i++) {
+    await new Promise((r) => setTimeout(r, 1000));
+    t = await ambilTopup(t.id);
+  }
+  if (t.userMintStatus === 'FAILED') throw new Error('Voucher gagal dikirim. Hubungi panitia');
+  return t;
+}
 
 /**
  * Pesan tanpa gas: tanda tangani `Pesanan` (EIP-712) + `permit` tIDRX untuk harga + fee, kirim ke relayer,
@@ -135,9 +204,14 @@ export async function pesanTanpaGas(
   p: { jenis: number; teks: string; harga: bigint; fee: bigint; halaman?: number; dokumen?: Hex; kodeHash?: Hex },
 ): Promise<{ id: bigint; hash: Hash }> {
   const pelanggan = akun.address;
-  const [nonce, nonceToken, izinAda, offset] = await Promise.all([
+  const nilai = p.harga + p.fee;
+  // Token tanpa permit (IDRX mainnet; atau nonces() revert): approve(max) sekali dari wallet pengguna, lalu relay tanpa izin.
+  const nonceToken = TOKEN_PUNYA_PERMIT
+    ? await pub.readContract({ address: TIDRX, abi: tidrxAbi, functionName: 'nonces', args: [pelanggan] }).catch(() => null)
+    : null;
+  if (nonceToken === null) await izinkanSekali(akun, nilai);
+  const [nonce, izinAda, offset] = await Promise.all([
     pub.readContract({ ...kontrak, functionName: 'nonces', args: [pelanggan] }),
-    pub.readContract({ address: TIDRX, abi: tidrxAbi, functionName: 'nonces', args: [pelanggan] }),
     pub.readContract({ address: TIDRX, abi: tidrxAbi, functionName: 'allowance', args: [pelanggan, kontrak.address] }),
     offsetChain(),
   ]);
@@ -160,9 +234,8 @@ export async function pesanTanpaGas(
     primaryType: 'Pesanan',
     message: { ...pesanan, nonce },
   });
-  const nilai = p.harga + p.fee;
   let izin: Record<string, string | number> | null = null;
-  if (izinAda < nilai) {
+  if (izinAda < nilai && nonceToken !== null) {
     const sigIzin = await w.signTypedData({
       account: akun.account,
       domain: domainTidrx(chain.id, TIDRX),
@@ -190,6 +263,26 @@ export async function pesanTanpaGas(
     }
   }
   throw new Error('Pesanan terkirim, tapi nomor order tidak terbaca');
+}
+
+/** `approve(contract, max)` bila allowance < `perlu` (token tanpa permit). Gas MON dari faucet bila saldo kurang. */
+async function izinkanSekali(akun: Akun, perlu: bigint) {
+  const ada = await pub.readContract({ address: TIDRX, abi: tidrxAbi, functionName: 'allowance', args: [akun.address, kontrak.address] });
+  if (ada >= perlu) return;
+  const { maxFeePerGas } = await pub.estimateFeesPerGas();
+  await pastikanMon(akun, GAS_LIMIT.approve * (maxFeePerGas ?? 0n));
+  const w = dompet(akun);
+  const hash = await w.writeContract({
+    address: TIDRX,
+    abi: tidrxAbi,
+    account: akun.account,
+    chain: w.chain,
+    functionName: 'approve',
+    args: [kontrak.address, maxUint256],
+    gas: GAS_LIMIT.approve,
+  });
+  const r = await pub.waitForTransactionReceipt({ hash, pollingInterval: 200 });
+  if (r.status !== 'success') throw new Error('Izin pembayaran IDRX gagal');
 }
 
 // ---------------------------------------------------------------- dokumen + lokasi (backend v2, Desain Backend bagian 14)

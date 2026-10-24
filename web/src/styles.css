@@ -232,3 +232,12 @@ body[data-halaman='layar'] { overflow: hidden; }
 .lacak-tahap li.lewat::before, .lacak-tahap li.kini::before { background: #5fd39a; }
 .lacak-tahap li.kini .lacak-titik { background: #f4b829; animation: kedip 1s infinite; }
 .lacak-batal .lacak-ikon { background: #fde1da; }
+/* v2.3: daftar toko sendiri dari dashboard */
+.daftar-toko { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 6px; }
+.daftar-toko input { flex: 1 1 180px; min-width: 0; font: inherit; padding: 8px 10px; border-radius: 10px; border: 2px solid currentColor; background: #fff; color: #231e16; }
+.daftar-toko .galat { flex-basis: 100%; }
+/* lencana jaringan (testnet / mainnet) */
+.lencana-jaringan { position: fixed; left: 10px; bottom: 10px; z-index: 50; font: 600 11px/1 system-ui, sans-serif; letter-spacing: 0.04em; padding: 6px 9px; border-radius: 999px; border: 2px solid #231e16; background: #fbfaf3; color: #231e16; cursor: pointer; opacity: 0.85; }
+.lencana-jaringan.mainnet { background: #5fd39a; }
+.lencana-jaringan span { font-weight: 400; opacity: 0.7; margin-left: 4px; }
+.lencana-jaringan:hover { opacity: 1; }

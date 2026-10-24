@@ -6,13 +6,15 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { hitungPayout } from '../../../shared/src/index.ts';
 import MesinFigur from '../components/MesinFigur';
 import { sfx } from '../game/sfx';
+import { IS_MAINNET } from '../lib/chain';
 import { mon, NAMA_LANGKAH } from '../lib/format';
 import { NAMA } from '../lib/merek';
 import { payoutBersih, type Katalog, type Order } from '../lib/katalog';
 import { useJamChain, useLive, type Kejadian, type TokoLive } from '../lib/live';
 
 const sama = (a?: string, b?: string) => !!a && !!b && a.toLowerCase() === b.toLowerCase();
-const URL_PESAN = `${(import.meta.env.VITE_PUBLIC_URL || location.origin).replace(/\/+$/, '')}/pesan`;
+// QR membawa jaringan yang sedang ditampilkan, supaya HP penonton memesan di chain yang sama dengan layar
+const URL_PESAN = `${(import.meta.env.VITE_PUBLIC_URL || location.origin).replace(/\/+$/, '')}/pesan${IS_MAINNET ? '?jaringan=mainnet' : ''}`;
 
 export default function Layar() {
   const s = useLive();

@@ -15,7 +15,9 @@ import {
   buatTopup,
   kirimLokasiOrder,
   lokasiPerangkat,
-  mintaMon,
+  bacaKode,
+  klaimKodeJuri,
+  pastikanMon,
   pesanTanpaGas,
   saldoTidrx,
   unggahDokumen,
@@ -79,6 +81,7 @@ export default function Pesan() {
   const [galatAkun, setGalatAkun] = useState('');
   const [saldo, setSaldo] = useState<bigint | null>(null);
   const [fee, setFee] = useState<bigint | null>(null);
+  const [topupMode, setTopupMode] = useState('simulasi');
   const [feeBps, setFeeBps] = useState(300);
   const [katalog, setKatalog] = useState<Katalog[]>([]);
   const [namaToko, setNamaToko] = useState<Record<string, string>>({});
@@ -125,7 +128,9 @@ export default function Pesan() {
       setOffset(off);
       setFee(feeRelay);
       setFeeBps(Number(bps));
-      ambilConfig().catch(() => setGalat('Server top-up/relayer tidak bisa dihubungi. Pesan tanpa gas mungkin gagal.'));
+      ambilConfig()
+        .then((c) => setTopupMode(c.topupMode))
+        .catch(() => setGalat('Server top-up/relayer tidak bisa dihubungi. Pesan tanpa gas mungkin gagal.'));
       setGalatMuat('');
     } catch (e) {
       setGalatMuat(pesanGalat(e));
@@ -349,6 +354,7 @@ export default function Pesan() {
               <motion.section key="isi" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
                 <IsiSaldo
                   akun={akun}
+                  voucher={topupMode === 'voucher'}
                   onMasuk={() => {
                     segarkanSaldo(akun).catch(() => {});
                     setIsiSaldo(false);
@@ -508,7 +514,56 @@ export default function Pesan() {
 }
 
 /** Isi saldo Rupiah → tIDRX lewat backend (simulasi API mint IDRX: VA / QRIS, lalu tombol "bayar" tiruan). */
-function IsiSaldo({ akun, onMasuk, onTutup }: { akun: Akun; onMasuk: () => void; onTutup?: () => void }) {
+function IsiSaldo(p: { akun: Akun; voucher: boolean; onMasuk: () => void; onTutup?: () => void }) {
+  return p.voucher ? <KodeJuri {...p} /> : <TopupSimulasi {...p} />;
+}
+
+/** Mainnet (mode voucher): satu kode juri → MON untuk gas (faucet) + saldo IDRX (voucher). Tanpa nominal, tanpa checkout. */
+function KodeJuri({ akun, onMasuk, onTutup }: { akun: Akun; onMasuk: () => void; onTutup?: () => void }) {
+  const [kode, setKode] = useState(bacaKode);
+  const [jalan, setJalan] = useState(false);
+  const [galat, setGalat] = useState('');
+  const [masuk, setMasuk] = useState<bigint | null>(null);
+
+  async function klaim() {
+    setGalat('');
+    setJalan(true);
+    try {
+      const t = await klaimKodeJuri(akun, kode.trim());
+      setMasuk(BigInt(Math.round(t.baseAmount * 100)));
+      onMasuk();
+    } catch (e) {
+      setGalat(pesanGalat(e));
+    } finally {
+      setJalan(false);
+    }
+  }
+
+  return (
+    <div className="kartu isi-saldo">
+      <div className="isi-saldo-kepala">
+        <b>Masukkan kode juri</b>
+        {onTutup && (
+          <button className="tautan inline" onClick={onTutup}>
+            tutup
+          </button>
+        )}
+      </div>
+      <div className="form-teks">
+        <input value={kode} placeholder="Kode dari panitia" onChange={(e) => setKode(e.target.value)} autoComplete="off" autoCapitalize="characters" />
+      </div>
+      <button className="tombol utama besar" disabled={jalan || !kode.trim()} onClick={klaim}>
+        {jalan ? 'Mengirim saldo…' : 'Klaim saldo'}
+      </button>
+      {masuk !== null && <p className="ok-teks">Saldo {formatRupiah(masuk)} masuk!</p>}
+      <p className="muted kecil">Saldo demo dari panitia: kamu tidak membayar apa pun. Satu kode untuk satu akun.</p>
+      {galat && <p className="galat kecil">{galat}</p>}
+    </div>
+  );
+}
+
+/** Testnet (mode simulasi): top-up Rupiah tiruan lewat VA / QRIS, lalu tombol "bayar" simulasi mencetak tIDRX. */
+function TopupSimulasi({ akun, onMasuk, onTutup }: { akun: Akun; onMasuk: () => void; onTutup?: () => void }) {
   const [rp, setRp] = useState(NOMINAL[1]);
   const [metode, setMetode] = useState<'qris' | 'BRI' | 'MANDIRI'>('qris');
   const [tagihan, setTagihan] = useState<TopUp | null>(null);
@@ -668,11 +723,7 @@ function StatusPesanan(p: {
     setGalat('');
     setKomplainJalan(true);
     try {
-      const [mon, perlu] = await Promise.all([pub.getBalance({ address: p.akun.address }), biayaMaks('komplain')]);
-      if (mon < perlu) {
-        const { hash } = await mintaMon(p.akun.address);
-        await pub.waitForTransactionReceipt({ hash, timeout: 60_000 });
-      }
+      await pastikanMon(p.akun, await biayaMaks('komplain'));
       await kirim(p.akun, 'komplain', [o.id]);
     } catch (e) {
       setGalat(pesanGalat(e));
