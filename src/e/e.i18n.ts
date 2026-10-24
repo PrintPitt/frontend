@@ -18,7 +18,6 @@ export const E_DICT = {
   'e.fig.held': { en: 'Paused — let go to continue', id: 'Ditahan — lepas untuk lanjut' },
 
   // ---------- 1 · BLITZ (pembuka) ----------
-  'e.k.where': { en: 'onchain on Monad', id: 'onchain di Monad' },
   'e.k.block': { en: '<b>~0.3 s</b> per block (measured on testnet)', id: '<b>±0,3 detik</b> per blok (diukur di testnet)' },
   'e.k.title': { en: 'Why this has to be onchain — and why it has to be Monad.', id: 'Kenapa ini harus onchain, dan harus di Monad.' },
 

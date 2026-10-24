@@ -4,6 +4,10 @@ import { ctx, reduced } from './ctx';
 import { t, lang, setLang } from './i18n';
 import { D } from './d/d';
 import { E } from './e/e';
+import type { Bagian } from './ctx';
+// pre-hero (src/p/) — dimuat lewat glob supaya build tetap jalan selama berkasnya belum ada
+const pMods = import.meta.glob<{ P?: Bagian }>('./p/p.ts', { eager: true });
+const P: Bagian | undefined = Object.values(pMods)[0]?.P;
 
 document.documentElement.classList.remove('no-js');
 const q = new URLSearchParams(location.search);
@@ -27,6 +31,8 @@ top.querySelectorAll<HTMLButtonElement>('.lang button').forEach(b => b.addEventL
 document.getElementById('stageHelp')!.textContent = t('shell.stagehelp');
 document.title = `${ctx.NAMA} — ${t('shell.headline')}`;
 
+const pEl = document.getElementById('P')!;
+if (P) P.mount(pEl, ctx); else pEl.remove();
 D.mount(document.getElementById('D')!, ctx);
 
 // bagian E baru dibangun saat pembaca mendekatinya (atau saat mode panggung / ?s= / kembali dari ganti bahasa),
@@ -60,7 +66,7 @@ if (q.has('s')) {
 /* ---------- mode panggung: → ← Spasi PageDown PageUp lompat ke berhenti berikutnya ---------- */
 function stops() {
   mountE();
-  return [0, ...D.stops(), ...E.stops()].map(v => Math.max(0, Math.round(v))).sort((a, b) => a - b)
+  return [0, ...(P ? P.stops() : []), ...D.stops(), ...E.stops()].map(v => Math.max(0, Math.round(v))).sort((a, b) => a - b)
     .filter((v, i, a) => i === 0 || v - a[i - 1] > 24);
 }
 let helpShown = false;

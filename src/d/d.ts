@@ -16,7 +16,7 @@ interface Denah {
   W: number; H: number; view: V2;
   phone: { x: number; y: number }; vault: { x: number; y: number }; sg1: Papan;
   ar: Arena; pr: Stasiun; fk: Stasiun; lm: Stasiun;
-  jStart: V2; sStart: V2; land: V2; jClaim: V2; sStop: V2; jFk: V2; jLm: V2; sPr: V2;
+  jStart: V2; sStart: V2; land: V2; jClaim: V2; sStop: V2; jFk: V2; jLm: V2; jPr: V2; sHome: V2;
   sg2: Papan; sg3: Papan; board: Papan; track: string;
   cam: (A: Arena, B: { cx: number; cy: number; z: number }) => Kunci[];
 }
@@ -25,9 +25,12 @@ type Pegas = { x: number; v: number };
 
 /* ---------- peta scroll → waktu cerita ----------
    [awal, akhir, panjang dalam vh]. awal === akhir = plateau (diam). Total ±2× ruang scroll mockup. */
+const MASUK = -.08; // waktu cerita negatif = masuk arena lewat gerbang (sebelum layar VS)
 const PETA: ReadonlyArray<readonly [number, number, number]> = [
-  [0, 0, 4],          // layar VS
-  [0, .10, 30],       // VS bubar, kamera turun ke HP
+  [MASUK, MASUK, 6],  // gerbang arena (lanjutan dari bagian sebelumnya)
+  [MASUK, 0, 34],     // kamera menembus gerbang, judul & toko datang dari kedalaman
+  [0, 0, 22],         // LAYAR VS
+  [0, .10, 32],       // keluar arena: kamera mundur, kartu beterbangan, turun ke HP
   [.10, .135, 8],
   [.135, .135, 22],   // BAB 1 · pesan dari HP
   [.135, .25, 34],    // bayar, koin terbang ke brankas
@@ -35,12 +38,14 @@ const PETA: ReadonlyArray<readonly [number, number, number]> = [
   [.275, .275, 22],   // brankas terkunci 0,02 MON
   [.275, .40, 40],    // tiket terbang ke arena
   [.40, .495, 36],    // dua toko berlari, KLAIM!
-  [.495, .495, 22],   // BAB 2 · rebutan
-  [.495, .64, 46],    // tiket ke Jaya, fotokopi + print mulai
-  [.64, .64, 22],     // BAB 3 · kerjakan
-  [.64, .75, 36],     // pindah ke laminator
-  [.75, .75, 22],     // laminating
-  [.75, .87, 42],     // stempel SELESAI, lembar terbang ke papan
+  [.495, .495, 22],   // BAB 2 · rebutan (adegan KLAIM — jangan diubah)
+  [.495, .605, 44],   // Jaya membawa kertas ke mesin fotokopi, kertas tersedot masuk
+  [.605, .605, 24],   // BAB 3 · di dalam mesin fotokopi (disalin)
+  [.605, .69, 40],    // keluar sebagai tumpukan salinan, terbang ke printer, masuk
+  [.69, .69, 24],     // di dalam printer (dicetak & dijilid)
+  [.69, .765, 40],    // keluar bersampul, terbang ke laminator, masuk
+  [.765, .765, 24],   // di dalam laminator
+  [.765, .87, 44],    // keluar mengilap, stempel SELESAI, terbang ke papan
   [.87, .915, 22],    // bintang + upah terhitung
   [.915, .915, 22],   // BAB 4 · selesai
   [.915, .98, 28],    // kartu dibalik
@@ -61,11 +66,19 @@ function keCerita(u: number): number {
   }
   return 1;
 }
+/* gerak dikurangi: lompat ke plateau terdekat (gerbang dilewati, langsung layar VS utuh) */
+const PLATO_BAB = PLATO.filter(q => q.s >= 0);
 function platoTerdekat(u: number): number {
-  let best = PLATO[0];
-  for (const q of PLATO) if (Math.abs(q.mid - u) < Math.abs(best.mid - u)) best = q;
+  let best = PLATO_BAB[0];
+  for (const q of PLATO_BAB) if (Math.abs(q.mid - u) < Math.abs(best.mid - u)) best = q;
   return best.s;
 }
+/* titik masuk/keluar kertas tiap mesin, pecahan dari ukuran stasiun relatif ke pusatnya */
+const SLOT: Record<'fk' | 'pr' | 'lm', { in: V2; out: V2; win: [number, number, number, number] }> = {
+  fk: { in: [0, -.17], out: [.21, .1], win: [.3, .38, .4, .26] },
+  pr: { in: [-.02, -.12], out: [.2, .08], win: [.28, .4, .44, .24] },
+  lm: { in: [-.16, -.04], out: [.2, .06], win: [.26, .4, .48, .24] },
+};
 
 /* ---------- alat kecil ---------- */
 function clamp(v: number, a = 0, b = 1): number { return Math.max(a, Math.min(b, v)); }
@@ -102,14 +115,18 @@ const DATAR: Denah = {
   ar: { x: 1800, y: 160, w: 1900, h: 1260 },
   pr: { x: 330, y: 380, s: 420 }, fk: { x: 950, y: 360, s: 560 }, lm: { x: 1570, y: 380, s: 420 },
   jStart: [300, 1080], sStart: [1600, 1080], land: [950, 990], jClaim: [860, 1080], sStop: [1085, 1085],
-  jFk: [950, 860], jLm: [1570, 860], sPr: [330, 860],
+  jFk: [950, 860], jLm: [1790, 880], jPr: [540, 880], sHome: [150, 1120],
   sg2: { x: 560, y: 1100, w: 780 }, sg3: { x: 1080, y: 660, w: 390 },
   board: { x: 3980, y: 330, w: 1100 },
   track: 'M690 1000C900 1090 1180 1080 1320 960M1640 880C1700 920 1750 950 1800 960',
   cam: (A, B) => [
-    [0, A.x + 950, 790, .62], [.10, 900, 770, 1.0], [.15, 900, 770, 1.0], [.25, 1000, 790, .98], [.28, 1060, 780, .95],
+    [0, A.x + 950, 790, .62], [.05, (A.x + 950 + 900) / 2, 760, .44], [.10, 900, 770, 1.0], [.15, 900, 770, 1.0], [.25, 1000, 790, .98], [.28, 1060, 780, .95],
     [.34, 1900, 640, .66], [.40, A.x + 950, A.y + 860, .92], [.48, A.x + 950, A.y + 850, 1.0], [.56, A.x + 1000, A.y + 660, 1.02],
-    [.62, A.x + 1080, A.y + 560, 1.0], [.76, A.x + 1280, A.y + 560, 1.0], [.80, A.x + 1500, A.y + 600, .88],
+    [.575, A.x + 1080, A.y + 560, 1.0], // = titik kunci lama: bingkai adegan KLAIM tetap identik
+    [.60, A.x + 960, A.y + 440, .98], [.635, A.x + 960, A.y + 440, .98],       // fotokopi
+    [.665, A.x + 420, A.y + 450, 1.02], [.715, A.x + 420, A.y + 450, 1.02],    // printer
+    [.745, A.x + 1480, A.y + 450, 1.02], [.79, A.x + 1480, A.y + 450, 1.02],   // laminator
+    [.82, A.x + 1540, A.y + 540, .9],
     [.87, B.cx, B.cy, B.z], [1, B.cx, B.cy, B.z * 1.02],
   ],
 };
@@ -119,14 +136,18 @@ const TEGAK: Denah = {
   ar: { x: 0, y: 1520, w: 1000, h: 2040 },
   pr: { x: 210, y: 860, s: 360 }, fk: { x: 500, y: 380, s: 520 }, lm: { x: 790, y: 860, s: 360 },
   jStart: [180, 1780], sStart: [820, 1780], land: [500, 1660], jClaim: [420, 1780], sStop: [612, 1785],
-  jFk: [500, 870], jLm: [790, 1270], sPr: [210, 1270],
+  jFk: [500, 870], jLm: [620, 1300], jPr: [390, 1300], sHome: [820, 1780],
   sg2: { x: 90, y: 1820, w: 820 }, sg3: { x: 90, y: 1290, w: 820 },
   board: { x: 60, y: 3720, w: 880 },
   track: 'M500 770L500 1020M500 1372L500 1520',
   cam: (A, B) => [
-    [0, 500, A.y + 1000, .62], [.10, 500, 700, .92], [.15, 500, 720, .92], [.25, 500, 900, .92], [.28, 500, 960, .9],
+    [0, 500, A.y + 1000, .62], [.05, 500, (A.y + 1000 + 700) / 2, .44], [.10, 500, 700, .92], [.15, 500, 720, .92], [.25, 500, 900, .92], [.28, 500, 960, .9],
     [.34, 500, 1800, .66], [.40, 500, A.y + 1520, .86], [.48, 500, A.y + 1560, .9], [.56, 500, A.y + 820, .86],
-    [.62, 500, A.y + 820, .86], [.76, 500, A.y + 960, .86], [.80, 500, A.y + 1500, .74],
+    [.575, 500, A.y + 820, .86], // = titik kunci lama: bingkai adegan KLAIM tetap identik
+    [.60, 500, A.y + 520, 1.22], [.635, 500, A.y + 520, 1.22],
+    [.665, 300, A.y + 960, 1.22], [.715, 300, A.y + 960, 1.22],
+    [.745, 700, A.y + 960, 1.22], [.79, 700, A.y + 960, 1.22],
+    [.82, 640, A.y + 1150, .9],
     [.87, B.cx, B.cy, B.z], [1, B.cx, B.cy, B.z * 1.02],
   ],
 };
@@ -170,6 +191,22 @@ const TOMBOL: Record<string, string> = {
 };
 const abtn = (k: FigKey, a: string, kelas = '') => `<button class="d-abtn${kelas ? ' ' + kelas : ''}" type="button" data-k="${k}" data-a="${a}">${t(TOMBOL[a])}</button>`;
 const hint = () => `<div class="d-sthint">${t('d.st.hint')}</div>`;
+/* lapisan "isi mesin" di atas figur iframe: lubang masuk menyala, jendela potong, label proses, bilah progres, tumpukan keluar */
+function prosesHTML(k: 'fk' | 'pr' | 'lm'): string {
+  const S = SLOT[k], pc = (v: number) => (v * 100).toFixed(1) + '%';
+  const [wl, wt, ww, wh] = S.win;
+  const isi = k === 'fk' ? '<i class="d-mini"></i><i class="d-scan"></i>'
+    : k === 'pr' ? '<div class="d-feed" style="position:absolute;inset:0"><i class="d-mini"></i></div><i class="d-carr"></i>'
+    : '<i class="d-heat"></i><i class="d-mini"></i><i class="d-roll d-r1"></i><i class="d-roll d-r2"></i>';
+  const label = t(k === 'fk' ? 'd.proc.copy' : k === 'pr' ? 'd.proc.print' : 'd.proc.lam');
+  const tumpuk = k === 'fk' ? `<div class="d-outstack" style="left:${pc(.5 + S.out[0] - .11)};top:${pc(.5 + S.out[1] - .14)}"><i></i><i></i><i></i></div>` : '';
+  return `<div class="d-proc" id="D-proc-${k}">
+    <i class="d-slotglow" style="left:${pc(.5 + S.in[0] - .11)};top:${pc(.5 + S.in[1] - .055)};width:22%;height:11%"></i>
+    <div class="d-win" style="left:${pc(wl)};top:${pc(wt)};width:${pc(ww)};height:${pc(wh)}">${isi}</div>
+    <span class="d-ptag" style="top:${pc(wt - .15)}">${label}</span>
+    <div class="d-pbar" style="left:${pc(wl)};top:${pc(wt + wh + .025)};width:${pc(ww)}"><i id="D-pbar-${k}"></i></div>${tumpuk}
+  </div>`;
+}
 
 function templat(c: Ctx): string {
   const N = esc(c.NAMA);
@@ -178,7 +215,11 @@ function templat(c: Ctx): string {
   const at = (k: string) => esc(t(k)); // teks untuk atribut
   const hl = t('d.hero.hl'), head = t('shell.headline');
   // kata sorotan + tanda baca sesudahnya tidak boleh terpisah baris ("Blitz," bukan "Blitz" / ", More")
-  const judul = head.includes(hl) ? head.replace(new RegExp(hl + '([,.!?]?)'), `<span class="d-nw"><span class="d-hl">${hl}</span>$1</span>`) : head;
+  const sorot = (x: string) => (x.includes(hl) ? x.replace(new RegExp(hl + '([,.!?]?)'), `<span class="d-nw"><span class="d-hl">${hl}</span>$1</span>`) : x);
+  // dua baris: "More Blitz," / "More Money." (dipotong setelah koma pertama; tanpa koma → di spasi tengah)
+  let ci = head.indexOf(', ');
+  if (ci < 0) { const sp = head.split(' '); ci = sp.slice(0, Math.ceil(sp.length / 2)).join(' ').length - 1; }
+  const baris1 = head.slice(0, ci + 1).trim(), baris2 = head.slice(ci + 1).trim();
   return `
 <div class="d-stage" id="D-stage" role="region" aria-label="${at('d.aria.stage')}">
  <div class="d-sticky" id="D-sticky">
@@ -223,18 +264,18 @@ function templat(c: Ctx): string {
       <div class="d-floor"></div>
       <div class="d-rim"></div>
       <svg class="d-bunting" id="D-bunting" aria-hidden="true"></svg>
-      <div class="d-st" id="D-stPr"><div class="d-mat"></div><div class="d-fg" id="D-fgPr"></div><div class="d-stl">${t('d.st.print')}</div>
+      <div class="d-st" id="D-stPr"><div class="d-mat"></div><div class="d-fg" id="D-fgPr"></div>${prosesHTML('pr')}<div class="d-stl">${t('d.st.print')}</div>
         <div class="d-stact" role="group" aria-label="${at('d.st.aria.pr')}">${abtn('pr', 'Nyalakan')}${abtn('pr', 'Print!', 'd-hot')}${abtn('pr', 'Ambil hasil')}</div>${hint()}
       </div>
-      <div class="d-st" id="D-stFk"><div class="d-mat"></div><div class="d-fg" id="D-fgFk"></div><div class="d-stl">${t('d.st.copy')}</div>
+      <div class="d-st" id="D-stFk"><div class="d-mat"></div><div class="d-fg" id="D-fgFk"></div>${prosesHTML('fk')}<div class="d-stl">${t('d.st.copy')}</div>
         <div class="d-stact" role="group" aria-label="${at('d.st.aria.fk')}">${abtn('fk', 'Angkat tutup')}${abtn('fk', 'Taruh dokumen')}${abtn('fk', 'Copy!', 'd-hot')}${abtn('fk', 'Ambil hasil')}</div>${hint()}
       </div>
-      <div class="d-st" id="D-stLm"><div class="d-mat"></div><div class="d-fg" id="D-fgLm"></div><div class="d-stl">${t('d.st.lam')}</div>
+      <div class="d-st" id="D-stLm"><div class="d-mat"></div><div class="d-fg" id="D-fgLm"></div>${prosesHTML('lm')}<div class="d-stl">${t('d.st.lam')}</div>
         <div class="d-stact" role="group" aria-label="${at('d.st.aria.lm')}">${abtn('lm', 'Nyalakan')}${abtn('lm', 'Masukkan pouch', 'd-warm')}${abtn('lm', 'Ambil hasil')}</div>${hint()}
       </div>
       <div class="d-sign d-tilt" id="D-sg2"><h3><span class="d-n">2</span>${t('d.step.2')}</h3><p>${t('d.sign.2')}</p></div>
       <div class="d-sign" id="D-sg3"><h3><span class="d-n">3</span>${t('d.step.3')}</h3><p>${t('d.sign.3')}</p>
-        <div class="d-chips3"><span class="d-chk" id="D-ck1"><i>${CENTANG}</i>${t('d.st.copy')}</span><span class="d-chk" id="D-ck2"><i>${CENTANG}</i>${t('d.st.lam')}</span></div>
+        <div class="d-chips3"><span class="d-chk" id="D-ck1"><i>${CENTANG}</i>${t('d.st.copy')}</span><span class="d-chk" id="D-ck3"><i>${CENTANG}</i>${t('d.st.print')}</span><span class="d-chk" id="D-ck2"><i>${CENTANG}</i>${t('d.st.lam')}</span></div>
       </div>
       <div class="d-chr" id="D-cJ" style="--c:var(--d-a1)" aria-hidden="true">${tokohSVG('j')}</div>
       <div class="d-chr" id="D-cS" style="--c:var(--d-a2)" aria-hidden="true">${tokohSVG('s')}</div>
@@ -275,9 +316,15 @@ function templat(c: Ctx): string {
   <div class="d-near" id="D-near" aria-hidden="true"></div>
   <div class="d-veil" id="D-veil"></div>
 
+  <div class="d-gate" id="D-gate" aria-hidden="true">
+    <i class="d-post d-pl"></i><i class="d-post d-pr"></i>
+    <div class="d-beam"><svg class="d-gflags" id="D-gflags"></svg><b class="d-gsign">${t('d.gate')}</b></div>
+  </div>
+
   <div class="d-hero" id="D-hero">
+    <h1 class="d-h1"><span class="d-l1" id="D-l1">${sorot(baris1)}</span> <span class="d-l2" id="D-l2">${sorot(baris2)}</span></h1>
+    <div class="d-hbody">
     <div class="d-hcopy" id="D-hcopy">
-      <h1>${judul}</h1>
       <p class="d-sub">${t('shell.sub')}</p>
       <p class="d-subline">${t('shell.subline')}</p>
       <div class="d-hact">
@@ -291,6 +338,7 @@ function templat(c: Ctx): string {
       <div class="d-vmid"><div class="d-tkslot" id="D-tkSlot"></div><div class="d-vsword" id="D-vsWord"><svg class="d-burstv" viewBox="-100 -100 200 200"><path id="D-vsBurst" fill="var(--d-a1)" stroke="var(--d-stroke)" stroke-width="4" stroke-linejoin="round"/></svg>VS</div></div>
       <div class="d-side d-r" id="D-vsR"><div class="d-bgp"></div><div class="d-chr" style="--c:var(--d-a2)">${tokohSVG('s')}</div><div class="d-plate">${SB}</div></div>
       <div class="d-rdslot" id="D-rdSlot"></div>
+    </div>
     </div>
   </div>
 
@@ -310,7 +358,8 @@ function templat(c: Ctx): string {
     <div class="d-tk-rec"><span><svg viewBox="0 0 24 24"><rect x="3" y="9" width="18" height="10" rx="2" fill="var(--d-panel)" stroke="var(--d-stroke)" stroke-width="2.4"/><path d="M5 9l2-4h10l2 4" fill="none" stroke="var(--d-stroke)" stroke-width="2.4" stroke-linejoin="round"/><rect x="7" y="13" width="10" height="2.4" fill="var(--d-stroke)"/></svg></span>+<span><svg viewBox="0 0 24 24"><rect x="2" y="8" width="20" height="9" rx="4" fill="var(--d-panel)" stroke="var(--d-stroke)" stroke-width="2.4"/><path d="M6 12.5h12" stroke="var(--d-stroke)" stroke-width="2.4" stroke-linecap="round"/><rect x="7" y="3" width="10" height="5" fill="var(--d-paper)" stroke="var(--d-stroke)" stroke-width="2"/></svg></span></div>
     <div class="d-tk-who">${NM}</div>
     <div class="d-tk-stamp" id="D-tkStamp">${t('d.ticket.done')}</div>
-  </div></div>
+    <i class="d-tk-gloss"></i>
+  </div><span class="d-tk-badge" id="D-tkBadge"></span></div>
 
   <div class="d-top" id="D-top">
     <nav class="d-steps" id="D-steps" aria-label="${at('d.steps.aria')}">
@@ -389,11 +438,14 @@ function pasang(root: HTMLElement, c: Ctx): void {
     round: $('round'), rdNum: $('rdNum'), rdRef: $('rdRef'), rdT: $('rdT'), rdFill: $('rdFill'), rdLbl: $('rdLbl'),
     tkSlot: $('tkSlot'), rdSlot: $('rdSlot'), top: $('top'),
     phPay: $('phPay'), phNote: $('phNote'), phSent: $('phSent'), vLcd: $('vLcd'), vDial: $<SVGGElement>('vDial'),
-    pv1: $('pv1'), pv2: $('pv2'), ck1: $('ck1'), ck2: $('ck2'), near: $('near'), stars: $('stars'),
+    pv1: $('pv1'), pv2: $('pv2'), ck1: $('ck1'), ck2: $('ck2'), ck3: $('ck3'), near: $('near'), stars: $('stars'),
+    gate: $('gate'), gflags: $<SVGSVGElement>('gflags'), l1: $('l1'), l2: $('l2'), tkBadge: $('tkBadge'), ticketEl: $('ticket'),
   };
   const segs = Array.from(root.querySelectorAll<HTMLElement>('.d-seg'));
   const segFill = segs.map(s => s.querySelector('i') as HTMLElement);
   const rdNumText = els.rdNum.firstChild as Text;
+  const MESIN = (['fk', 'pr', 'lm'] as const).map(k => ({ k, proc: $('proc-' + k), bar: $('pbar-' + k), st: k === 'fk' ? els.stFk : k === 'pr' ? els.stPr : els.stLm }));
+  const tumpukan = Array.from(root.querySelectorAll<HTMLElement>('#D-proc-fk .d-outstack i'));
 
   const R = c.reduced;
   const small = c.isMobile(); // diputuskan sekali: di HP maksimal 2 figur aktif
@@ -405,6 +457,7 @@ function pasang(root: HTMLElement, c: Ctx): void {
     held: t('d.phone.held'), cust: tf('d.phone.customer', { name: NM }), sent: t('d.phone.sent'),
     pay: t('d.round.pay'), late: t('d.round.late'), payShop: tf('d.round.payShop', { shop: t('d.shop.a') }),
     done: tf('d.round.done', { t: dec(KERJA, 1) }), tick: '−' + dec(.0001, 4),
+    copied: t('d.tk.copied'), bound: t('d.tk.bound'), lam: t('d.tk.lam'),
   };
 
   /* ---------- hiasan statis ---------- */
@@ -525,11 +578,12 @@ function pasang(root: HTMLElement, c: Ctx): void {
   });
 
   /* pemicu otomatis saat scroll melewati titik cerita (aksi sama dengan tombol) */
+  /* kertas masuk mesin → tombol figur yang sama ditekan: fotokopi (Taruh dokumen, Copy!), printer (Print!), laminator (Masukkan pouch) */
   const PICU: { at: number; fn: () => void; siap: boolean }[] = [
-    { at: .565, fn: () => { if (dokTerpasang) act('fk', 'Angkat tutup'); else if (F.fk) { act('fk', 'Taruh dokumen'); dokTerpasang = true; } }, siap: true },
-    { at: .61, fn: () => { if (act('fk', 'Copy!')) nanti(6500, () => act('fk', 'Ambil hasil')); }, siap: true },
-    { at: .625, fn: prPrint, siap: true },
-    { at: .725, fn: lmFeed, siap: true },
+    { at: .57, fn: () => { if (dokTerpasang) act('fk', 'Angkat tutup'); else if (F.fk) { act('fk', 'Taruh dokumen'); dokTerpasang = true; } }, siap: true },
+    { at: .588, fn: () => { if (act('fk', 'Copy!')) nanti(6500, () => act('fk', 'Ambil hasil')); }, siap: true },
+    { at: .668, fn: prPrint, siap: true },
+    { at: .748, fn: lmFeed, siap: true },
   ];
 
   /* ---------- tata letak ---------- */
@@ -599,6 +653,19 @@ function pasang(root: HTMLElement, c: Ctx): void {
     els.bunting.setAttribute('width', String(A.w)); els.bunting.setAttribute('height', '200');
     els.bunting.innerHTML = '<path d="' + bp + '" fill="none" stroke="var(--d-stroke)" stroke-width="6"/>' + bendera;
 
+    /* umbul-umbul gerbang masuk, selebar layar */
+    {
+      const gw = Math.round(vw), gh = Math.max(80, Math.round(vh * .22)), ng = Math.max(6, Math.round(gw / 64));
+      let gp = '', gf = '';
+      for (let k = 0; k <= ng; k++) {
+        const u = k / ng, x = u * gw, y = 12 + Math.sin(u * Math.PI) * gh * .38;
+        gp += (k ? 'L' : 'M') + x.toFixed(0) + ' ' + y.toFixed(0);
+        if (k > 0 && k < ng) gf += '<path d="M' + (x - 18).toFixed(0) + ' ' + (y - 2).toFixed(0) + 'h36l-18 38z" fill="' + (k % 2 ? 'var(--d-a1)' : 'var(--d-a2)') + '" stroke="var(--d-stroke)" stroke-width="5" stroke-linejoin="round"/>';
+      }
+      els.gflags.setAttribute('viewBox', '0 0 ' + gw + ' ' + gh);
+      els.gflags.innerHTML = '<path d="' + gp + '" fill="none" stroke="var(--d-stroke)" stroke-width="6"/>' + gf;
+    }
+
     /* geometri dunia */
     const bh = els.board.offsetHeight, bw = L.board.w;
     G.A = A;
@@ -616,7 +683,7 @@ function pasang(root: HTMLElement, c: Ctx): void {
 
     /* jangkar lapisan dekat di sekitar titik kamera */
     const vwW = L.view[0], vhW = L.view[1];
-    const jangkar = [1, 3, 5, 6, 8, 10, 11, 12];
+    const jangkar = [2, 4, 6, 7, 9, 17, 18, 19].map(i => Math.min(i, K.length - 1));
     NZ.forEach((nz, i) => {
       const k = K[jangkar[i % jangkar.length]];
       const sisi = i % 2 ? 1 : -1;
@@ -683,7 +750,7 @@ function pasang(root: HTMLElement, c: Ctx): void {
   let p = 0, sp = 0, s = 0, sTuju = 0, sLalu = -1, kotor = true, tLalu = performance.now();
   const t0 = performance.now();
   let upahLalu = '', popLalu = 0, detikLalu = -1, jatuhLalu = 0, picuLalu = 0;
-  let dtNow = 0.016, tkX = 0, ambLalu = performance.now(), amb = 0, cekHdrLalu = 0;
+  let dtNow = 0.016, tkX = 0, ambLalu = performance.now(), amb = 0, cekHdrLalu = 0, wujudLalu = -1;
   const condongJ = pegas(0), condongS = pegas(0);
   const ayun = { a: 0, v: 0, lx: NaN }; // bandul tiket
   const SU = pegas(HARGA), SRf = pegas(0), STt = pegas(BATAS);
@@ -751,8 +818,11 @@ function pasang(root: HTMLElement, c: Ctx): void {
     if (!berat) return;
     sLalu = s; kotor = false;
 
-    /* kamera */
-    const cam = kamera(s);
+    /* kamera; saat masuk (s < 0) kamera maju mendekati arena dari balik gerbang */
+    const m = R ? 1 : halus(MASUK, 0, s);
+    const mm = eout(m);
+    const cam0 = kamera(Math.max(0, s));
+    const cam = s < 0 ? { x: cam0.x, y: cam0.y - (1 - mm) * 140, z: cam0.z * lerp(.66, 1, mm) } : cam0;
     const S = s0 * cam.z;
     const tx = vw / 2 - cam.x * S, ty = cyS - cam.y * S;
     world.style.transform = 'translate3d(' + tx.toFixed(2) + 'px,' + ty.toFixed(2) + 'px,0) scale(' + S.toFixed(5) + ')';
@@ -769,16 +839,27 @@ function pasang(root: HTMLElement, c: Ctx): void {
       nz.el.style.transform = 'translate(' + (x - 45).toFixed(1) + 'px,' + (y - 58).toFixed(1) + 'px) scale(' + sc.toFixed(3) + ')';
     }
 
-    /* layar VS bubar */
+    /* masuk arena (m: 0→1) lalu keluar ke tur (e: 0→1) */
     const e = halus(0, .09, s);
-    els.veil.style.opacity = (1 - e).toFixed(3);
-    els.hcopy.style.transform = 'translateY(' + (-e * 34).toFixed(2) + 'vh)';
-    els.hcopy.style.opacity = clamp(1 - e * 1.4).toFixed(3);
-    els.vsL.style.transform = 'translateX(' + (-e * 70).toFixed(2) + 'vw) rotate(' + (-e * 14).toFixed(2) + 'deg)';
-    els.vsR.style.transform = 'translateX(' + (e * 70).toFixed(2) + 'vw) rotate(' + (e * 14).toFixed(2) + 'deg)';
-    els.vsWord.style.transform = 'rotate(-6deg) scale(' + (1 + e * 2.4).toFixed(3) + ')';
-    els.vsWord.style.opacity = clamp(1 - e * 1.6).toFixed(3);
-    els.hero.style.visibility = e > .985 ? 'hidden' : 'visible';
+    const gv = R ? 0 : 1 - halus(.42, .92, m);
+    els.gate.style.opacity = gv.toFixed(3);
+    els.gate.style.visibility = gv > .01 ? 'visible' : 'hidden';
+    els.gate.style.transform = 'scale(' + lerp(1, 3.6, eio(m)).toFixed(4) + ')';
+    els.veil.style.opacity = ((1 - e) * lerp(.3, 1, halus(.25, 1, m))).toFixed(3);
+    const k1 = halus(.12, .66, m), k2 = halus(.24, .78, m), kv = halus(.36, .9, m), kc = halus(.48, 1, m);
+    const dalam = (k: number) => lerp(.28, 1, eout(k)); // datang dari kedalaman: kecil → ukuran asli
+    els.l1.style.transform = 'translate(' + (-e * 55).toFixed(2) + 'vw,' + ((1 - k1) * 9 - e * 24).toFixed(2) + 'vh) rotate(' + (-e * 9).toFixed(2) + 'deg) scale(' + (dalam(k1) * (1 + e * .7)).toFixed(4) + ')';
+    els.l1.style.opacity = (k1 * clamp(1 - e * 1.3)).toFixed(3);
+    els.l2.style.transform = 'translate(' + (e * 55).toFixed(2) + 'vw,' + ((1 - k2) * 9 - e * 14).toFixed(2) + 'vh) rotate(' + (e * 9).toFixed(2) + 'deg) scale(' + (dalam(k2) * (1 + e * .7)).toFixed(4) + ')';
+    els.l2.style.opacity = (k2 * clamp(1 - e * 1.3)).toFixed(3);
+    els.hcopy.style.transform = 'translate(' + (-e * 30).toFixed(2) + 'vw,' + ((1 - kc) * 6 + e * 30).toFixed(2) + 'vh) rotate(' + (-e * 6).toFixed(2) + 'deg) scale(' + lerp(.86, 1, eout(kc)).toFixed(4) + ')';
+    els.hcopy.style.opacity = (kc * clamp(1 - e * 1.4)).toFixed(3);
+    els.vsL.style.transform = 'translate(' + (-e * 70 - (1 - kv) * 18).toFixed(2) + 'vw,' + ((1 - kv) * 8).toFixed(2) + 'vh) rotate(' + (-e * 14).toFixed(2) + 'deg) scale(' + dalam(kv).toFixed(4) + ')';
+    els.vsR.style.transform = 'translate(' + (e * 70 + (1 - kv) * 18).toFixed(2) + 'vw,' + ((1 - kv) * 8).toFixed(2) + 'vh) rotate(' + (e * 14).toFixed(2) + 'deg) scale(' + dalam(kv).toFixed(4) + ')';
+    els.vsL.style.opacity = els.vsR.style.opacity = kv.toFixed(3);
+    els.vsWord.style.transform = 'rotate(-6deg) scale(' + ((1 + e * 2.4) * (kv > 0 ? lontar(kv) : 0)).toFixed(3) + ')';
+    els.vsWord.style.opacity = (kv * clamp(1 - e * 1.6)).toFixed(3);
+    els.hero.style.visibility = e > .985 || m < .01 ? 'hidden' : 'visible';
     /* kalau halaman punya header tetap, bilah langkah D baru muncul setelah layar VS bubar */
     const tb = hdr > 0 ? halus(.04, .09, s) : 1;
     els.top.style.opacity = tb.toFixed(3);
@@ -803,8 +884,8 @@ function pasang(root: HTMLElement, c: Ctx): void {
     /* tokoh */
     const A = G.A;
     const gerak = Math.abs(sTuju - s) > .0006;
-    const jt = lintas(s, [P(0, L.jStart), P(.36, L.jStart), P(.46, L.jClaim), P(.50, L.jClaim), P(.56, L.jFk), P(.69, L.jFk), P(.72, L.jLm), P(1, L.jLm)]);
-    const st = lintas(s, [P(0, L.sStart), P(.37, L.sStart), P(.48, L.sStop), P(.55, L.sStop), P(.62, L.sPr), P(1, L.sPr)]);
+    const jt = lintas(s, [P(0, L.jStart), P(.36, L.jStart), P(.46, L.jClaim), P(.50, L.jClaim), P(.56, L.jFk), P(.64, L.jFk), P(.665, L.jPr), P(.72, L.jPr), P(.745, L.jLm), P(1, L.jLm)]);
+    const st = lintas(s, [P(0, L.sStart), P(.37, L.sStart), P(.48, L.sStop), P(.55, L.sStop), P(.63, L.sHome), P(1, L.sHome)]);
     const lompat = Math.sin(clamp((s - .46) / .04) * Math.PI) * 70;
     const jy = jt.y - lompat;
     const taruhTokoh = (el: HTMLElement, cj: Jejak, y: number, condong: number, sp2: Pegas) => {
@@ -817,8 +898,8 @@ function pasang(root: HTMLElement, c: Ctx): void {
     };
     taruhTokoh(els.cJ, jt, jy, 9, condongJ);
     taruhTokoh(els.cS, st, st.y, 7, condongS);
-    els.cJ.classList.toggle('d-work', (s > .565 && s < .69) || (s > .725 && s < .80));
-    els.cS.classList.toggle('d-work', s > .625);
+    els.cJ.classList.toggle('d-work', (s > .585 && s < .64) || (s > .665 && s < .72) || (s > .745 && s < .80));
+    els.cS.classList.remove('d-work');
     els.cS.classList.toggle('d-sad', s > .475 && s < .63);
     if (Math.abs(condongJ.x) > 1e-3 || Math.abs(condongS.x) > 1e-3) kotor = true; // biarkan pegas condong selesai
 
@@ -842,10 +923,11 @@ function pasang(root: HTMLElement, c: Ctx): void {
     const g2 = 1 - halus(.66, .72, s);
     els.sg2.style.opacity = g2.toFixed(3);
     els.sg2.style.visibility = g2 > .01 ? 'visible' : 'hidden';
-    els.ck1.classList.toggle('d-on', s > .665);
-    els.ck2.classList.toggle('d-on', s > .785);
+    els.ck1.classList.toggle('d-on', s > .64);
+    els.ck3.classList.toggle('d-on', s > .72);
+    els.ck2.classList.toggle('d-on', s > .797);
 
-    /* tiket: slot VS → HP → terbang → lantai → Jaya → dok HUD → papan */
+    /* tiket: slot VS → HP → terbang → lantai → Jaya → mesin-mesin → papan */
     let wx: number, wy: number, w: number, r: number;
     const ps = G.phoneSpot;
     if (s < .25) { wx = ps[0]; wy = ps[1]; w = 190; r = 0; }
@@ -858,50 +940,83 @@ function pasang(root: HTMLElement, c: Ctx): void {
       wx = q[0]; wy = q[1]; w = lerp(210, 150, u) + 70 * Math.sin(u * Math.PI); r = -8 + 720 * eout(u);
     }
     else if (s < .495) { wx = G.landW[0]; wy = G.landW[1] - 20 * Math.sin(clamp((s - .40) / .02) * Math.PI); w = 150; r = -8; }
-    else if (s < .79) {
+    else if (s < .52) {
       const u = halus(.495, .52, s);
       const cx = A.x + jt.x, cy = A.y + jy - 250;
       wx = lerp(G.landW[0], cx, u); wy = lerp(G.landW[1], cy, u) - 60 * Math.sin(u * Math.PI); w = lerp(150, 120, u); r = lerp(-8, 6, u);
     }
-    else { wx = G.boardSpot[0]; wy = G.boardSpot[1]; w = 170; r = 10; }
-    const pw = proj(wx, wy);
-    let X = pw[0], Y = pw[1], SC = w * S / 200, RT = r;
-    const dk = halus(.555, .60, s) * (1 - halus(.79, .85, s));
-    if (dk > 0) {
-      const busur = s > .79 ? -110 * Math.sin(halus(.79, .85, s) * Math.PI) : -80 * Math.sin(halus(.555, .60, s) * Math.PI);
-      X = lerp(X, HERO.tkDock[0], dk); Y = lerp(Y, HERO.tkDock[1], dk) + busur;
-      SC = lerp(SC, HERO.tkDockScale, dk); RT = lerp(RT, -3, dk);
+    else {
+      /* kertas = tokoh utama: dibawa Jaya → tersedot ke fotokopi → printer → laminator → papan (jadi kartu NFT) */
+      const titik = (k: FigKey, f: 'in' | 'out'): V2 => { const M = L[k], v = SLOT[k][f]; return [A.x + M.x + v[0] * M.s, A.y + M.y + v[1] * M.s]; };
+      const tangan: V2 = [A.x + jt.x, A.y + jy - 250];
+      const lompatKe = (a: V2, b: V2, u: number, naik: number): V2 => bez(a, [(a[0] + b[0]) / 2, Math.min(a[1], b[1]) - naik], b, eio(clamp(u)));
+      let q: V2;
+      if (s < .565) { q = tangan; w = 120; r = 6; }
+      else if (s < .585) { const u = (s - .565) / .02; q = lompatKe(tangan, titik('fk', 'in'), u, 200); w = lerp(120, 100, u); r = lerp(6, 0, u); }
+      else if (s < .645) { q = s < .635 ? titik('fk', 'in') : titik('fk', 'out'); w = 104; r = -4; }
+      else if (s < .665) { const u = (s - .645) / .02; q = lompatKe(titik('fk', 'out'), titik('pr', 'in'), u, 260); w = 104; r = -4 - Math.sin(clamp(u) * Math.PI) * 16; }
+      else if (s < .725) { q = s < .715 ? titik('pr', 'in') : titik('pr', 'out'); w = 104; r = 4; }
+      else if (s < .745) { const u = (s - .725) / .02; q = lompatKe(titik('pr', 'out'), titik('lm', 'in'), u, 340); w = 104; r = 4 + Math.sin(clamp(u) * Math.PI) * 18; }
+      else if (s < .82) { q = s < .79 ? titik('lm', 'in') : titik('lm', 'out'); w = s < .79 ? 104 : 124; r = -6; }
+      else {
+        const u = halus(.82, .885, s), a = titik('lm', 'out'), b = G.cardC;
+        const c3: V2 = por ? [a[0] - 420, (a[1] + b[1]) / 2] : [(a[0] + b[0]) / 2, Math.min(a[1], b[1]) - 520];
+        q = bez(a, c3, b, eio(u)); w = lerp(124, G.cardW, eio(u)); r = lerp(-6, 0, u);
+      }
+      wx = q[0]; wy = q[1];
     }
+    const pw = proj(wx, wy);
+    /* di dalam mesin kertas tak terlihat (yang tampak: jendela potong); saat masuk ia mengecil seperti tersedot */
+    const dalamMesin = Math.max(
+      halus(.578, .585, s) * (1 - halus(.635, .642, s)),
+      halus(.658, .665, s) * (1 - halus(.715, .722, s)),
+      halus(.738, .745, s) * (1 - halus(.79, .797, s)));
+    let X = pw[0], Y = pw[1], SC = w * S / 200 * (1 - .5 * dalamMesin), RT = r;
     if (h > 0) { X = lerp(X, HERO.tk[0], h); Y = lerp(Y, HERO.tk[1], h); SC = lerp(SC, HERO.tkScale, h); RT = lerp(RT, 0, h); }
+    if (s < 0) SC *= dalam(kv);
     els.ticket.style.transform = 'translate(' + X.toFixed(1) + 'px,' + Y.toFixed(1) + 'px) translate(-50%,-50%) rotate(' + RT.toFixed(2) + 'deg) scale(' + SC.toFixed(4) + ')';
     tkX = X;
     // saat kartu NFT terbalik, tiket "berubah" jadi NFT: tiket memudar supaya label "example round" dan kartu tidak tertutup
-    const tv = 1 - halus(.925, .965, s);
+    const tv = (1 - halus(.925, .965, s)) * (1 - dalamMesin) * (s < 0 ? kv : 1);
     els.ticket.style.opacity = tv.toFixed(3);
     els.ticket.style.visibility = tv > .01 ? 'visible' : 'hidden';
     const sk = halus(.80, .82, s);
     els.tkStamp.style.opacity = sk.toFixed(3);
     els.tkStamp.style.transform = 'translate(-50%,-50%) rotate(-16deg) scale(' + (1.7 - .7 * sk).toFixed(3) + ')';
+    /* wujud kertas berubah selagi tersembunyi di dalam mesin */
+    const wujud = s > .77 ? 3 : s > .69 ? 2 : s > .61 ? 1 : 0;
+    if (wujud !== wujudLalu) {
+      wujudLalu = wujud;
+      els.ticketEl.classList.toggle('d-lk-copy', wujud >= 1);
+      els.ticketEl.classList.toggle('d-lk-print', wujud >= 2);
+      els.ticketEl.classList.toggle('d-lk-lam', wujud >= 3);
+      els.tkBadge.textContent = wujud ? [TX.copied, TX.bound, TX.lam][wujud - 1] : '';
+    }
+
+    /* isi mesin: tampil saat kertas di dalam; mesin bergetar; bilah progres ikut scroll */
+    const PROSES: V2[] = [[.585, .635], [.665, .715], [.745, .79]];
+    MESIN.forEach((M, i) => {
+      const [a, b] = PROSES[i];
+      const v = halus(a - .008, a, s) * (1 - halus(b, b + .008, s));
+      M.proc.style.opacity = v.toFixed(3);
+      M.proc.style.visibility = v > .01 ? 'visible' : 'hidden';
+      M.proc.classList.toggle('d-on', v > .01);
+      M.st.classList.toggle('d-busy', !R && v > .5);
+      M.bar.style.transform = 'scaleX(' + clamp((s - a) / (b - a)).toFixed(3) + ')';
+    });
+    tumpukan.forEach((el, i) => {
+      const ta = .595 + i * .012;
+      el.style.opacity = (halus(ta, ta + .006, s) * (1 - halus(.64, .648, s))).toFixed(3);
+      el.style.transform = 'translate(' + (i * 7) + 'px,' + (-i * 8) + 'px) rotate(' + (i * 4 - 4) + 'deg)';
+    });
 
     /* panel ronde: slot VS → dok kanan atas */
-    const rX = lerp(HERO.rdDock[0], HERO.rd[0], h), rY = lerp(HERO.rdDock[1], HERO.rd[1], h), rS = lerp(HERO.rdDockScale, HERO.rdScale, h);
-    els.round.style.transform = 'translate(' + (rX - 200).toFixed(1) + 'px,' + (rY - HERO.rdH / 2).toFixed(1) + 'px) scale(' + rS.toFixed(4) + ')';
-    const rv = 1 - halus(.83, .87, s);
+    const kr = halus(.5, 1, m);
+    const rX = lerp(HERO.rdDock[0], HERO.rd[0], h), rY = lerp(HERO.rdDock[1], HERO.rd[1], h), rS = lerp(HERO.rdDockScale, HERO.rdScale, h) * dalam(kr);
+    els.round.style.transform = 'translate(' + (rX - 200).toFixed(1) + 'px,' + (rY - HERO.rdH / 2 + (1 - kr) * vh * .12).toFixed(1) + 'px) scale(' + rS.toFixed(4) + ')';
+    const rv = (1 - halus(.83, .87, s)) * kr;
     els.round.style.opacity = rv.toFixed(3);
     els.round.style.visibility = rv > .01 ? 'visible' : 'hidden';
-
-    /* lembar cetakan terbang ke papan, jadi kartu */
-    const su = halus(.79, .885, s);
-    const sv = su > 0 && su < 1;
-    els.sheet.style.visibility = sv ? 'visible' : 'hidden';
-    if (sv) {
-      const a = G.lmOut, b = G.cardC;
-      const cc3: V2 = por ? [a[0] - 420, (a[1] + b[1]) / 2] : [(a[0] + b[0]) / 2, Math.min(a[1], b[1]) - 520];
-      const q = bez(a, cc3, b, eio(su));
-      const ss = lerp(.35, G.cardW / 360, eio(su));
-      els.sheet.style.transform = 'translate(' + (q[0] - 180).toFixed(1) + 'px,' + (q[1] - 250).toFixed(1) + 'px) rotate(' + lerp(-24, 0, su).toFixed(1) + 'deg) scale(' + ss.toFixed(3) + ')';
-      els.sheet.style.opacity = (1 - halus(.92, 1, su)).toFixed(3);
-    }
 
     /* papan: bintang, upah, kartu dibalik */
     [.87, .885, .90].forEach((th, i) => {
@@ -998,8 +1113,9 @@ export const D: Bagian = {
   stops(): number[] {
     const st = stageRef, sk = stickyRef;
     if (!st || !sk) return [];
+    // posisi absolut bagian ini sendiri (ada bagian lain di atasnya): layar VS + tengah tiap plateau bab
     const top = st.getBoundingClientRect().top + scrollY;
     const max = Math.max(0, st.offsetHeight - sk.clientHeight);
-    return [Math.round(top), ...PLATO.filter(q => q.s > 0).map(q => Math.round(top + q.mid * max))];
+    return PLATO_BAB.map(q => Math.round(top + q.mid * max));
   },
 };

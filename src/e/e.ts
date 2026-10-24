@@ -1,6 +1,6 @@
 // PrintPitt · Bagian E "Blitz+" — penjelasan setelah tur D (Arena Toko).
 // Rupa & gerak meniru mockup E2 pilihan Dex, ditulis ulang sebagai modul:
-//   1 BLITZ masuk  ·  2 rumus upah interaktif  ·  3 kenapa Monad  ·  4 dua sisi + model bisnis
+//   1 judul pembuka  ·  2 rumus upah interaktif  ·  3 kenapa Monad  ·  4 dua sisi + model bisnis
 //   5 live (simulasi / papan app)  ·  6 bukti onchain  ·  7 CTA + QR + footer
 // Semua teks tampil lewat kamus (e.i18n.ts, kunci 'e.*'); bawaan English, angka EN pakai titik, ID pakai koma.
 // Satu loop requestAnimationFrame milik bagian ini; berhenti saat bagian E jauh dari layar.
@@ -64,7 +64,6 @@ function template(c: Ctx): string {
   const live = c.MODE === 'LIVE' && !!c.URL_APP;
   const pesan = absUrl(c.URL_PESAN);
   const NM = t('e.name'), SA = t('e.shop.a'), SB = t('e.shop.b'), U = t('e.unit.s');
-  const big = t('shell.bigword');
   // petunjuk seret hanya di mesin depan (satu kali di layar)
   const fw = (k: K) => `<div class="e-fw" data-k="${k}"><div class="e-trail" aria-hidden="true"><i></i><i></i><i></i></div><div class="e-fbox"></div>${k === 'front' ? '<span class="e-fhint" aria-hidden="true"></span>' : ''}</div>`;
 
@@ -93,8 +92,6 @@ function template(c: Ctx): string {
 
 <section class="e-sec e-k" id="E-kilat" aria-labelledby="E-kilat-h">
   <div class="e-hlines" aria-hidden="true"></div>
-  <div class="e-ktop"><span class="e-where">${t('e.k.where')}</span></div>
-  <div class="e-kilat" aria-hidden="true"><span class="e-ghost">${esc(big)}</span><span class="e-word"></span><span class="e-slits"></span></div>
   <div class="e-boltrow"><span class="e-bolt-l"><i></i><span>${t('e.k.block')}</span></span>${BOLT_H('e-bolt-h')}</div>
   <div class="e-kcopy"><h2 class="e-tag" id="E-kilat-h">${t('e.k.title')}</h2></div>
 </section>
@@ -235,20 +232,6 @@ function mount(root: HTMLElement, c: Ctx): void {
   if (document.readyState === 'complete') setTimeout(addFonts, 200);
   else addEventListener('load', () => setTimeout(addFonts, 200), { once: true });
 
-  /* ---------- BLITZ (kata raksasa dari kamus) ---------- */
-  const kilat = $('.e-kilat'), word = $('.e-word'), ghost = $('.e-ghost'), slitsBox = $('.e-slits');
-  const letters = Array.from(t('shell.bigword')).map(ch => {
-    const el = document.createElement('span'); el.className = 'e-ch';
-    el.innerHTML = `<span class="e-b">${ch}</span><span class="e-cut e-cut0">${ch}</span><span class="e-cut e-cut1">${ch}</span><span class="e-cut e-cut2">${ch}</span>`;
-    word.appendChild(el);
-    return { el, s: $$('.e-cut', el) };
-  });
-  const NL = letters.length, MIDL = (NL - 1) / 2;
-  let GL: number[][] = letters.map(() => [0, 0, 0]), glitch = 0;
-  const newGlitch = () => { GL = letters.map(() => [rnd(-1, 1), rnd(-1, 1), rnd(-1, 1)]); glitch = 1; };
-  const boltPath = root.querySelector('.e-bolt-h path');
-  if (boltPath && !RM) { boltPath.addEventListener('animationiteration', newGlitch); boltPath.addEventListener('animationstart', newGlitch); }
-
   function makeLines(box: HTMLElement, n: number, cls: string, kinds: Record<number, string> = {}): Line[] {
     const out: Line[] = [];
     for (let i = 0; i < n; i++) {
@@ -258,29 +241,16 @@ function mount(root: HTMLElement, c: Ctx): void {
     return out;
   }
   const sec1 = secs[0], hlines = $('.e-hlines');
-  const heroLines = RM ? [] : makeLines(hlines, 18, 'e-ln', { 3: 'e-a', 11: 'e-a', 7: 'e-y' });
-  const slits = RM ? [] : makeLines(slitsBox, 6, 'e-slit');
+  const heroLines = RM ? [] : makeLines(hlines, 18, 'e-ln', { 3: 'e-a', 11: 'e-a', 7: 'e-y' }); // garis kecepatan di belakang judul pembuka E
   const streakLayer = $('.e-lw-streak .e-layer');
   const streaks = RM ? [] : makeLines(streakLayer, 14, 'e-ln', { 2: 'e-a', 9: 'e-a', 5: 'e-y' });
 
   /* ---------- ukuran ---------- */
   const frontLayer = $('.e-lw-front .e-layer'), backWrap = $('.e-lw-back');
   const wraps = $$('.e-lw');
-  let W = innerWidth, H = innerHeight, mobile = c.isMobile(), useMid = !mobile, fsWord = 200;
-  let eTop = 0, k1H = 0, flowTop = 0, secTop: number[] = [], secH: number[] = [], lastWH = '', lastFs = 0, backOp = 1;
-  const st = { sy: scrollY, ly: scrollY, v: 0, last: performance.now(), blur: -1, streakO: 0 };
-
-  function fitWord(): number {
-    kilat.style.fontSize = '200px';
-    let avail = kilat.clientWidth;
-    const natural = word.offsetWidth || 1;
-    const vw = Math.max(innerWidth || 0, 320), vh = Math.max(innerHeight || 0, 480);
-    if (!avail || avail < 100) avail = vw - 32;
-    let fs = 200 * avail / natural * 0.995;
-    fs = clamp(Math.min(fs, vh * 0.5), vw * 0.14, 900); // tinggi 0 (pane tersembunyi) tidak boleh menghasilkan huruf 0
-    kilat.style.fontSize = fs.toFixed(1) + 'px';
-    return fs;
-  }
+  let W = innerWidth, H = innerHeight, mobile = c.isMobile(), useMid = !mobile;
+  let eTop = 0, k1H = 0, flowTop = 0, secTop: number[] = [], secH: number[] = [], lastWH = '', backOp = 1;
+  const st = { sy: scrollY, ly: scrollY, v: 0, last: performance.now(), streakO: 0 };
 
   function seedLines() {
     const hh = sec1.offsetHeight;
@@ -288,13 +258,6 @@ function mount(root: HTMLElement, c: Ctx): void {
       l.w = l.y2 ? rnd(24, 60) : rnd(40, W * 0.36); l.y = rnd(hh * 0.04, hh * 0.97); l.x = rnd(-l.w, W);
       l.sp = rnd(70, 420) * (l.y2 ? 2.4 : 1);
       l.el.style.width = l.w.toFixed(0) + 'px'; l.el.style.top = l.y.toFixed(0) + 'px';
-      l.el.style.transform = `translate3d(${l.x.toFixed(1)}px,0,0)`;
-    });
-    const kh = kilat.offsetHeight;
-    slits.forEach((l, i) => {
-      l.w = W * rnd(0.05, 0.22); l.h = Math.max(2, fsWord * rnd(0.008, 0.024));
-      l.y = kh * (0.12 + (i / slits.length) * 0.8 + rnd(-0.04, 0.04)); l.x = rnd(-l.w, W); l.sp = rnd(520, 1300);
-      l.el.style.width = l.w.toFixed(0) + 'px'; l.el.style.height = l.h.toFixed(1) + 'px'; l.el.style.top = l.y.toFixed(0) + 'px';
       l.el.style.transform = `translate3d(${l.x.toFixed(1)}px,0,0)`;
     });
     streaks.forEach(l => {
@@ -318,14 +281,13 @@ function mount(root: HTMLElement, c: Ctx): void {
 
   function figLayout(resetPhase: boolean) {
     const f = slots.front, m = slots.mid, b = slots.back;
-    const kTop = (secs[0].offsetTop || 0) + kilat.offsetTop, kH = kilat.offsetHeight || fsWord * 0.84;
     if (mobile) {
-      f.S = W * 0.8; f.y0 = H - f.S * 0.84; f.spd = 1.1; f.depth = 1; f.sh = 0.95; f.yh = kTop + kH * 0.4; f.xh = W - f.S * f.sh * 0.98;
+      f.S = W * 0.8; f.y0 = H - f.S * 0.84; f.spd = 1.1; f.depth = 1; f.sh = 1; f.yh = f.y0; f.xh = W - f.S * 0.98;
       m.S = 0;
       b.S = W * 0.42; b.y0 = H * 0.05; b.spd = 0.3; b.xa = W * 0.5; b.depth = 0.3;
     } else {
       f.S = clamp(Math.min(W * 0.4, H * 0.74), 260, 780); f.y0 = H - f.S * 0.84; f.spd = 1.15; f.depth = 1;
-      f.sh = 0.92; f.yh = kTop + kH * 0.12 - f.S * f.sh * 0.12; f.xh = W * 0.55;
+      f.sh = 1; f.yh = f.y0; f.xh = W * 0.55;
       m.S = Math.min(W * 0.25, H * 0.44); m.y0 = H * 0.36; m.spd = 0.62; m.xa = W * 0.34; m.depth = 0.6;
       b.S = Math.min(W * 0.15, H * 0.27); b.y0 = H * 0.07; b.spd = 0.3; b.xa = W * 0.3; b.depth = 0.3;
     }
@@ -599,37 +561,12 @@ function mount(root: HTMLElement, c: Ctx): void {
   }
 
   /* ================= gambar per frame ================= */
-  function heroFrame(dt: number, ls: number, v: number) {
+  function heroFrame(dt: number, v: number) { // garis kecepatan di belakang judul pembuka E
     const av = Math.abs(v);
-    kilat.style.transform = `translate3d(0,${(Math.max(0, ls) * 0.28).toFixed(1)}px,0)`;
-    glitch *= Math.pow(0.002, dt / 1000); if (glitch < 0.002) glitch = 0;
-    // masuk dari D: huruf melesat dari kiri satu per satu (huruf terakhir duluan), mendarat saat BLITZ naik ke layar
-    const pe = clamp((ls + H * 0.95) / (H * 0.8), 0, 1);
-    const skew = clamp(-v * 4.5 - (1 - pe) * 16, -24, 16);
-    const spread = Math.min(av * 18, 70);
-    const gAmp = fsWord * 0.09 * glitch;
-    for (let i = 0; i < letters.length; i++) {
-      const L = letters[i];
-      const pi = 1 - Math.pow(1 - clamp((pe - (NL - 1 - i) * 0.07) / 0.72, 0, 1), 3);
-      const tx = (i - MIDL) * spread - v * 10 - (1 - pi) * (W * 0.3 + (i + 1) * fsWord * 0.95);
-      L.el.style.transform = `translate3d(${tx.toFixed(1)}px,0,0) skewX(${skew.toFixed(2)}deg)`;
-      for (let j = 0; j < 3; j++) {
-        const sx = (j - 1) * v * 14 * (1 + i * 0.15) + gAmp * GL[i][j] + (j - 1) * (1 - pi) * fsWord * 0.12;
-        L.s[j].style.transform = `translate3d(${sx.toFixed(1)}px,0,0)`;
-      }
-    }
-    const b = Math.round(Math.min(Math.max(av - 0.3, 0) * 0.8 + (1 - pe) * 3, 2.5) * 2) / 2;
-    if (b !== st.blur) { st.blur = b; word.style.filter = b ? `blur(${b}px)` : 'none'; }
-    ghost.style.opacity = Math.min(av * 0.22 + (1 - pe) * 0.5, 0.55).toFixed(3);
-    ghost.style.transform = `translate3d(${(-v * 38 - (1 - pe) * W * 0.12).toFixed(1)}px,0,0) skewX(${skew.toFixed(2)}deg)`;
     const boost = 1 + av * 2.2, s = dt / 1000, sc = (1 + av * 0.6).toFixed(3);
     heroLines.forEach(l => {
       l.x -= l.sp * boost * s; if (l.x < -l.w * 1.6) l.x = W + rnd(0, W * 0.3);
       l.el.style.transform = `translate3d(${l.x.toFixed(1)}px,0,0) scaleX(${sc})`;
-    });
-    slits.forEach(l => {
-      l.x -= l.sp * boost * s; if (l.x < -l.w) l.x = W + rnd(0, W * 0.5);
-      l.el.style.transform = `translate3d(${l.x.toFixed(1)}px,0,0)`;
     });
   }
 
@@ -669,7 +606,7 @@ function mount(root: HTMLElement, c: Ctx): void {
       let x = mod(s.phX, W + s.S) - s.S;
       const bob = Math.sin(now * 0.0011 + s.ph) * s.S * 0.016;
       let y: number, sc = 1;
-      if (k === 'front') { // di pembuka: berdiri di depan "AT"; makin digulir turun ke jalur bawah
+      if (k === 'front') { // jalur bawah
         const kk = sstep(0, H * 0.7, ls);
         y = s.yh + (s.y0 - s.yh) * kk + bob + drop * s.S * 1.05;
         sc = s.sh + (1 - s.sh) * kk;
@@ -714,7 +651,6 @@ function mount(root: HTMLElement, c: Ctx): void {
     H = frontLayer.clientHeight || Math.max(innerHeight || 0, 480);
     W = Math.max(W, 320); H = Math.max(H, 480);
     mobile = c.isMobile(); useMid = !mobile;
-    fsWord = fitWord();
     const rr = root.getBoundingClientRect(), y = scrollY;
     eTop = rr.top + y;
     secTop = secs.map(s => s.getBoundingClientRect().top - rr.top);
@@ -723,8 +659,8 @@ function mount(root: HTMLElement, c: Ctx): void {
     oc = null;
     flowTop = eTop + secTop[2];
     slides.forEach(r => { const b = r.el.getBoundingClientRect(); r.top = b.top - rr.top; r.h = b.height; });
-    const wh = `${W}x${H}x${mobile}`, resized = wh !== lastWH || Math.abs(fsWord - lastFs) > 1;
-    figLayout(wh !== lastWH); lastWH = wh; lastFs = fsWord;
+    const wh = `${W}x${H}x${mobile}`, resized = wh !== lastWH;
+    figLayout(wh !== lastWH); lastWH = wh;
     if (!RM && resized) seedLines();
     ensureFigs();
     renderNow();
@@ -734,7 +670,7 @@ function mount(root: HTMLElement, c: Ctx): void {
     const y = scrollY, now = performance.now();
     st.sy = st.ly = y;
     if (RM) { placeFigs(now, eTop, 0); return; }
-    heroFrame(0, y - eTop, 0);
+    heroFrame(0, 0);
     placeFigs(now, y, 0);
     placeRows(y, 0);
   }
@@ -754,7 +690,7 @@ function mount(root: HTMLElement, c: Ctx): void {
     st.sy += (y - st.sy) * (1 - Math.pow(0.86, f));
     if (Math.abs(y - st.sy) < 0.05) st.sy = y;
     const sy = st.sy, v = st.v, ls = sy - eTop;
-    if (ls > -H * 1.05 && ls < k1H + 60) heroFrame(dt, ls, v);
+    if (ls > -H * 1.05 && ls < k1H + 60) heroFrame(dt, v);
     streakFrame(dt, v);
     placeFigs(now, sy, v);
     placeRows(sy, v);

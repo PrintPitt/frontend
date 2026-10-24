@@ -25,7 +25,8 @@
       var inter = !!opts.interactive;
       if (!inter) { f.setAttribute('aria-hidden', 'true'); f.tabIndex = -1; }
       else { f.title = (opts.title || name) + ' — seret untuk memutar, ketuk dua kali untuk kembali'; }
-      f.style.cssText = 'border:0;width:100%;height:100%;display:block;background:transparent;pointer-events:' + (inter ? 'auto' : 'none');
+      f.style.cssText = 'border:0;width:100%;height:100%;display:block;background:transparent;visibility:hidden;opacity:0;transition:opacity .35s ease;pointer-events:' + (inter ? 'auto' : 'none');
+      /* disembunyikan sampai CSS figur terpasang: isi asli figur sempat ditata ulang dan itu terhitung pergeseran tata letak (CLS) */
       f.addEventListener('load', function () {
         var w = f.contentWindow, d = f.contentDocument;
         var s = d.createElement('style'); s.textContent = CSS; d.head.appendChild(s);
@@ -48,6 +49,7 @@
           try { w.dispatchEvent(new w.Event('resize')); } catch (e) {}
           if (opts.palette) api.palette(opts.palette);
           if (opts.spin) api.spin(true);
+          requestAnimationFrame(function () { requestAnimationFrame(function () { f.style.visibility = 'visible'; f.style.opacity = '1'; }); });
           resolve(api);
         }, 60);
       });

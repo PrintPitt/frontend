@@ -101,6 +101,13 @@ export const DICT: Record<string, Entry> = {
   'd.round.ref': { en: 'refund to {name}', id: 'sisa balik ke {name}' },
   'd.unit.s': { en: 's', id: 'dtk' },
   'd.ticket.done': { en: 'DONE', id: 'SELESAI' },
+  'd.gate': { en: 'ARENA', id: 'ARENA' },
+  'd.proc.copy': { en: 'Copying…', id: 'Menyalin…' },
+  'd.proc.print': { en: 'Printing & binding…', id: 'Mencetak & menjilid…' },
+  'd.proc.lam': { en: 'Laminating…', id: 'Melaminasi…' },
+  'd.tk.copied': { en: '3 copies', id: '3 salinan' },
+  'd.tk.bound': { en: 'Printed & bound', id: 'Dicetak & dijilid' },
+  'd.tk.lam': { en: 'Laminated', id: 'Dilaminasi' },
 };
 
 /** Ambil teks sesuai bahasa aktif. Kunci tidak ada → kunci itu sendiri (supaya kelihatan saat uji). */

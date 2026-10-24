@@ -52,7 +52,6 @@
 .E .e-ln{position:absolute;left:0;top:0;height:1px;background:var(--e-ink);transform-origin:0 50%;will-change:transform;opacity:.55}
 .E .e-ln.e-a{background:var(--e-bolt);height:1.5px;opacity:.9}
 .E .e-ln.e-y{background:var(--e-spark);height:2px;opacity:1}
-.E .e-slit{position:absolute;left:0;top:0;background:var(--e-bg);will-change:transform}
 
 /* petir */
 .E .e-bolt{display:block;overflow:visible}
@@ -69,26 +68,14 @@
 .E .e-link:hover,.E .e-link:focus-visible{box-shadow:inset 0 -.6em 0 color-mix(in srgb,var(--e-accent) 30%,transparent)}
 
 /* ---------- 1 · KILAT (pembuka bagian E) ---------- */
-.E .e-k{min-height:100vh;min-height:100svh;padding-top:calc(60px + max(16px,3vh));padding-bottom:0;display:flex;flex-direction:column;overflow:hidden}
+.E .e-k{padding-top:max(96px,12vh);padding-bottom:0;display:flex;flex-direction:column;overflow:hidden}
 .E .e-hlines{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0}
-.E .e-ktop{position:relative;z-index:3;display:flex;justify-content:flex-end;align-items:baseline;gap:16px}
-.E .e-where{font-family:var(--e-mono);font-size:13px;color:var(--e-muted)}
-.E .e-kilat{position:relative;z-index:1;margin:6vh 0 0;font-family:var(--e-disp);font-weight:900;font-variation-settings:'wdth' 150;font-size:22vw;line-height:.84;letter-spacing:-.01em;white-space:nowrap;text-transform:uppercase;will-change:transform;user-select:none;-webkit-user-select:none}
-.E .e-word{display:inline-block;position:relative}
-.E .e-ch{display:inline-block;position:relative;will-change:transform}
-.E .e-ch .e-b{visibility:hidden}
-.E .e-ch .e-cut{position:absolute;left:0;top:0;will-change:transform}
-.E .e-cut0{clip-path:inset(-30% -25% 63.4% -25%)}
-.E .e-cut1{clip-path:inset(36.2% -25% 29.4% -25%)}
-.E .e-cut2{clip-path:inset(70.2% -25% -30% -25%)}
-.E .e-ghost{position:absolute;left:0;top:0;color:transparent;-webkit-text-stroke:1.5px var(--e-ink);opacity:0;pointer-events:none;will-change:transform,opacity}
-.E .e-slits{position:absolute;top:-4%;bottom:-4%;left:calc(-1 * var(--e-g));width:100vw;overflow:hidden;pointer-events:none}
 .E .e-boltrow{position:relative;z-index:2;display:flex;align-items:center;gap:14px;margin-top:2.2vh}
 .E .e-bolt-h{flex:1;height:46px;min-width:0}
 .E .e-bolt-l{flex:none;font-family:var(--e-mono);font-size:13px;color:var(--e-muted);display:flex;align-items:center;gap:8px;white-space:nowrap}
 .E .e-bolt-l i{width:7px;height:7px;background:var(--e-spark);display:inline-block}
 .E .e-bolt-l b{color:var(--e-ink);font-weight:500}
-.E .e-kcopy{position:relative;z-index:3;margin-top:auto;padding:4vh 0 10vh;max-width:min(50rem,50vw)}
+.E .e-kcopy{position:relative;z-index:3;padding:4vh 0 10vh;max-width:min(50rem,50vw)}
 .E .e-tag{margin:0;font-family:var(--e-disp);font-weight:850;font-variation-settings:'wdth' 124;font-size:clamp(34px,5.4vw,104px);line-height:.92;letter-spacing:-.012em}
 
 /* ---------- 2 · rumus upah ---------- */
@@ -282,8 +269,6 @@
 /* ---------- HP ---------- */
 @media (max-width:699.98px){
   .E .e-kcopy{padding:4vh 0 11vh;max-width:none}
-  .E .e-kilat{font-variation-settings:'wdth' 75;margin-top:4vh;line-height:.82}
-  .E .e-ghost{-webkit-text-stroke-width:1px}
   .E .e-bolt-l{font-size:12px;white-space:normal;flex:0 1 auto;max-width:72%}
   .E .e-bolt-h{min-width:56px}
   .E .e-num{font-size:clamp(56px,19vw,96px)}
