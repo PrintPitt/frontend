@@ -16,7 +16,7 @@ import {
   tidrxAbi,
 } from '../../../shared/src/index.ts';
 import type { Akun } from './akun';
-import { chain, dompet, IS_ANVIL, IS_MAINNET, kontrak, offsetChain, pub, TIDRX, TOKEN_PUNYA_PERMIT } from './chain';
+import { chain, dompet, IS_ANVIL, IS_MAINNET, kontrak, offsetChain, pub, TIDRX } from './chain';
 
 const env = import.meta.env;
 // Backend per network: mainnet → VITE_BACKEND_URL_MAINNET (default: Railway mainnet); testnet/anvil → VITE_BACKEND_URL
@@ -206,10 +206,11 @@ export async function pesanTanpaGas(
 ): Promise<{ id: bigint; hash: Hash }> {
   const pelanggan = akun.address;
   const nilai = p.harga + p.fee;
-  // Token without permit (mainnet IDRX; or nonces() reverts): approve(max) once from the user's wallet, then relay without permit.
-  const nonceToken = TOKEN_PUNYA_PERMIT
-    ? await pub.readContract({ address: TIDRX, abi: tidrxAbi, functionName: 'nonces', args: [pelanggan] }).catch(() => null)
-    : null;
+  // Permit support is detected per token, not per chain: tIDRX (testnet and mainnet) has EIP-2612 `nonces()`/`permit`.
+  // A token without it (e.g. real IDRX, nonces() reverts) gets a one-time approve(max) from the user's wallet, then relay without permit.
+  const nonceToken = await pub
+    .readContract({ address: TIDRX, abi: tidrxAbi, functionName: 'nonces', args: [pelanggan] })
+    .catch(() => null);
   if (nonceToken === null) await izinkanSekali(akun, nilai);
   const [nonce, izinAda, offset] = await Promise.all([
     pub.readContract({ ...kontrak, functionName: 'nonces', args: [pelanggan] }),
