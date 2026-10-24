@@ -33,7 +33,11 @@ import { bacaRahasia, buatRahasia, hapusRahasia, isiQr, simpanRahasia } from '..
 import { biayaMaks, kirim, pesanError } from '../lib/tx';
 
 const POLL_MS = Number(import.meta.env.VITE_POLL_MS || 1500);
-const DEBUG = new URLSearchParams(location.search).has('debug'); // SPK-07: waktu onboarding + alasan fallback
+const Q = new URLSearchParams(location.search);
+const DEBUG = Q.has('debug'); // SPK-07: waktu onboarding + alasan fallback
+// Prefill dari landing / QR: ?jenis=3&teks=Juri (jenis yang tidak ada di katalog diabaikan saat render)
+const PREFILL_JENIS = Number(Q.get('jenis')) || null;
+const PREFILL_TEKS = (Q.get('teks') ?? '').slice(0, MAX_TEXT);
 const KUNCI_ORDER = 'pp.order.aktif';
 /** Jenis 1–4 = order mini-game (dikerjakan di game /main). Jenis 5+ = cetak dokumen nyata (unggah file + serah terima QR). */
 const JENIS_DEMO = (k: Katalog) => k.jenis <= 4;
@@ -87,8 +91,8 @@ export default function Pesan() {
   const [titik, setTitik] = useState<Titik | null>(null);
   const [infoLokasi, setInfoLokasi] = useState('');
   const [offset, setOffset] = useState(0);
-  const [pilih, setPilih] = useState<number | null>(null);
-  const [teks, setTeks] = useState('');
+  const [pilih, setPilih] = useState<number | null>(PREFILL_JENIS);
+  const [teks, setTeks] = useState(PREFILL_TEKS);
   const [tahap, setTahap] = useState<'' | 'tanda' | 'kirim' | 'tunggu'>('');
   const [galat, setGalat] = useState('');
   const [isiSaldo, setIsiSaldo] = useState(false);
