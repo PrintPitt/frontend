@@ -1,5 +1,8 @@
 import { lazy, StrictMode, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
+import '@fontsource/fredoka/500.css';
+import '@fontsource/fredoka/700.css';
+import '@fontsource/lilita-one';
 import './styles.css';
 import { NAMA } from './lib/merek';
 import { useJalur } from './lib/navigasi';
@@ -33,7 +36,7 @@ function Beranda() {
 function Router() {
   const path = useJalur();
   const Halaman = path === '/dev' ? Beranda : (HALAMAN[path] ?? Beranda);
-  document.body.dataset.halaman = path.slice(1) || 'beranda';
+  document.body.dataset.halaman = document.documentElement.dataset.halaman = path.slice(1) || 'beranda';
   return <Halaman key={path} />;
 }
 document.title = NAMA;

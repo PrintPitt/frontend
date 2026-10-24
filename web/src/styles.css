@@ -158,3 +158,50 @@ body[data-halaman='layar'] { overflow: hidden; }
 .va-no { font-family: var(--mono); font-size: 1.5rem; letter-spacing: 0.06em; }
 .rincian { display: grid; gap: 2px; font-family: var(--mono); margin: 8px 0 0; }
 .ok-teks { color: var(--ok); font-weight: 700; text-align: center; margin: 0; }
+
+/* ===== Tema kartun (sama dengan game) untuk /layar, /pesan, /toko ===== */
+[data-halaman='layar'], [data-halaman='pesan'], [data-halaman='toko'] {
+  --bg: #2c2170;
+  --panel: #fbfaf3;
+  --panel-2: #f1e8d4;
+  --garis: #231e16;
+  --garis-2: #231e16;
+  --teks: #231e16;
+  --muted: #6b6457;
+  --aksen: #836ef9;
+  --aksen-lembut: rgba(131, 110, 249, 0.18);
+  --kertas: #fbfaf3;
+  --tinta: #231e16;
+  --mono: 'Fredoka', system-ui, sans-serif;
+  --sans: 'Fredoka', system-ui, sans-serif;
+  color-scheme: light;
+  background: var(--bg) repeating-linear-gradient(135deg, transparent 0 22px, rgba(255, 255, 255, 0.04) 22px 44px);
+}
+[data-halaman='layar'] .kartu, [data-halaman='pesan'] .kartu, [data-halaman='toko'] .kartu,
+[data-halaman='layar'] .stat, [data-halaman='pesan'] .item-katalog, [data-halaman='pesan'] .chip, [data-halaman='layar'] .kartu-qr,
+[data-halaman='toko'] .kartu-order {
+  border-width: 3px; border-radius: 16px; box-shadow: 0 5px 0 #231e16;
+}
+[data-halaman='layar'] .brand, [data-halaman='pesan'] .brand, [data-halaman='toko'] .brand {
+  font-family: 'Lilita One', system-ui; text-transform: none; letter-spacing: 0; color: #f4b829; -webkit-text-stroke: 1px #231e16; paint-order: stroke fill; text-shadow: 0 3px 0 #231e16;
+}
+[data-halaman='layar'] .brand::before, [data-halaman='pesan'] .brand::before, [data-halaman='toko'] .brand::before { content: ''; }
+[data-halaman='layar'] .layar-head .muted, [data-halaman='pesan'] .pesan-head .muted, [data-halaman='pesan'] .akun-baris, [data-halaman='layar'] .judul-bagian, [data-halaman='pesan'] .judul-bagian, [data-halaman='toko'] .toko-head .muted { color: #e9e4ff; }
+[data-halaman='layar'] .judul-bagian, [data-halaman='pesan'] .judul-bagian { font-family: 'Lilita One', system-ui; font-size: 1.1rem; letter-spacing: 0.04em; }
+[data-halaman='layar'] .stat .nilai, [data-halaman='layar'] .omzet-juara, [data-halaman='layar'] .angka-payout, [data-halaman='pesan'] .item-katalog .harga, [data-halaman='pesan'] .angka b, [data-halaman='toko'] .angka-payout, [data-halaman='toko'] .angka-hasil { font-family: 'Lilita One', system-ui; font-weight: 400; }
+[data-halaman='layar'] .stat.nyala { box-shadow: 0 5px 0 #231e16, inset 0 -6px 0 var(--aksen); }
+[data-halaman='pesan'] .tombol, [data-halaman='toko'] .tombol { border: 3px solid #231e16; border-radius: 14px; box-shadow: 0 4px 0 #231e16; font-family: 'Lilita One', system-ui; font-weight: 400; letter-spacing: 0.02em; }
+[data-halaman='pesan'] .tombol.utama, [data-halaman='toko'] .tombol.utama { background: #f4b829; color: #231e16; border-color: #231e16; }
+[data-halaman='pesan'] .tombol:not(:disabled):active, [data-halaman='toko'] .tombol:not(:disabled):active { translate: 0 3px; box-shadow: 0 1px 0 #231e16; }
+[data-halaman='pesan'] .item-katalog.aktif { background: #fff3c4; box-shadow: 0 5px 0 #231e16, 0 0 0 4px #f4b829; }
+[data-halaman='pesan'] .badge { background: #231e16; color: #fbfaf3; border-color: #231e16; }
+[data-halaman='pesan'] input, [data-halaman='toko'] input { background: #fff; color: #231e16; border: 3px solid #231e16; border-radius: 12px; }
+[data-halaman='pesan'] .qr-bayar { background: #fff; border: 3px solid #231e16; }
+[data-halaman='pesan'] .pilih-nominal button { border: 3px solid #231e16; box-shadow: 0 3px 0 #231e16; background: #fff; }
+[data-halaman='pesan'] .pilih-nominal button.aktif { background: #f4b829; color: #231e16; }
+[data-halaman='pesan'] .isi-saldo { border-color: #836ef9; }
+[data-halaman='layar'] .juara { background: rgba(36, 26, 82, 0.82); }
+[data-halaman='layar'] .banner-galat, [data-halaman='pesan'] .banner-galat { background: #ef6a4c; color: #fbfaf3; border: 3px solid #231e16; border-radius: 12px; padding: 6px 12px; }
+[data-halaman='layar'] .stat .muted, [data-halaman='layar'] .kartu .muted, [data-halaman='layar'] .kartu-qr .muted, [data-halaman='layar'] .omzet .muted, [data-halaman='pesan'] .kartu .muted, [data-halaman='toko'] .kartu .muted { color: var(--muted); }
+[data-halaman='layar'] .tombol-suara { background: #fbfaf3; border: 3px solid #231e16; border-radius: 14px; box-shadow: 0 4px 0 #231e16; opacity: 1; color: #231e16; }
+[data-halaman='layar'] .tombol-suara:not(.nyala) { opacity: 0.55; }

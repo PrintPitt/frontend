@@ -309,7 +309,7 @@ function PanelToko(p: {
         <div className="nama-toko">{t.nama}</div>
         <div className="omzet">
           <span className="muted kecil">Omzet</span>
-          <motion.span key={String(t.omzet)} initial={{ y: -14, opacity: 0, color: '#5fd39a' }} animate={{ y: 0, opacity: 1, color: '#e9eaea' }} transition={{ duration: 0.8 }}>
+          <motion.span key={String(t.omzet)} initial={{ y: -14, opacity: 0, color: '#5fd39a' }} animate={{ y: 0, opacity: 1, color: '#231e16' }} transition={{ duration: 0.8 }}>
             {mon(t.omzet)}
           </motion.span>
         </div>

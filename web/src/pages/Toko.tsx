@@ -130,7 +130,7 @@ export default function Toko() {
           {s.toko.map((t) => (
             <div key={t.alamat} className={`skor ${sama(t.alamat, akun.address) ? 'saya' : ''}`}>
               <span className="muted kecil">{t.nama}</span>
-              <motion.b key={String(t.omzet)} initial={{ scale: 1.3, color: '#5fd39a' }} animate={{ scale: 1, color: '#e9eaea' }}>
+              <motion.b key={String(t.omzet)} initial={{ scale: 1.3, color: '#5fd39a' }} animate={{ scale: 1, color: '#231e16' }}>
                 {mon(t.omzet)}
               </motion.b>
             </div>
