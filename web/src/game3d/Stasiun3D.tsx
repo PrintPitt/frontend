@@ -1,7 +1,7 @@
 // Isi dinamis toko 3D: barang di meja/mesin, sorotan stasiun di depan pemain, bar progres + gelembung status mesin, antrean pelanggan.
 import { Billboard } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
-import { memo, useRef } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Pekerja3D, TIPE_PEMBELI } from '../arena3d/Pekerja3D';
 import { Item3D } from './Item3D';
@@ -304,12 +304,50 @@ function PelangganDasar({ p, x, z, menunggu, putar = Math.PI }: { p: DataPembeli
 const Pelanggan = memo(PelangganDasar, (a, b) => a.p.id === b.p.id && a.p.jenis === b.p.jenis && Math.round(a.p.sisa * 50) === Math.round(b.p.sisa * 50) && a.x === b.x && a.z === b.z && a.menunggu === b.menunggu && a.putar === b.putar);
 
 /** Pelanggan: yang order-nya sedang dikerjakan menunggu di loket; yang belum direbut antre di luar. Gelembung = pesanan + kesabaran. */
+type Pergi = { p: DataPembeli; x: number; z: number; t0: number; kunci: string };
+const LAMA_PERGI = 0.7;
+
+/** Pelanggan yang keluar antrean (diambil toko lain / hangus): lompat, berputar, mengecil. */
+function PelangganPergi({ d, onSelesai }: { d: Pergi; onSelesai: (k: string) => void }) {
+  const g = useRef<THREE.Group>(null);
+  useFrame(({ clock }) => {
+    const u = Math.min(1, (clock.elapsedTime - d.t0) / LAMA_PERGI);
+    if (g.current) {
+      g.current.position.set(d.x, Math.sin(u * Math.PI) * 0.9, d.z + u * 1.2);
+      g.current.rotation.y = u * Math.PI * 2;
+      g.current.scale.setScalar(1 - u * 0.95);
+    }
+    if (u >= 1) onSelesai(d.kunci);
+  });
+  return (
+    <group ref={g}>
+      <Pelanggan p={d.p} x={0} z={0} />
+    </group>
+  );
+}
+
 export function Antrean({ antre, aktif }: { antre: DataPembeli[]; aktif?: DataPembeli }) {
+  const tampil = antre.slice(0, SLOT_X.length);
+  const sebelum = useRef<Map<string, { p: DataPembeli; x: number }>>(new Map());
+  const [pergi, setPergi] = useState<Pergi[]>([]);
+  useEffect(() => {
+    const kini = new Map(tampil.map((o, i) => [String(o.id), { p: o, x: SLOT_X[i] }]));
+    const baru: Pergi[] = [];
+    for (const [k, v] of sebelum.current) {
+      // pindah ke loket (aktif) bukan "pergi"
+      if (!kini.has(k) && String(aktif?.id) !== k) baru.push({ p: v.p, x: v.x, z: Z_ANTRE, t0: performance.now() / 1000, kunci: `${k}-${Date.now()}` });
+    }
+    sebelum.current = kini;
+    if (baru.length) setPergi((d) => [...d, ...baru].slice(-4));
+  }, [tampil.map((o) => String(o.id)).join(','), aktif?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <group>
       {aktif && <Pelanggan p={aktif} x={POS_SERAH[0]} z={D / 2 + 0.7} menunggu />}
-      {antre.slice(0, SLOT_X.length).map((o, i) => (
+      {tampil.map((o, i) => (
         <Pelanggan key={String(o.id)} p={o} x={SLOT_X[i]} z={Z_ANTRE} putar={((Number(o.id % 3n) - 1) * 0.35)} />
+      ))}
+      {pergi.map((d) => (
+        <PelangganPergi key={d.kunci} d={d} onSelesai={(k) => setPergi((xs) => xs.filter((x) => x.kunci !== k))} />
       ))}
     </group>
   );

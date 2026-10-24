@@ -89,6 +89,23 @@ function Detak({
   return null;
 }
 
+/** Kalau rata-rata FPS < 38 selama 3 detik, pindah ke mode ringan (tanpa bayangan, dpr 1). */
+function PengawasFps({ onBerat }: { onBerat: () => void }) {
+  const akumulasi = useRef({ n: 0, t: 0, mulai: 0 });
+  useFrame(({ clock }, dt) => {
+    const a = akumulasi.current;
+    if (clock.elapsedTime < 4) return; // lewati pemuatan awal
+    a.n++;
+    a.t += dt;
+    if (a.t >= 3) {
+      if (a.n / a.t < 38) onBerat();
+      a.n = 0;
+      a.t = 0;
+    }
+  });
+  return null;
+}
+
 export default function Main() {
   const s = useLive();
   const now = useJamChain(s.offset);
@@ -110,6 +127,7 @@ export default function Main() {
   const toastT = useRef<ReturnType<typeof setTimeout>>(undefined);
   const melayang = useRef<Melayang[]>([]);
   const [goyang, setGoyang] = useState(0);
+  const [ringan, setRingan] = useState(() => new URLSearchParams(location.search).has('ringan'));
   const terbang = (teks: string, warna: string, x: number, z: number, y = 1.3) => melayang.current.push({ teks, warna, x, y, z, t0: performance.now() / 1000 });
   const dingTerakhir = useRef('');
   const rebutTerakhir = useRef('');
@@ -421,9 +439,9 @@ export default function Main() {
   return (
     <main key={goyang} className={`halaman-game main-3d ${goyang ? 'goyang' : ''}`}>
       <Canvas
-        shadows
+        shadows={!ringan}
         flat
-        dpr={[1, 1.5]}
+        dpr={ringan ? 1 : [1, 1.5]}
         camera={{ fov: 30, position: [0, 14.8, 11.3], near: 0.5, far: 80 }}
         onCreated={({ camera, gl, scene }) => {
           camera.lookAt(0, 0, 0.55);
@@ -437,7 +455,7 @@ export default function Main() {
           position={[6, 14, 8]}
           intensity={2.2}
           color="#fff1d6"
-          castShadow
+          castShadow={!ringan}
           shadow-mapSize={[1536, 1536]}
           shadow-camera-left={-10}
           shadow-camera-right={10}
@@ -477,6 +495,7 @@ export default function Main() {
             onFokus={onFokus}
           />
           <Detak dunia={dunia} tombol={tombol} fokus={fokusRef} onSelesai={onSelesai} onUbah={ubah} />
+          {!ringan && <PengawasFps onBerat={() => setRingan(true)} />}
         </Suspense>
       </Canvas>
 
@@ -489,7 +508,19 @@ export default function Main() {
       </div>
       {lawan.length > 0 && (
         <div className="lawan-hud">
-          <span>VS</span> {lawan[0].nama.toUpperCase()} <b>{rp(lawan[0].omzet)}</b>
+          <div>
+            <span>VS</span> {lawan[0].nama.toUpperCase()} <b>{rp(lawan[0].omzet)}</b>
+          </div>
+          {(() => {
+            const ol = lawan[0].orderAktif ? s.order[String(lawan[0].orderAktif)] : undefined;
+            return ol && ol.status === 'Claimed' ? (
+              <div className="lawan-order">
+                mengerjakan #{String(ol.id)} · {ol.langkahSelesai}/{ol.langkah.length} langkah · {Math.max(0, Math.ceil(ol.batasKerja - (now - ol.diclaimPada)))} dtk
+              </div>
+            ) : (
+              <div className="lawan-order">{lawan[0].orderAktif ? 'menyerahkan…' : 'menganggur'}</div>
+            );
+          })()}
         </div>
       )}
       <div className="koin-3d">
@@ -564,6 +595,7 @@ export default function Main() {
           </div>
         </div>
       )}
+      {ringan && <div className="mode-ringan">mode ringan</div>}
       {(!s.siap || s.galat) && <div className="status-3d">{s.galat ?? 'Menyambung ke Monad…'}</div>}
       {s.siap && !s.galat && !s.sesiAktif && s.sesiId === 0 && <div className="status-3d">Menunggu operator membuka sesi… pelanggan belum bisa memesan</div>}
       {sesiUsai && (

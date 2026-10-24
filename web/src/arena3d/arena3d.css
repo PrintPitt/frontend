@@ -139,3 +139,7 @@
 
 @keyframes goyang { 0%, 100% { transform: translate(0, 0); } 20% { transform: translate(-7px, 4px); } 40% { transform: translate(6px, -5px); } 60% { transform: translate(-5px, 3px); } 80% { transform: translate(4px, -2px); } }
 .main-3d.goyang { animation: goyang 0.4s; }
+
+.lawan-hud { flex-direction: column; align-items: flex-end; gap: 0; border-radius: 18px; padding: 6px 16px 9px; }
+.lawan-order { font: 700 0.72rem 'Fredoka', system-ui; opacity: 0.75; }
+.mode-ringan { position: absolute; left: 22px; top: 150px; z-index: 20; background: #231e16; color: #fbfaf3; border-radius: 999px; padding: 3px 10px; font: 700 0.7rem 'Fredoka', system-ui; opacity: 0.7; }
