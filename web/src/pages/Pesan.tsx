@@ -23,7 +23,7 @@ import {
   type Titik,
   type TopUp,
 } from '../lib/backend';
-import { BATAS_JEMPUT, kontrak, offsetChain, pub } from '../lib/chain';
+import { BATAS_JEMPUT, BATAS_SENGKETA, kontrak, offsetChain, pub } from '../lib/chain';
 import { NAMA_LANGKAH, pendek } from '../lib/format';
 import { NAMA } from '../lib/merek';
 import { bacaFeePlatform, bacaHarga, bacaKatalog, bacaNft, bacaOrder, bacaToko, payoutBersih, type Katalog, type Order } from '../lib/katalog';
@@ -730,8 +730,13 @@ function StatusPesanan(p: {
               {pakaiKode && <div className="muted kecil">Tunjukkan QR di bawah ke toko. Tanpa QR, order ditutup otomatis dalam {Math.ceil(sisaJemput / 60)} menit.</div>}
             </li>
           )}
-          {o.status === 'Sengketa' && <li className="refund">Komplain diterima, menunggu keputusan panitia</li>}
-          {o.status === 'Diputuskan' && <li className="ok">Sengketa diputuskan panitia. Bagianmu sudah dikembalikan ke saldo</li>}
+          {o.status === 'Sengketa' && (
+            <li className="refund">
+              Komplain diterima, menunggu keputusan panitia
+              <div className="muted kecil">Tanpa keputusan dalam {Math.round(BATAS_SENGKETA / 3600)} jam, dana dibagi otomatis 50/50 dengan toko.</div>
+            </li>
+          )}
+          {o.status === 'Diputuskan' && <li className="ok">Sengketa selesai (keputusan panitia atau dibagi otomatis). Bagianmu sudah dikembalikan ke saldo</li>}
           {o.status === 'Expired' && <li className="refund">Tidak keburu. Dana {formatRupiah(o.harga)} dikembalikan penuh.</li>}
         </ol>
         {o.status === 'Open' && p.infoLokasi && <div className="muted kecil">{p.infoLokasi}</div>}
