@@ -1,5 +1,5 @@
-// Privy (login email/Google → embedded wallet) dipadukan dengan Mera (passkey). Aktif hanya bila VITE_PRIVY_APP_ID diisi;
-// tanpa itu, komponen ini tidak merender apa-apa dan halaman /masuk hanya menawarkan passkey + tamu.
+// Privy (email/Google login → embedded wallet) combined with Mera (passkey). Only active when VITE_PRIVY_APP_ID is set;
+// without it, this component renders nothing and the /masuk page only offers passkey + guest.
 import { PrivyProvider, usePrivy, useWallets } from '@privy-io/react-auth';
 import { useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { createWalletClient, custom, type Hex } from 'viem';
@@ -26,7 +26,7 @@ export function PenyediaAuth({ children }: { children: ReactNode }) {
   );
 }
 
-/** Tombol Google/email. Setelah login dan wallet siap, `onAkun` dipanggil sekali dengan Akun yang bisa menandatangani lewat Privy. */
+/** Google/email buttons. After login and once the wallet is ready, `onAkun` is called once with an Akun that signs via Privy. */
 export function TombolPrivy({ onAkun, onGalat, sibuk }: { onAkun: (a: Akun) => void; onGalat: (pesan: string) => void; sibuk?: boolean }) {
   const { ready, authenticated, login, logout, user } = usePrivy();
   const { wallets, ready: walletSiap } = useWallets();
@@ -42,7 +42,7 @@ export function TombolPrivy({ onAkun, onGalat, sibuk }: { onAkun: (a: Akun) => v
       const label = user?.email?.address ?? user?.google?.email ?? user?.google?.name ?? undefined;
       onAkun(pakaiAkun({ account: { address, type: 'json-rpc' }, jenis: 'privy', address, klien, label, akhiri: () => void logout() }));
     } catch (e) {
-      onGalat(e instanceof Error ? e.message : 'Wallet Privy gagal disiapkan');
+      onGalat(e instanceof Error ? e.message : 'Could not set up the Privy wallet');
     }
   }, [wallets, user, onAkun, onGalat, logout]);
 
@@ -57,17 +57,17 @@ export function TombolPrivy({ onAkun, onGalat, sibuk }: { onAkun: (a: Akun) => v
     try {
       login({ loginMethods: [metode] });
     } catch (e) {
-      onGalat(e instanceof Error ? e.message : 'Login Privy gagal');
+      onGalat(e instanceof Error ? e.message : 'Privy login failed');
     }
   };
 
   return (
     <>
       <button className="tombol-masuk google" disabled={!ready || sibuk} onClick={() => masuk('google')}>
-        <span className="ikon-g">G</span> Lanjut dengan Google
+        <span className="ikon-g">G</span> Continue with Google
       </button>
       <button className="tombol-masuk email" disabled={!ready || sibuk} onClick={() => masuk('email')}>
-        ✉ Lanjut dengan email
+        ✉ Continue with email
       </button>
     </>
   );
