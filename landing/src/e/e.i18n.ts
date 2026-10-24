@@ -146,8 +146,8 @@ export const E_DICT = {
   'e.cta.qrAria': { en: 'QR code to the order page {url}', id: 'QR ke halaman pesan {url}' },
   'e.cta.scan': { en: 'Scan to order from your phone', id: 'Scan untuk pesan dari HP' },
   'e.foot': {
-    en: '{name} — the onchain print shop · Monad Blitz Jogja Vol. 2, 24 October 2026 · Dex Bennett · Hans Gunawan · Dave',
-    id: '{name} — toko fotokopi kilat onchain · Monad Blitz Jogja Vol. 2, 24 Oktober 2026 · Dex Bennett · Hans Gunawan · Dave',
+    en: '{name} — the onchain print shop · Monad Blitz Jogja Vol. 2, 24 October 2026 · Dex Bennett · Hans Gunawan · Dave Aryanda Agape',
+    id: '{name} — toko fotokopi kilat onchain · Monad Blitz Jogja Vol. 2, 24 Oktober 2026 · Dex Bennett · Hans Gunawan · Dave Aryanda Agape',
   },
 };
 
