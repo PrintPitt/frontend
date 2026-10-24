@@ -6,7 +6,7 @@ import '@fontsource/fredoka/700.css';
 import '@fontsource/lilita-one';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { AnimatePresence, motion } from 'motion/react';
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type * as THREE from 'three';
 import '../arena/arena.css';
 import { Cahaya } from '../arena3d/Adegan';
@@ -21,7 +21,10 @@ import { pendek } from '../lib/format';
 import { useLive } from '../lib/live';
 import { NAMA } from '../lib/merek';
 import { pindah } from '../lib/navigasi';
+import { bacaPro, langgananPro, tanggalPro, type InfoPro } from '../lib/pro';
 import { bacaProfil, MAKS_NAMA, rapikanNama, simpanProfil, WARNA_BAJU, WARNA_KULIT, WARNA_RAMBUT, type Profil } from '../lib/profil';
+import { formatRupiah } from '../../../shared/src/index.ts';
+import { pesanError } from '../lib/tx';
 
 const sama = (a?: string, b?: string) => !!a && !!b && a.toLowerCase() === b.toLowerCase();
 
@@ -97,11 +100,33 @@ export default function Lobi() {
   const [akun, setAkun] = useState<Akun | null>(akunAktif);
   const [masukJalan, setMasukJalan] = useState(false);
   const [disalin, setDisalin] = useState(false);
+  const [pro, setPro] = useState<InfoPro | null>(null);
+  const [proJalan, setProJalan] = useState(false);
+  const [proPesan, setProPesan] = useState('');
 
   useEffect(() => {
     if (!akun && new URLSearchParams(location.search).has('dev')) masuk().then(setAkun);
   }, [akun]);
   useEffect(() => simpanProfil(profil), [profil]);
+  const segarkanPro = useCallback(() => {
+    if (akun) bacaPro(akun.address).then(setPro).catch(() => setPro(null));
+  }, [akun]);
+  useEffect(segarkanPro, [segarkanPro]);
+
+  async function beliPro() {
+    if (!akun || !pro) return;
+    setProJalan(true);
+    setProPesan('');
+    try {
+      await langgananPro(akun, 1, pro.hargaPro);
+      setProPesan('Toko Pro aktif!');
+      segarkanPro();
+    } catch (e) {
+      setProPesan(pesanError(e));
+    } finally {
+      setProJalan(false);
+    }
+  }
 
   const ubah = (f: Partial<Profil>) => {
     setProfil((p) => ({ ...p, ...f }));
@@ -227,6 +252,21 @@ export default function Lobi() {
                 </button>
                 <span className="kecil-akun">{akun.jenis === 'mera' ? 'Passkey' : akun.jenis === 'dev' ? 'Akun dev anvil' : 'Akun sementara'}</span>
                 {!saya && <span className="kecil-akun">Kirim alamat ini ke operator supaya didaftarkan sebagai toko.</span>}
+                {saya && pro && (
+                  <div className="baris-pro">
+                    {pro.proSampai * 1000 > Date.now() ? (
+                      <span className="badge-pro">★ TOKO PRO · sampai {tanggalPro(pro.proSampai)}</span>
+                    ) : (
+                      <button className="tombol-game kuning kecil" disabled={proJalan || pro.saldo < pro.hargaPro} onClick={beliPro}>
+                        {proJalan ? 'MEMPROSES…' : `LANGGANAN PRO ${formatRupiah(pro.hargaPro)}/30 HARI`}
+                      </button>
+                    )}
+                    <span className="kecil-akun">
+                      Saldo toko {formatRupiah(pro.saldo)} · fee platform {pro.feeBps / 100}% dari payout. Pro: radius feed 3 km + badge, rebutan tetap adil.
+                    </span>
+                    {proPesan && <span className="kecil-akun">{proPesan}</span>}
+                  </div>
+                )}
               </>
             )}
           </div>

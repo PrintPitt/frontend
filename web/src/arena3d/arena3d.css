@@ -134,3 +134,5 @@
   .fitur { grid-template-columns: 1fr; margin: 28px 16px 40px; }
   .kepala-lobi .judul-game { font-size: 1.8rem; }
 }
+.baris-pro { display: grid; gap: 4px; margin-top: 6px; padding-top: 6px; border-top: 2px dashed #c9bfe8; }
+.badge-pro { align-self: start; background: #f4b829; border: 2px solid #231e16; border-radius: 999px; padding: 2px 10px; font: 0.9rem 'Lilita One', system-ui; }

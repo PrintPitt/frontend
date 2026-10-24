@@ -49,6 +49,7 @@ export default function Pesan() {
   const [galatAkun, setGalatAkun] = useState('');
   const [saldo, setSaldo] = useState<bigint | null>(null);
   const [fee, setFee] = useState<bigint | null>(null);
+  const [feeBps, setFeeBps] = useState(300);
   const [katalog, setKatalog] = useState<Katalog[]>([]);
   const [namaToko, setNamaToko] = useState<Record<string, string>>({});
   const [batasAntre, setBatasAntre] = useState(45);
@@ -84,6 +85,7 @@ export default function Pesan() {
       setBatasAntre(b);
       setOffset(off);
       setFee(BigInt(cfg.feeRelay));
+      if (cfg.platformFeeBps !== undefined) setFeeBps(Number(cfg.platformFeeBps));
       setGalatMuat('');
     } catch (e) {
       setGalatMuat(pesanGalat(e));
@@ -273,6 +275,7 @@ export default function Pesan() {
                   offset={offset}
                   nft={nft}
                   putus={gagalPoll >= 3}
+                  feeBps={feeBps}
                   onLagi={pesanLagi}
                 />
               </motion.section>
@@ -472,6 +475,7 @@ function StatusPesanan(p: {
   offset: number;
   nft: { name: string; image: string } | null;
   putus: boolean;
+  feeBps: number;
   onLagi: () => void;
 }) {
   const now = Math.floor(useJamChain(p.offset, 500));
@@ -491,7 +495,9 @@ function StatusPesanan(p: {
   const kerja = Math.max(0, now - o.diclaimPada);
   const payout = o.status === 'Claimed' ? hitungPayout(o.harga, o.batasKerja, kerja) : 0n;
   const selesai = o.status === 'Finished' || o.status === 'Diputuskan';
+  // v2.1: payout kotor dari rumus; platform memotong feeBps dari payout toko (cashback pelanggan tetap utuh)
   const payoutAkhir = selesai || o.status === 'Siap' ? hitungPayout(o.harga, o.batasKerja, o.kerja) : 0n;
+  const feePlatform = (payoutAkhir * BigInt(p.feeBps)) / 10_000n;
 
   return (
     <div className="status">
@@ -538,14 +544,16 @@ function StatusPesanan(p: {
             </div>
             <div>
               <span className="muted kecil">Toko dibayar</span>
-              <b>{formatRupiah(payoutAkhir)}</b>
+              <b>{formatRupiah(payoutAkhir - feePlatform)}</b>
             </div>
             <div>
               <span className="muted kecil">Kembalianmu</span>
               <b>{formatRupiah(o.harga - payoutAkhir)}</b>
             </div>
           </div>
-          <div className="muted kecil">NFT hasil cetakan sudah ada di akunmu.</div>
+          <div className="muted kecil">
+            NFT hasil cetakan sudah ada di akunmu. Fee platform {p.feeBps / 100}% ({formatRupiah(feePlatform)}) dari bayaran toko, bukan dari kembalianmu.
+          </div>
         </motion.div>
       )}
 

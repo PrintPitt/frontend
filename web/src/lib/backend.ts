@@ -48,7 +48,7 @@ async function api<T>(jalur: string, body?: unknown): Promise<T> {
   return j;
 }
 
-export type Config = { chainId: number; contract: Hex; token: Hex; relayer: Hex | null; feeRelay: string; topupMode: string };
+export type Config = { chainId: number; contract: Hex; token: Hex; relayer: Hex | null; feeRelay: string; topupMode: string; platformFeeBps?: number; treasury?: Hex; hargaPro?: string };
 export const ambilConfig = () => api<Config>('/config');
 
 export type TopUp = {

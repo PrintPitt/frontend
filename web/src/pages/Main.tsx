@@ -241,7 +241,7 @@ export default function Main() {
       buangItem(d, it.id);
       sfx('selesai');
       confetti({ particleCount: 150, spread: 95, startVelocity: 45, origin: { x: 0.5, y: 0.78 }, colors: ['#836ef9', '#fbfaf3', '#f4b829', '#5fd39a'] });
-      tampil(h ? `Beres! +${rp(h.payout)} · NFT terkirim ke pelanggan` : 'Beres! NFT terkirim ke pelanggan', 'ok', 3400);
+      tampil(h ? `Beres! +${rp(h.payout)} bersih (fee platform 3% sudah dipotong) · NFT terkirim` : 'Beres! NFT terkirim ke pelanggan', 'ok', 3400);
     } catch (e) {
       const pesan = pesanError(e);
       if (KATA_TELAT.includes(pesan)) hangus(it.id, `Telat! Order #${it.id} hangus — uang balik ke pelanggan`);
