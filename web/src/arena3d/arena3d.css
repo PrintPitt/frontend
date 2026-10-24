@@ -1,0 +1,36 @@
+/* HUD di atas kanvas 3D, mengikuti tata letak Overcooked: tiket kiri atas, koin kiri bawah, timer kanan bawah. */
+.main-3d { height: 100vh; }
+.main-3d canvas { position: absolute !important; inset: 0; }
+.main-3d > .rel-tiket { position: absolute; }
+.koin-3d, .timer-3d, .lawan-hud { position: absolute; z-index: 20; display: flex; align-items: center; gap: 12px; color: #231e16; }
+.koin-3d { left: 22px; bottom: 22px; background: #fbfaf3; border: 3px solid #231e16; border-radius: 18px; box-shadow: 0 6px 0 #231e16, inset 0 -8px 0 #836ef9; padding: 10px 22px 16px 12px; }
+.timer-3d { right: 22px; bottom: 22px; background: #fbfaf3; border: 3px solid #231e16; border-radius: 18px; box-shadow: 0 6px 0 #231e16; padding: 10px 14px 10px 22px; }
+.timer-3d .timer-angka { font-size: 2.6rem; }
+.lawan-hud { top: 18px; right: 22px; background: #fbfaf3; border: 3px solid #231e16; border-radius: 999px; box-shadow: 0 4px 0 #231e16, inset 0 -5px 0 #ef6a4c; padding: 6px 16px 9px; font-family: 'Lilita One', system-ui; font-size: 1.05rem; }
+.lawan-hud span { color: #ef6a4c; -webkit-text-stroke: 1px #231e16; }
+.label-3d { font-family: 'Lilita One', system-ui; color: #fff; padding: 4px 14px; border: 3px solid #231e16; border-radius: 10px; box-shadow: 0 4px 0 #231e16; white-space: nowrap; letter-spacing: 0.08em; font-size: 20px; -webkit-text-stroke: 0.6px #231e16; }
+.bar-3d { width: 120px; height: 16px; background: #231e16; border: 3px solid #231e16; border-radius: 99px; overflow: hidden; box-shadow: 0 3px 0 #0006; }
+.bar-3d > div { height: 100%; background: #5fd39a; border-radius: 99px; }
+.papan-harga { display: grid; gap: 6px; background: #2a2163; color: #fbfaf3; border: 6px solid #231e16; border-radius: 14px; padding: 16px 24px; font-family: 'Lilita One', system-ui; font-size: 26px; min-width: 380px; box-shadow: 0 8px 0 #231e16; }
+.papan-harga b { font-weight: 400; color: #f4b829; font-size: 32px; letter-spacing: 0.06em; }
+.papan-harga span { font-family: 'Fredoka', system-ui; font-weight: 700; }
+.poster-3d { background: #fbfaf3; color: #cf5038; border: 5px solid #231e16; border-radius: 8px; padding: 14px 22px; font-family: 'Lilita One', system-ui; font-size: 34px; line-height: 1.05; transform: rotate(-4deg); text-align: center; }
+.poster-3d small { display: block; font-family: 'Fredoka', system-ui; font-size: 20px; color: #231e16; margin-top: 6px; }
+/* landing 3D */
+.landing-3d { display: flex; flex-direction: column; align-items: center; }
+.hero-3d { position: relative; width: 100%; height: 100vh; }
+.hero-3d canvas { position: absolute !important; inset: 0; }
+.hero-3d .nav-landing { position: absolute; top: 0; left: 0; right: 0; }
+.judul-hero { position: absolute; top: 6vh; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; z-index: 2; }
+.cta-3d { position: absolute; bottom: 7vh; left: 0; right: 0; margin: 0; z-index: 2; }
+/* lobi 3D */
+.panggung-lobi { position: relative; border-radius: 22px; overflow: hidden; border: 3px solid #231e16; box-shadow: 0 10px 0 #231e16; }
+.panggung-lobi canvas { position: absolute !important; inset: 0; }
+.panggung-lobi .slot-grid { position: absolute; inset: 0; padding: 14px; }
+.panggung-lobi .slot { background: transparent; border: 3px dashed #ffffff40; box-shadow: none; }
+.panggung-lobi .slot::before { display: none; }
+.panggung-lobi .slot.siap { border: 3px solid #5fd39a; box-shadow: 0 0 0 4px #5fd39a55; }
+.panggung-lobi .slot-kepala { background: #fbfaf3; border: 3px solid #231e16; border-radius: 14px; padding: 6px 12px; box-shadow: 0 4px 0 #231e16; }
+.ruang-karakter { flex: 1; }
+.panggung-lobi .slot-alamat { background: #fbfaf3; border-radius: 999px; padding: 2px 10px; opacity: 1; border: 2px solid #231e16; }
+.panggung-lobi .slot-tombol { color: #fff; opacity: 0.85; }

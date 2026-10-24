@@ -16,3 +16,13 @@ FE (Vercel) dikerjakan tim FE. Repo ini berisi aset dan kontrak integrasi yang s
 | Event live game | WebSocket langsung ke RPC Monad (D-16) |
 
 Alur, aturan, dan backlog FE: repo `PrintPitt/vault` → `06-FE-vault/`.
+
+## App `web/` (FE + game)
+
+React + Vite + three.js (React Three Fiber). Halaman: `/` landing, `/lobi`, `/main` (tanding 3D ala Overcooked), `/pesan` (HP penonton), `/toko`, `/layar` (proyektor). Detail di `web/README.md`.
+
+```bash
+cd web && npm install && npm run dev
+```
+
+Catatan: `shared/` di repo ini adalah snapshot ABI lama (pembayaran MON) yang dipakai `web/` saat ini; akan diganti `@printpitt/shared` (tIDRX + permit + relayer) begitu contract final.

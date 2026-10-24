@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mesin Fotokopi</title></head><body>
+<script src="core.js"></script>
+<script>
+/* Mesin fotokopi kantor (floor-standing), untuk game Fotokopi Kilat on Monad.
+   x = depth 62 (front x = W), y = width 58 (+y = viewer-left; the RIGHT side y = 0 carries the exit slot and tray),
+   z = up 104 to the scanner glass. 1 unit ~ 1 cm.
+
+   How a real digital copier works (each button is one real step):
+     1. Lift the lid, lay the original face down on the platen glass, close the lid.
+     2. COPY: the scan lamp carriage sweeps under the glass; two mirrors (the second carriage at half speed) fold the
+        light through a lens onto the CCD, which turns the page into an image in memory.
+     3. For each copy: the pickup roller takes the top sheet from the paper drawer; feed rollers push it up the left
+        wall; the laser unit writes the image onto the charged photoconductor DRUM; the developer roller brushes toner
+        from the cartridge onto the drum; the transfer roller under the paper pulls the toner onto the sheet; the hot
+        fuser roller and pressure roller melt it in; exit rollers push the copy out of the slot onto the tray.
+
+   Parts (each held by another):
+     CASE       plinth . cabinet with 2 paper drawers . engine body . scanner unit . platen glass . document lid (hinged at
+                the back edge) . control panel (screen, COPY key, keys) . exit slot . output tray with end stop
+     SCANNER    two carriage rails . lamp carriage with lamp . mirror carriage . lens . CCD board
+     PAPER      drawer trays . paper stacks . pickup roller . feed roller pair . registration path
+     IMAGING    laser unit on two brackets . laser beam . photoconductor drum . developer roller . toner cartridge .
+                transfer roller
+     FIXING     heat roller . pressure roller . exit roller pair
+     POWER      power supply . main board with chips . wires PSU -> board, PSU -> fuser
+*/
+PALS.monad = { l:'#a99bfa', m:'#836ef9', d:'#2a2163' };
+
+const W = 62, D = 58, HC = 40, HB = 92, HS = 104;             // cabinet top, engine top, scanner (glass) top
+const BODY_PROF = rectUV(0, 0, D, HS);                        // the whole case in (y, z), swept along x
+const LID_X0 = 2, LID_X1 = 60, LID_Y0 = 18, LID_Y1 = 56, LIDT = 3;
+const PAN = { x0:38, x1:W + 5, y0:2, y1:16, z0:HS, z1:HS + 5 };
+const TRAY = { x0:8, x1:54, y1:0, y0:-24, z1:57, z0:63 };      // z at y = 0 and at the far end y = -24
+const GREY = matOf('#e8e4d8'), LIGHT = matOf('#f4f2ea'), RECESS = '#2b2523';
+const DRUMM = matOf('#3f9d5d'), TONERM = matOf('#2f2d33'), PCBM = matOf('#2f8a5a'), RUBBER = DARK;
+const HOT = '#ff7a2e', PAPER = '#fbfaf3';
+const SHEET = { x0:13, x1:43, len:21 };                       // A4 fed long-edge first: 30 across, 21 along the path
+
+const fkTop = (x,y,z,str,size,col=INK,weight=800) => `<text transform="${txM(P(x,y,z), Dv(0,-1,0), Dv(1,0,0))}" font-size="${size}" fill="${col}" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-weight="${weight}" letter-spacing=".05em">${str}</text>`;
+const fkBack = (x,y,z,str,size,col=INK,weight=700) => `<text transform="${txM(P(x,y,z), Dv(0,1,0), Dv(0,0,-1))}" font-size="${size}" fill="${col}" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-weight="${weight}" letter-spacing=".04em">${str}</text>`;
+const fkClamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+/* a convex 8-corner solid (bottom 0..3, top 4..7, both counter-clockwise from above): only faces toward the viewer */
+function fkHexa(c, m, shade = tone, w = .9, under = null){
+  const F = [[0,3,2,1],[4,5,6,7],[0,1,5,4],[1,2,6,5],[2,3,7,6],[3,0,4,7]], ctr = avg(c);
+  let s = '';
+  F.forEach((ix, fi) => { const q = ix.map(i => c[i]); let n = norm(cross(sub(q[1], q[0]), sub(q[2], q[0])));
+    if (dot(n, sub(avg(q), ctr)) < 0) n = n.map(v => -v);
+    if (vis(n)) s += shape(q, fi === 0 && under ? under : shade(n, m), w); });
+  return s;
+}
+const fkBoxOf = pts => [[0,1,2].map(i => Math.min(...pts.map(p => p[i])) - .5), [0,1,2].map(i => Math.max(...pts.map(p => p[i])) + .5)];
+
+/* ---------- the document lid: a slab hinged on the back edge of the glass ---------- */
+function lidCorners(a, x0 = LID_X0, x1 = LID_X1, y0 = LID_Y0, y1 = LID_Y1, w0 = 0, w1 = LIDT){
+  const ca = Math.cos(a), sa = Math.sin(a), L = (u, y, w) => [LID_X0 + (u - LID_X0)*ca - w*sa, y, HS + (u - LID_X0)*sa + w*ca];
+  return [L(x0,y0,w0), L(x1,y0,w0), L(x1,y1,w0), L(x0,y1,w0), L(x0,y0,w1), L(x1,y0,w1), L(x1,y1,w1), L(x0,y1,w1)];
+}
+function lidSvg(st){
+  const a = ease(st.lid) * 72 * Math.PI/180, c = lidCorners(a);
+  let s = fkHexa(c, GREY, tone, 1.1, '#f6f4ec');                // underside is the white document mat
+  // a finger lip along the front edge
+  s += fkHexa(lidCorners(a, LID_X1 - .5, LID_X1 + 1.6, 28, 46, .6, 2.2), DARK, tone, .7);
+  s += hullInk(c, 1.8);
+  return act('lid', s);
+}
+
+/* ---------- the output tray: a sloped plate cantilevered from the right side, with the copies on it ---------- */
+const trayZ = y => TRAY.z1 + (TRAY.z0 - TRAY.z1) * (y / TRAY.y0);
+function traySvg(st){
+  const t = TRAY, top = (x, y) => [x, y, trayZ(y)];
+  const plate = [[t.x0,t.y1],[t.x1,t.y1],[t.x1,t.y0],[t.x0,t.y0]].map(([x, y]) => [x, y, trayZ(y) - 1]);
+  const c = [...plate, ...plate.map(([x, y, z]) => [x, y, z + 1])];
+  let s = fkHexa(c, LIGHT, tone, 1);
+  s += fkHexa([[t.x0+2,t.y0-1,trayZ(t.y0)],[t.x1-2,t.y0-1,trayZ(t.y0)],[t.x1-2,t.y0,trayZ(t.y0)],[t.x0+2,t.y0,trayZ(t.y0)],
+              [t.x0+2,t.y0-1,trayZ(t.y0)+4],[t.x1-2,t.y0-1,trayZ(t.y0)+4],[t.x1-2,t.y0,trayZ(t.y0)+4],[t.x0+2,t.y0,trayZ(t.y0)+4]], GREY, tone, .8);
+  // stack of copies lying on the tray
+  if (st.stack > 0){ const hgt = .25 + .18*st.stack, ya = -2.5, yb = -23.5;
+    const q = [[SHEET.x0,ya],[SHEET.x1,ya],[SHEET.x1,yb],[SHEET.x0,yb]].map(([x, y]) => [x, y, trayZ(y)]);
+    s += act('copies', fkHexa([...q, ...q.map(([x, y, z]) => [x, y, z + hgt])], matOf(PAPER), tone, .8)
+      + line([[SHEET.x0 + 4, -8, trayZ(-8) + hgt + .05], [SHEET.x1 - 6, -8, trayZ(-8) + hgt + .05]], .5)
+      + line([[SHEET.x0 + 4, -11, trayZ(-11) + hgt + .05], [SHEET.x1 - 10, -11, trayZ(-11) + hgt + .05]], .5)); }
+  // a copy sliding out of the slot
+  const out = sheetWindow(st).filter(p => p[0] < 0);
+  if (out.length > 1) s += ribbon(out);
+  return s + hullInk(c, 1.4);
+}
+
+/* ---------- the paper path (y, z) and a sheet travelling along it ---------- */
+const PATH = [[48,30.3],[55.2,33],[55.2,54],[36,54.1],[18,54.1],[8,58.6],[0,59.6],[-22,trayZ(-22) + .3]];
+const PLEN = PATH.slice(1).map((p, i) => Math.hypot(p[0] - PATH[i][0], p[1] - PATH[i][1]));
+const PTOT = PLEN.reduce((a, b) => a + b, 0);
+function pathAt(sd){ sd = fkClamp(sd, 0, PTOT); let i = 0;
+  while (i < PLEN.length - 1 && sd > PLEN[i]){ sd -= PLEN[i]; i++; }
+  const k = PLEN[i] ? sd / PLEN[i] : 0, a = PATH[i], b = PATH[i + 1];
+  return [a[0] + (b[0] - a[0])*k, a[1] + (b[1] - a[1])*k]; }
+// the part of the path a sheet covers: its leading edge runs from the stack (0) to the tray (PTOT)
+function sheetWindow(st){
+  if (st.sheet < 0) return [];
+  const head = SHEET.len + st.sheet * (PTOT - SHEET.len), tail = head - SHEET.len, pts = [];
+  let acc = 0; pts.push(pathAt(tail));
+  for (let i = 0; i < PLEN.length; i++){ acc += PLEN[i]; if (acc > tail && acc < head) pts.push(PATH[i + 1]); }
+  pts.push(pathAt(head));
+  return pts;
+}
+function ribbon(pts){
+  let s = '';
+  for (let i = 0; i + 1 < pts.length; i++){ const [ya, za] = pts[i], [yb, zb] = pts[i + 1];
+    s += shape([[SHEET.x0, ya, za], [SHEET.x1, ya, za], [SHEET.x1, yb, zb], [SHEET.x0, yb, zb]], PAPER, .6); }
+  return s;
+}
+
+/* ---------- the closed machine ---------- */
+function caseSvg(st, m){
+  const FRONT = facing([1,0,0]), BACK = facing([-1,0,0]), LEFT = facing([0,1,0]), RIGHT = facing([0,-1,0]);
+  let s = box(1, 1, 0, W - 1, D - 1, 2, DARK, tone, .8);                      // plinth
+  // cabinet with two paper drawers
+  s += box(0, 0, 2, W, D, HC, GREY, tone, 1.1);
+  // the top drawer (the one the copier feeds from) slides out to be refilled; its paper shows on the open tray
+  const dk = ease(st.drawer);
+  if (FRONT) for (const [z0, z1, top] of [[5, 20, false], [23, 38, true]]){
+    const ox = top ? 22*dk : 0, lvl = top ? Math.ceil(st.paper / 7) : 2;
+    if (ox > .1){
+      s += box(W, 6, z0 + 1, W + ox, D - 6, z1 - 2, METAL, toneI, .8);
+      if (st.paper > 0 && ox > 4) s += box(W + 1, 18, z1 - 2, W + ox - 1, D - 9, z1 - 2 + .2 + .12*st.paper, matOf(PAPER), toneI, .6);
+    }
+    s += act(top ? 'drawer' : 'drawer2', box(W + ox, 4, z0, W + 1.2 + ox, D - 4, z1, LIGHT, tone, .9)
+      + shape(on(PX(W + 1.25 + ox), rectUV(20, z1 - 4.5, 38, z1 - 2)), RECESS, .6)            // handle recess
+      + tx(W + 1.3 + ox, 49, z0 + 3.2, 'A4', 3, INK, 800)
+      // paper level: three ticks, lit by how full the drawer is (the top drawer counts down as copies are made)
+      + [0, 1, 2].map(i => shape(on(PX(W + 1.3 + ox), rectUV(8 + 2.6*i, z0 + 2.2, 9.8 + 2.6*i, z0 + 4)), i < lvl ? '#43c25c' : '#c9c1b2', .4)).join(''));
+  }
+  // engine body in the palette colour
+  s += box(0, 0, HC, W, D, HB, m, tone, 1.2);
+  if (FRONT){
+    const da = st.door;
+    if (da > .01){                                         // behind the front door: the drum and fuser ends, and a jammed sheet
+      const open = on(PX(W + .05), rrUV(4, HC + 4, D - 4, HB - 6, 3));
+      let inside = cylX(W - 4, W, 36, 60, 6, DRUMM, toneI, .9, 24) + cylX(W - 4, W, 18, 58, 4, matOf(mix('#c9cfd2', HOT, st.heat)), toneI, .9, 20)
+        + box(W - 4, 12, HC + 6, W, 50, HC + 8, METAL, toneI, .6);
+      s += shape(open, RECESS, 1) + clipTo(open, inside);
+      if (st.jam || st.pull > 0){ const out = 4 + 22*ease(st.pull);           // the jammed sheet, pulled out toward the viewer
+        s += `<g opacity="${f(1 - Math.max(0, st.pull - .8)/.2)}">` + box(W - 2, 26, 54, W + out, 47, 54.4, matOf(PAPER), toneI, .6)
+          + line([[W + out - 3, 30, 54.45], [W + out - 3, 44, 54.45]], .5) + `</g>`; }
+    }
+    s += act('door', doorSvg(st, m));
+  }
+  if (RIGHT){                                                                  // exit slot above the tray
+    s += shape(on(PY(-.15), rrUV(10, 57.2, 52, 62, 1.2)), RECESS, .9);
+    s += fill(pd(on(PY(-.2), rectUV(12, 58.6, 50, 59.4))), '#4a403a');
+  }
+  if (LEFT){                                                                   // vents on the left side
+    let v = ''; for (let z = HC + 10; z <= HC + 30; z += 3.5) v += pd([[14, D + .15, z], [48, D + .15, z]], false);
+    s += `<path d="${v}" fill="none" stroke="${INK}" stroke-width="1.1" opacity=".55"/>`;
+  }
+  if (BACK){                                                                   // fan grille, rating plate, power inlet
+    const fx = -.15;
+    s += shape(on(PX(fx), ellUV(44, 62, 6, 6, 20)), mix(m.d, '#000000', .25), .9);
+    for (const r of [2, 4]) s += ink(pd(on(PX(fx - .02), ellUV(44, 62, r, r, 16))), .6);
+    s += shape(on(PX(fx), rrUV(10, 70, 30, 80, 1.5)), '#f3f0e6', .8);
+    s += fkBack(fx - .05, 20, 76.6, 'KILAT C-300', 2.2) + fkBack(fx - .05, 20, 72.8, '230V 1.2kW', 2);
+    s += shape(on(PX(fx), rectUV(8, 46, 14, 51)), RECESS, .7);
+  }
+  // scanner unit, the platen glass, the original on it and the scan light
+  s += box(0, 0, HB, W, D, HS, GREY, tone, 1.1);
+  if (facing([0,0,1])){
+    s += shape(on(PZ(HS + .05), rectUV(5, LID_Y0 + 1, 57, LID_Y1 - 1)), '#cfe9f0', .8);
+    s += fill(pd(on(PZ(HS + .08), [[10, LID_Y0 + 4], [14, LID_Y0 + 4], [8, LID_Y1 - 6], [6, LID_Y1 - 6]])), '#ffffff', 'opacity=".38"');
+    if (st.doc){ const dz = HS + .12;
+      s += act('doc', shape(on(PZ(dz), rectUV(16, 27, 46, 48)), PAPER, .7)
+        + line(on(PZ(dz + .02), [[20, 44], [40, 44]]), .6) + line(on(PZ(dz + .02), [[20, 40], [42, 40]]), .5)
+        + line(on(PZ(dz + .02), [[20, 37], [36, 37]]), .5) + line(on(PZ(dz + .02), [[20, 34], [41, 34]]), .5)); }
+    if (st.phase === 'scan'){ const sy = scanY(st);
+      s += fill(pd(on(PZ(HS + .16), rectUV(5, sy - 2.2, 57, sy + 2.2))), '#fff4a8', `opacity="${(st.lid > .3 ? .85 : .35).toFixed(2)}"`); }
+  }
+  return s;
+}
+const scanY = st => st.phase === 'scan' ? LID_Y1 - 3 - (LID_Y1 - LID_Y0 - 6) * st.scan : LID_Y1 - 3;
+
+/* ---------- the front door: a slab hinged on a vertical axis at its left edge (y = D - 4) ---------- */
+const DOOR_U = D - 8, DOOR_Z0 = HC + 4, DOOR_Z1 = HB - 6;
+function doorCorners(a){
+  const dv = [Math.sin(a), -Math.cos(a)], nv = [Math.cos(a), Math.sin(a)];
+  const Q = (u, w, z) => [W + u*dv[0] + w*nv[0], D - 4 + u*dv[1] + w*nv[1], z];
+  return [Q(0,0,DOOR_Z0), Q(DOOR_U,0,DOOR_Z0), Q(DOOR_U,1,DOOR_Z0), Q(0,1,DOOR_Z0), Q(0,0,DOOR_Z1), Q(DOOR_U,0,DOOR_Z1), Q(DOOR_U,1,DOOR_Z1), Q(0,1,DOOR_Z1)];
+}
+const doorAngle = st => ease(st.door) * 95 * Math.PI/180;
+function doorSvg(st, m){
+  const c = doorCorners(doorAngle(st));
+  let s = fkHexa(c, m, tone, 1.1);
+  if (st.door < .01){                                     // badge on the closed door
+    s += shape(on(PX(W + 1.05), rrUV(40, HB - 16, 54, HB - 9, 2)), mix(m.l, '#ffffff', .35), .7);
+    s += tx(W + 1.1, 47, HB - 13.6, 'KILAT', 3.2, INK, 800);
+    s += tx(W + 1.1, 18, HB - 13.2, 'C-300', 2.6, mix(m.d, '#000000', .2), 800);
+    s += shape(on(PX(W + 1.05), rrUV(6, HC + 18, 8, HC + 30, 1)), RECESS, .6);           // finger pull
+  }
+  return s + hullInk(c, 1.6);
+}
+
+function panelSvg(st){
+  const p = PAN, top = p.z1 + .05;
+  let s = box(p.x0, p.y0, p.z0, p.x1, p.y1, p.z1, DARK, tone, 1);
+  if (facing([0,0,1])){
+    s += shape(on(PZ(top), rectUV(p.x0 + 3, p.y0 + 2, p.x0 + 14, p.y1 - 2)), '#1d2a26', .7);
+    const msg = st.jam ? 'JAM!' : st.phase === 'scan' ? 'SCAN' : st.phase === 'print' ? `${st.n - st.left + 1}/${st.n}` : !st.paper ? 'KERTAS' : st.doc ? `x${st.n}` : 'SIAP';
+    const blink = Math.floor(st.t*4) % 2 === 0;           // warning light: red blink on a jam, orange when the drawer is empty
+    s += shape(on(PZ(top + .01), ellUV(p.x0 + 16.6, p.y1 - 1.3, .7, .7, 10)), st.jam && blink ? '#e2483d' : !st.paper ? '#f4a228' : '#5c6369', .4);
+    s += fkTop(p.x0 + 9.6, (p.y0 + p.y1)/2, top + .02, msg, 3, '#8af0ae');
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 2; j++)
+      s += box(p.x0 + 16 + 2.6*i, p.y0 + 3 + 4.6*j, p.z1, p.x0 + 18 + 2.6*i, p.y0 + 5.4 + 4.6*j, p.z1 + .8, LIGHT, toneI, .5);
+  }
+  const kz = p.z1 + 1.4 - (st.kc > 0 ? .9 : 0);            // the key sinks while pressed
+  s += act('copy', cyl(p.x1 - 3.5, (p.y0 + p.y1)/2, p.z1, kz, 2.4, matOf(st.jam ? '#e2483d' : st.phase === 'idle' ? '#43c25c' : '#f4b829'), toneI, .9));
+  if (facing([0,0,1])) s += fkTop(p.x1 - 3.5, (p.y0 + p.y1)/2 + .2, kz + .06, 'COPY', 1.3, INK);
+  return s;
+}
+
+/* ---------- see-through: the real mechanism ---------- */
+let MECH_LABELS = '';
+const fkWire = (pts, col, w = .5) => ({ box: fkBoxOf(pts), svg: `<path d="${pd(pts, false)}" fill="none" stroke="${INK}" stroke-width="${f(2*w + 1)}" stroke-linejoin="round" stroke-linecap="round"/><path d="${pd(pts, false)}" fill="none" stroke="${col}" stroke-width="${f(2*w)}" stroke-linejoin="round" stroke-linecap="round"/>` });
+function mech(st, k){
+  const parts = [], put = (b, svg) => parts.push({ box: b, svg });
+  const bx = (x0,y0,z0,x1,y1,z1,mm,w = .8) => put([[x0,y0,z0],[x1,y1,z1]], box(x0,y0,z0,x1,y1,z1,mm,toneI,w));
+  const roll = (y, z, r, mm, x0 = 10, x1 = 52, w = .8) => put([[x0, y - r, z - r], [x1, y + r, z + r]], cylX(x0, x1, y, z, r, mm, toneI, w, 18));
+  const run = st.phase === 'print', heat = st.heat;
+  // ---- paper drawers: trays and stacks
+  for (const [z0, n] of [[23, .3*st.paper], [5, 6]]){
+    bx(10, 28, z0 - 1, 48, 56, z0, METAL, .6);
+    if (n > .05) bx(SHEET.x0, 31, z0, SHEET.x1, 52, z0 + n, matOf(PAPER), .7); }
+  roll(48, 32.7, 2.4, RUBBER, 14, 44);                                        // pickup roller on the top stack
+  put([[13, 46, 32], [15, 49, 40]], rod([14, 48, 32.7], [14, 48, 40], .5, METAL, toneI, .5));   // its arm from the frame
+  roll(56.9, 44, 1.6, RUBBER, 14, 44); roll(53.5, 44, 1.6, METAL, 14, 44);    // feed roller pair on the left wall
+  // ---- imaging: laser unit on brackets, drum, developer, toner, transfer roller
+  bx(16, 20, 79, 46, 38, 86, DARK, .9);                                        // laser unit, shorter than the drum
+  bx(1, 26, 80, 16, 32, 81.2, METAL, .5); bx(46, 26, 80, 61, 32, 81.2, METAL, .5);
+  if (run) put([[30, 30, 66], [32, 36, 79]], `<path d="${pd([[31, 33, 79], [31, 35.4, 66.2]], false)}" fill="none" stroke="#e2483d" stroke-width="1.4" opacity=".9" stroke-dasharray="2 1.5"/>`);
+  const da = st.drum * Math.PI/180;
+  { const dx = facing([1,0,0]) ? 56.1 : 5.9;                                    // the drum runs past everything, so both ends show
+    put([[6, 30, 54], [56, 42, 66]], cylX(6, 56, 36, 60, 6, DRUMM, toneI, 1, 24)
+      + ink(pd([[dx, 36, 60], [dx, 36 + 5*Math.cos(da), 60 + 5*Math.sin(da)]], false), 1)
+      + (facing([1,0,0]) ? shape(on(PX(56.15), ellUV(36, 60, 1.4, 1.4, 12)), METAL.l, .5) : '')); }
+  roll(41.6, 65.6, 1.8, DARK, 14, 48);                                        // developer roller touching the drum
+  bx(16, 43, 64, 46, 52, 72, TONERM, 1);                                       // toner cartridge, low and short
+  put([[46, 44, 65], [46.4, 52, 71]], tx(46.2, 47.5, 67, 'TONER', 1.8, '#f2efe7', 800));
+  roll(36, 52.5, 1.5, RUBBER, 12, 50);                                         // transfer roller under the paper
+  // ---- fixing: heat roller (glows when hot), pressure roller, exit rollers
+  put([[10, 14, 54], [52, 22, 62]], cylX(10, 52, 18, 58, 4, matOf(mix('#c9cfd2', HOT, heat)), toneI, 1, 20));
+  roll(18, 51, 3, RUBBER);
+  roll(5, 60.9, 1.4, RUBBER, 12, 50); roll(5, 57.9, 1.4, METAL, 12, 50);
+  // ---- scanner: rails, lamp carriage, mirror carriage, lens, CCD
+  for (const x of [9, 53]) put([[x - .6, 6, 97.4], [x + .6, 54, 98.6]], rod([x, 6, 98], [x, 54, 98], .55, METAL, toneI, .5));
+  const sy = scanY(st), my = 14 + (sy - 14) / 2;
+  bx(8, sy - 1.5, 98.6, 54, sy + 1.5, 101.6, METAL, .7);
+  put([[8, sy - .9, 101.6], [54, sy + .9, 103.4]], cylX(8, 54, sy, 102.5, .8, matOf(st.phase === 'scan' ? '#fff3a0' : '#e8e4da'), toneI, .5));
+  bx(8, my - 2, 94.5, 54, my + 2, 98.4, DARK, .7);
+  roll(9, 97, 1.6, CLEAR, 22, 40, .6);                                         // lens
+  bx(28, 2.5, 93.6, 34, 4.2, 100, PCBM, .6);                                   // CCD board
+  // ---- power: supply, main board, wires
+  bx(3, 4, 41, 15, 20, 50, METAL, .8);
+  bx(.8, 26, 44, 2.2, 54, 74, PCBM, .7);
+  for (const [y, z] of [[32, 66], [40, 62], [47, 68], [36, 52]]) bx(2.2, y, z, 3, y + 4, z + 4, DARK, .4);
+  parts.push(fkWire([[9, 20, 47], [9, 24, 47], [2.6, 28, 48]], '#e2483d'));
+  parts.push(fkWire([[15, 12, 46], [26, 12, 46], [26, 14, 54]], run ? '#ff6a2a' : '#3a3632'));
+  // ---- the sheet in flight
+  const win = sheetWindow(st).filter(p => p[0] >= 0);
+  if (win.length > 1){ const pts = win.map(([y, z]) => [SHEET.x0, y, z]).concat(win.map(([y, z]) => [SHEET.x1, y, z]));
+    put(fkBoxOf(pts), ribbon(win)); }
+  const out = byDepth(parts);
+  MECH_LABELS = k <= .6 ? '' : xrCallouts([
+    { at:[31, sy, 102], text:'LAMPU SCAN', on: st.phase === 'scan' },
+    { at:[31, my, 96.5], text:'CERMIN', on: st.phase === 'scan' },
+    { at:[30, 9, 97], text:'LENSA + CCD', on: st.phase === 'scan' },
+    { at:[31, 29, 82], text:'UNIT LASER', on: run },
+    { at:[56, 36, 60], text:'DRUM', on: run },
+    { at:[31, 47.5, 72], text:'TONER', on: run },
+    { at:[52, 18, 58], text:'FUSER (PANAS)', on: heat > .3 },
+    { at:[44, 48, 32.7], text:'ROL PENGAMBIL', on: run && st.sheet < .3 },
+    { at:[48, 52, 29], text:'LACI KERTAS', on: false },
+    { at:[50, 5, 59.4], text:'ROL KELUAR', on: run && st.sheet > .75 },
+    { at:[2, 40, 74], text:'PAPAN UTAMA', on: st.phase !== 'idle' } ], [0, W, -24, D, 0, HS + 6]);
+  return out;
+}
+
+/* ---------- scene ---------- */
+function scene(st, m){
+  let s = castShadow([[0,0,0],[W,0,0],[W,D,0],[0,D,0],[0,0,HS],[W,0,HS],[W,D,HS],[0,D,HS],
+                      [TRAY.x0, TRAY.y0, TRAY.z0], [TRAY.x1, TRAY.y0, TRAY.z0]]);
+  const k = ease(st.xr || 0);
+  let body = caseSvg(st, m) + hullInk([[0,0,0],[W,0,0],[W,D,0],[0,D,0],[0,0,HS],[W,0,HS],[W,D,HS],[0,D,HS]], 2.8);
+  if (k > 0) body = xrGhost(body, '', k, BODY_PROF, 0, W, m) + `<g opacity="${f(k)}">${mech(st, k)}</g>`;
+  const lidC = lidCorners(ease(st.lid) * 72 * Math.PI/180);
+  s += byDepth([
+    { box: fkBoxOf([[0, 0, 0], [W + 1.3 + 22*ease(st.drawer), D, HS], ...doorCorners(doorAngle(st))]), svg: body },
+    { box: [[PAN.x0, PAN.y0, PAN.z0], [PAN.x1, PAN.y1, PAN.z1 + 1.5]], svg: panelSvg(st) },
+    { box: fkBoxOf(lidC), svg: k > 0 ? `<g opacity="${f(1 - .8*k)}">${lidSvg(st)}</g>` : lidSvg(st) },   // the lid covers the scanner: it fades too
+    { box: [[TRAY.x0, TRAY.y0 - 1, TRAY.z1 - 1], [TRAY.x1, TRAY.y1, TRAY.z0 + 4]], svg: traySvg(st) } ]);
+  if (k > .6) s += MECH_LABELS;
+  else s += [
+    tag([W + 1.2, 30, 31], 26, 10, 'LACI KERTAS', false),
+    tag([PAN.x1 - 3.5, (PAN.y0 + PAN.y1)/2, PAN.z1 + 1.4], 18, -14, 'COPY', st.phase !== 'idle'),
+    tag([30, TRAY.y0 + 4, trayZ(TRAY.y0 + 4)], 20, 8, 'HASIL', st.stack > 0),
+  ].join('');
+  return s;
+}
+
+/* ---------- behaviour (one state object, one clock) ---------- */
+let ui, fkLoop = false;
+const JAM_EVERY = 4;                                       // every 4th sheet fed jams in the fuser (a real copier's bad day)
+function startSheet(st){
+  if (!st.paper){ st.sheet = -1; st.phase = 'idle'; st.left = 0; ui.flash('Kertas habis: isi laci kertas', 2000); return false; }
+  st.paper--; st.fed++; st.jamNow = st.fed % JAM_EVERY === 0; st.sheet = 0; return true;
+}
+function fkStep(st, dt){
+  st.t += dt;
+  const sp = dt * 1.5;
+  st.lid += fkClamp(st.lidT - st.lid, -sp, sp);
+  st.drawer += fkClamp(st.drawerT - st.drawer, -dt*1.2, dt*1.2);
+  st.door += fkClamp(st.doorT - st.door, -dt*1.1, dt*1.1);
+  st.kc = Math.max(0, st.kc - dt);
+  if (st.wantDoc && st.lid > .97){ st.doc = true; st.wantDoc = false; ui.flash('Dokumen di kaca. Tekan Copy!', 2000); }
+  // refill: the drawer slides out, fills, and slides back in by itself
+  if (st.drawerT === 1 && st.drawer > .98 && st.refill === 0 && st.paper < 20) st.refill = .7;
+  if (st.refill > 0){ st.refill -= dt; if (st.refill <= 0){ st.refill = 0; st.paper = 20; st.drawerT = 0; ui.flash('Laci terisi 20 lembar', 1400); } }
+  // pulling a jammed sheet out of the open front door
+  if (st.pull > 0){ st.pull = Math.min(1, st.pull + dt/1.2);
+    if (st.pull >= 1){ st.pull = 0; st.jam = false; st.sheet = -1; st.phase = 'idle'; st.left = 0; ui.flash('Kertas macet diambil. Tutup pintu, lalu Copy lagi', 2200); } }
+  if (st.phase === 'close' && st.lid < .02){ st.phase = 'scan'; st.scan = 0; }
+  else if (st.phase === 'scan'){ st.scan += dt / 1.4; if (st.scan >= 1){ st.phase = 'print'; st.scan = 0; st.left = st.n; startSheet(st); } }
+  else if (st.phase === 'print'){
+    st.heat = Math.min(1, st.heat + dt * 2); st.drum = (st.drum + dt * 320) % 360; st.sheet += dt / 1.8;
+    if (st.jamNow && st.sheet >= .45){ st.sheet = .45; st.jamNow = false; st.jam = true; st.phase = 'jam'; ui.flash('Kertas macet! Buka pintu depan', 2400); }
+    else if (st.sheet >= 1){ st.stack = Math.min(30, st.stack + 1); st.done++; st.left--;
+      if (st.left > 0) startSheet(st); else { st.sheet = -1; st.phase = 'idle'; ui.flash(`Selesai: ${st.n} lembar`, 1800); } }
+  }
+  if (st.phase === 'idle') st.heat = Math.max(0, st.heat - dt / 3);
+}
+function fkRun(){
+  if (fkLoop) return; fkLoop = true;
+  ui.animate(dt => { const st = ui.st; fkStep(st, dt);
+    const moving = (st.phase !== 'idle' && st.phase !== 'jam') || st.jam || st.heat > 0 || st.wantDoc || st.kc > 0 || st.refill > 0 || st.pull > 0
+      || [['lid', 'lidT'], ['drawer', 'drawerT'], ['door', 'doorT']].some(([a, b]) => Math.abs(st[a] - st[b]) > .001);
+    if (!moving) fkLoop = false; return moving; });
+}
+const busy = st => st.phase === 'scan' || st.phase === 'print' || st.phase === 'close';
+function liftLid(st){
+  if (busy(st)) return ui.flash('Jangan buka tutup saat menyalin');
+  st.lidT = st.lidT > .5 ? 0 : 1; fkRun();
+}
+function placeDoc(st){
+  if (busy(st)) return ui.flash('Tunggu sampai selesai');
+  if (st.doc){ if (st.lid < .5){ st.lidT = 1; fkRun(); return ui.flash('Angkat tutup untuk mengambil dokumen'); }
+    st.doc = false; return; }
+  st.lidT = 1; st.wantDoc = true; fkRun();
+}
+function copy(st){
+  st.kc = .2; fkRun();
+  if (busy(st)) return ui.flash('Sedang menyalin, tunggu sebentar');
+  if (st.jam) return ui.flash('Kertas macet: buka pintu depan, lalu tarik kertasnya');
+  if (st.door > .05){ st.doorT = 0; return ui.flash('Tutup pintu depan dulu'); }
+  if (st.drawer > .05 || st.refill > 0) return ui.flash('Tunggu laci tertutup');
+  if (!st.paper) return ui.flash('Kertas habis: tekan Isi kertas');
+  if (!st.doc){ st.lidT = 1; return ui.flash('Taruh dokumen di kaca dulu'); }
+  st.lidT = 0; st.phase = st.lid > .02 ? 'close' : 'scan'; st.scan = 0;
+}
+function frontDoor(st){
+  if (busy(st)) return ui.flash('Jangan buka pintu saat menyalin');
+  st.doorT = st.doorT > .5 ? 0 : 1; fkRun();
+}
+function pullJam(st){
+  if (!st.jam) return ui.flash('Tidak ada kertas macet');
+  if (st.door < .9){ st.doorT = 1; fkRun(); return ui.flash('Buka pintu depan dulu'); }
+  if (st.pull === 0){ st.pull = .001; fkRun(); }
+}
+function refillPaper(st){
+  if (busy(st) || st.jam) return ui.flash('Tunggu mesin berhenti dulu');
+  if (st.paper >= 20) return ui.flash('Laci sudah penuh');
+  st.drawerT = 1; fkRun();
+}
+function take(st){
+  if (!st.stack) return ui.flash('Belum ada hasil copy');
+  st.stack = 0;
+}
+
+ui = mountFigure({
+  fig:'01', turn:'full', title:'Mesin Fotokopi', hint:'Angkat tutup · taruh dokumen · Copy',
+  idea:'Lampu memindai dokumen, laser menggambar bayangannya di drum, toner menempel, lalu rol panas melelehkannya ke kertas.',
+  size:[W + 30, D + 26, HS + 60], center:[W/2 + 12, (D - 26)/2], palette:'monad',
+  // lid/drawer/door 0 closed .. 1 open; scan 0..1 lamp sweep; sheet -1 none or 0..1 along the path; heat 0..1 fuser; drum angle
+  state:{ lid:0, lidT:0, doc:false, wantDoc:false, phase:'idle', scan:0, sheet:-1, left:0, n:1, done:0, stack:0, heat:0, drum:0,
+          t:0, paper:12, fed:0, jamNow:false, jam:false, pull:0, drawer:0, drawerT:0, refill:0, door:0, doorT:0, kc:0 },
+  scene,
+  stats: st => [{ label:'COPY', value: st.done }, { label:'DI TRAY', value: st.stack, small: true }, { label:'KERTAS', value: st.paper, small: true }],
+  readout: st => st.jam ? 'KERTAS MACET · buka pintu depan dan tarik kertasnya'
+    : st.phase === 'scan' ? 'memindai dokumen…'
+    : st.phase === 'print' ? `mencetak lembar ${st.n - st.left + 1} dari ${st.n}`
+    : st.phase === 'close' ? 'menutup tutup…'
+    : st.refill > 0 || st.drawer > .05 ? 'mengisi laci kertas…'
+    : !st.paper ? 'kertas habis · isi laci'
+    : !st.doc ? 'siap · angkat tutup dan taruh dokumen'
+    : st.lid > .5 ? 'dokumen di kaca · tekan Copy' : `siap menyalin ${st.n} lembar`,
+  buttons:[
+    { label:'Angkat tutup', onClick:(st) => liftLid(st) },
+    { label:'Taruh dokumen', onClick:(st) => placeDoc(st) },
+    { label:'Jumlah', choices: st => [1, 3, 5].map(n => ({ label:`${n} lembar`, current: st.n === n,
+        disabled: busy(st), why:'jumlah diatur sebelum menyalin', onClick:(st) => { st.n = n; } })) },
+    { label:'Copy!', onClick:(st) => copy(st) },
+    { label:'Ambil hasil', onClick:(st) => take(st) },
+    { label:'Isi kertas', onClick:(st) => refillPaper(st) },
+    { label:'Pintu depan', onClick:(st) => frontDoor(st) },
+    { label:'Tarik kertas macet', onClick:(st) => pullJam(st) },
+  ],
+  acts:{ lid:(st) => liftLid(st), doc:(st) => placeDoc(st), copy:(st) => copy(st), copies:(st) => take(st),
+         drawer:(st) => refillPaper(st), drawer2:(st) => ui.flash('Laci bawah cadangan; mesin mengambil dari laci atas'),
+         door:(st) => st.jam && st.door > .9 ? pullJam(st) : frontDoor(st) },
+  params:(st, q) => {
+    for (const key of ['lid', 'scan', 'sheet', 'heat', 'drum', 'drawer', 'door', 'pull', 'paper']) if (q.has(key)) st[key] = +q.get(key);
+    for (const key of ['lid', 'drawer', 'door']) if (q.has(key)) st[key + 'T'] = st[key];
+    if (q.get('doc') === '1') st.doc = true;
+    if (q.get('jam') === '1'){ st.jam = true; st.phase = 'jam'; if (!q.has('sheet')) st.sheet = .45; }
+    if (q.has('stack')) st.stack = +q.get('stack');
+    if (q.has('n')) st.n = +q.get('n');
+    if (q.has('phase')) st.phase = q.get('phase');
+  },
+});
+addEventListener('keydown', e => {
+  if (/input|textarea|button/i.test(e.target.tagName)) return;
+  const key = e.key.toLowerCase(), st = ui.st;
+  if (key === ' ' || key === 'enter') copy(st); else if (key === 'l') liftLid(st); else if (key === 'd') placeDoc(st); else if (key === 't') take(st); else return;
+  e.preventDefault(); ui.render();
+});
+xrMount(() => ui, () => '');
+</script></body></html>

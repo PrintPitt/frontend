@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Printer Inkjet</title></head><body>
+<script src="core.js"></script>
+<script>
+/* Printer inkjet di meja toko fotokopi, untuk game Fotokopi Kilat on Monad.
+   x = depth 34 (front x = W), y = width 46 (+y = viewer-left; the RIGHT side y = 0 has the USB port), z = up.
+   It stands on a desk board (top at Z0). 1 unit ~ 1 cm.
+
+   How a real rear-feed inkjet prints (each button is one real step):
+     1. Power on: the carriage leaves its parking station, checks the rail end to end, and parks again.
+     2. A USB stick goes in the port on the side; the screen lists its files; choose one (an .exe is a virus: refused).
+     3. PRINT: the output tray slides out if it is closed; the pickup roller takes the top sheet from the rear tray;
+        the feed roller pulls it over the platen; the carriage with the four ink cartridges (C M Y K) sweeps across on
+        its rail, driven by a belt from the motor and timed by the encoder strip, spraying one band per pass while the
+        paper steps forward; the exit roller and star wheels push the page out onto the tray.
+     4. Opening the top cover sends the carriage to the middle so the cartridges can be swapped.
+
+   Parts (each held by another):
+     CASE      desk board . body . top cover (hinged at the back) . rear paper support + paper . output tray + stop .
+               front panel: screen, power key, print key, ink light . USB port . USB stick
+     PAPER     pickup roller . feed roller . platen . exit roller . star wheels
+     CARRIAGE  rail rod . carriage . 4 ink cartridges . belt . carriage motor + pulley . idler pulley . encoder strip .
+               parking (capping) station
+     POWER     power supply . main board . ribbon cable to the carriage
+*/
+PALS.monad = { l:'#a99bfa', m:'#836ef9', d:'#2a2163' };
+
+const Z0 = 3, W = 34, D = 46, HB = 14, HT = 3, ZT = Z0 + HB;   // desk top, body height, cover thickness, body top
+const BODY = rrUV(0, Z0, D, ZT, 3);                              // body profile in (y, z), swept along x
+const HINGE = 3, PRINTX = 20;                                    // cover hinge (x) at the back; print line (x)
+const PSH = { y0:12.5, y1:33.5, len:29.7 };                      // A4 portrait: 21 across, 29.7 along the path
+const TRAYL = 16;
+const GREY = matOf('#ebe7dc'), LIGHT = matOf('#f6f4ec'), RECESS = '#2b2523', PAPER = '#fbfaf3';
+const PCBM = matOf('#2f8a5a'), STICK = matOf('#f4b829'), RUBBER = DARK;
+const INKS = [['C', '#2fb6d8'], ['M', '#e0408a'], ['Y', '#f4d23a'], ['K', '#2b2a2e']];
+const FILES = [
+  { name:'skripsi_FINAL.pdf', lcd:'SKRIPSI.PDF', kind:'text' },
+  { name:'foto_KTP.jpg', lcd:'KTP.JPG', kind:'photo' },
+  { name:'New Folder.exe', lcd:'VIRUS!', kind:'virus' } ];
+
+const pClamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const tri = u => 1 - Math.abs((u % 2) - 1);                       // 0..1..0 triangle wave
+function pHexa(c, m, shade = tone, w = .9, under = null){
+  const F = [[0,3,2,1],[4,5,6,7],[0,1,5,4],[1,2,6,5],[2,3,7,6],[3,0,4,7]], ctr = avg(c);
+  let s = '';
+  F.forEach((ix, fi) => { const q = ix.map(i => c[i]); let n = norm(cross(sub(q[1], q[0]), sub(q[2], q[0])));
+    if (dot(n, sub(avg(q), ctr)) < 0) n = n.map(v => -v);
+    if (vis(n)) s += shape(q, fi === 0 && under ? under : shade(n, m), w); });
+  return s;
+}
+const pBoxOf = pts => [[0,1,2].map(i => Math.min(...pts.map(p => p[i])) - .5), [0,1,2].map(i => Math.max(...pts.map(p => p[i])) + .5)];
+const lerp3 = (a, b, k) => a.map((v, i) => v + (b[i] - v)*k);
+
+/* ---------- the paper path in (x, z): rear support -> slot -> under the feed roller -> platen -> out onto the tray ---------- */
+const RSLOT = [2.2, ZT - .4], RDIR = norm([-10, 0, 16]);
+const PPATH = [[RSLOT[0] + RDIR[0]*PSH.len, RSLOT[1] + RDIR[2]*PSH.len], RSLOT, [6.5, Z0 + 7], [W, Z0 + 7], [W + TRAYL - 1, Z0 + 6.3]];
+const PLEN = PPATH.slice(1).map((p, i) => Math.hypot(p[0] - PPATH[i][0], p[1] - PPATH[i][1]));
+const PTOT = PLEN.reduce((a, b) => a + b, 0);
+const SPRINT = PLEN[0] + PLEN[1] + (PRINTX - 6.5);                // arc length of the print line
+function pathAt(sd){ sd = pClamp(sd, 0, PTOT); let i = 0;
+  while (i < PLEN.length - 1 && sd > PLEN[i]){ sd -= PLEN[i]; i++; }
+  const k = PLEN[i] ? sd / PLEN[i] : 0, a = PPATH[i], b = PPATH[i + 1];
+  return [a[0] + (b[0] - a[0])*k, a[1] + (b[1] - a[1])*k]; }
+const headOf = st => PSH.len + st.sheet * (PTOT - PSH.len);
+function sheetWin(st){
+  if (st.sheet < 0) return [];
+  const head = headOf(st), tail = head - PSH.len, pts = [pathAt(tail)];
+  let acc = 0; for (let i = 0; i < PLEN.length; i++){ acc += PLEN[i]; if (acc > tail && acc < head) pts.push(PPATH[i + 1]); }
+  pts.push(pathAt(head)); return pts;
+}
+function ribbon(pts){ let s = '';
+  for (let i = 0; i + 1 < pts.length; i++){ const [xa, za] = pts[i], [xb, zb] = pts[i + 1];
+    s += shape([[xa, PSH.y0, za], [xa, PSH.y1, za], [xb, PSH.y1, zb], [xb, PSH.y0, zb]], PAPER, .6); }
+  return s; }
+// printed rows on a sheet: rows sit at a distance d behind the leading edge; a row is inked once it has passed the print line
+function rowsOf(kind){
+  const out = [];
+  if (kind === 'photo'){ for (let d = 4; d <= 22; d += 1.2) out.push({ d, w:15, col: d < 10 ? '#2fb6d8' : d < 16 ? '#836ef9' : '#e0408a', t:1.1 }); }
+  else for (let d = 4; d <= 26; d += 2) out.push({ d, w: d === 4 ? 9 : 12 + ((d*7) % 5), col:'#2b2a2e', t:.5 });
+  return out;
+}
+function rowsSvg(st, filterFn){
+  if (st.sheet < 0 || st.job < 0) return '';
+  const head = headOf(st); let s = '';
+  for (const r of rowsOf(FILES[st.job].kind)){ const sd = head - r.d; if (sd < SPRINT) continue;
+    const [x, z] = pathAt(sd); if (!filterFn(x)) continue;
+    s += `<path d="${pd([[x, PSH.y1 - 2, z + .06], [x, PSH.y1 - 2 - r.w, z + .06]], false)}" stroke="${r.col}" stroke-width="${r.t}" fill="none" stroke-linecap="round"/>`; }
+  return s;
+}
+
+/* ---------- carriage (also seen from outside when the cover is open) ---------- */
+function carriage(st, shade = toneI){
+  const cy = st.cy, lift = 4*Math.sin(Math.PI*st.swap), parts = [];
+  parts.push({ box:[[15, cy - 5, Z0 + 9], [25, cy + 5, Z0 + 13]], svg: box(15, cy - 5, Z0 + 9, 25, cy + 5, Z0 + 13, DARK, shade, .9) });
+  INKS.forEach(([lab, col], i) => { const y0 = cy - 4.4 + 2.2*i, z0 = Z0 + 13 + lift*(i % 2 ? .7 : 1);
+    parts.push({ box:[[16.5, y0, z0], [23.5, y0 + 2, z0 + 2.4]], svg: box(16.5, y0, z0, 23.5, y0 + 2, z0 + 2.4, matOf(col), shade, .6)
+      + (facing([0,0,1]) ? `<text transform="${txM(P(20, y0 + 1, z0 + 2.45), Dv(0,-1,0), Dv(1,0,0))}" font-size="1.2" fill="${i === 3 ? '#f2efe7' : INK}" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-weight="800">${lab}</text>` : '') }); });
+  return parts;
+}
+const railSvg = () => ({ box:[[21.4, 2, Z0 + 11.4], [22.6, D - 2, Z0 + 12.6]], svg: rod([22, 2, Z0 + 12], [22, D - 2, Z0 + 12], .6, METAL, toneI, .6) });
+
+/* ---------- the closed printer ---------- */
+function bodySvg(st, m){
+  const FRONT = facing([1,0,0]), BACK = facing([-1,0,0]), RIGHT = facing([0,-1,0]), TOP = facing([0,0,1]);
+  let s = '';
+  if (BACK) s += fill(pd(on(PX(0), BODY)), tone([-1,0,0], m));
+  s += extrude(BODY, 0, W, m);
+  if (FRONT){ s += fill(pd(on(PX(W), BODY)), tone([1,0,0], m));
+    s += shape(on(PX(W + .1), rrUV(8, Z0 + 5.6, 38, Z0 + 8.4, 1)), RECESS, 1);                 // exit slot
+    s += shape(on(PX(W + .12), rrUV(27, Z0 + 9.2, 41, Z0 + 12.9, 1)), '#1d2a26', .8);          // screen
+    const msg = !st.on ? '' : st.phase === 'boot' ? 'MULAI...' : st.phase === 'print' ? 'PRINT...' : st.usb < .95 ? 'COLOK USB' : st.file < 0 ? 'PILIH FILE' : FILES[st.file].lcd;
+    if (msg) s += tx(W + .16, 34, Z0 + 10.3, msg, 1.7, st.file === 2 && st.phase === 'idle' ? '#ff6b5a' : '#8af0ae', 800);
+    // ink light: orange when low, blinking red on a virus warning
+    const warnOn = st.warn > 0 && Math.floor(st.warn*6) % 2 === 0;
+    s += shape(on(PX(W + .12), ellUV(16, Z0 + 11, .8, .8, 10)), warnOn ? '#e2483d' : st.on && st.ink < 15 ? '#f4a228' : '#7d7169', .4);
+    s += tx(W + .14, 16, Z0 + 9.1, 'INK', 1, INK, 800);
+    s += tx(W + .14, 5, Z0 + 8.6, 'POWER', 1, INK, 800) + tx(W + .14, 10.5, Z0 + 8.6, 'PRINT', 1, INK, 800); }
+  if (RIGHT) s += shape(on(PY(-.12), rrUV(W - 8.6, Z0 + 9.1, W - 4.4, Z0 + 11.1, .4)), RECESS, .7);   // USB port
+  if (BACK) s += shape(on(PX(-.12), rrUV(36, Z0 + 3, 41, Z0 + 6, .5)), RECESS, .6);              // power inlet
+  // the top: a well under the cover; when the cover is open the carriage shows inside it
+  if (TOP){ const well = on(PZ(ZT + .04), rrUV(HINGE + 1, 2, W - 3, D - 2, 1.5));
+    s += shape(on(PZ(ZT + .02), rrUV(HINGE, 1, W - 1, D - 1, 2)), mix(m.l, '#ffffff', .3), .8);
+    if (st.cover > .05){ s += shape(well, RECESS, .8);
+      s += clipTo(well, byDepth([railSvg(), ...carriage(st, tone)])); } }
+  if (FRONT) s += ink(pd(on(PX(W), BODY)), 2.2);
+  if (BACK) s += ink(pd(on(PX(0), BODY)), 2.2);
+  s += hullInk([...on(PX(0), BODY), ...on(PX(W), BODY)], 2.8);
+  return s;
+}
+// front keys: they sink when pressed
+function keysSvg(st){
+  const k1 = st.kp > 0 ? .7 : 0, k2 = st.kr > 0 ? .7 : 0;
+  return act('power', cylX(W - k1, W + 1 - k1, 5, Z0 + 11, 1.3, matOf(st.on ? '#43c25c' : '#cfc8b8'), toneI, .9, 16))
+       + act('print', cylX(W - k2, W + 1 - k2, 10.5, Z0 + 11, 1.3, DARK, toneI, .9, 16));
+}
+
+function coverCorners(a){
+  const ca = Math.cos(a), sa = Math.sin(a), L = (u, y, w) => [HINGE + (u - HINGE)*ca - w*sa, y, ZT + (u - HINGE)*sa + w*ca];
+  return [L(HINGE,1,0), L(W - .5,1,0), L(W - .5,D - 1,0), L(HINGE,D - 1,0), L(HINGE,1,HT), L(W - .5,1,HT), L(W - .5,D - 1,HT), L(HINGE,D - 1,HT)];
+}
+const coverAngle = st => ease(st.cover) * 80 * Math.PI/180;
+function coverSvg(st, m){
+  const c = coverCorners(coverAngle(st));
+  return act('cover', pHexa(c, m, tone, 1.1, '#3a3632') + hullInk(c, 1.8));
+}
+
+function rearSvg(st){
+  // the paper support leans back from the slot; the stack lies on it
+  const A = [RSLOT[0] + .4, RSLOT[1] - .8], dir = RDIR, Lp = 17, th = 1;
+  const nrm = [dir[2], 0, -dir[0]];                                  // in-plane normal (toward the back/up side)
+  const at = (sAlong, off, y) => [A[0] + dir[0]*sAlong + nrm[0]*off, y, A[1] + dir[2]*sAlong + nrm[2]*off];
+  const plate = [at(0,-th,6), at(0,-th,40), at(Lp,-th,40), at(Lp,-th,6), at(0,0,6), at(0,0,40), at(Lp,0,40), at(Lp,0,6)];
+  let s = pHexa(plate, GREY, tone, 1);
+  // paper supply: a thin stack lying on the support, longer than it (A4 sticks up)
+  if (st.paper > 0){ const t = .2 + .06*st.paper, len = PSH.len - .6, lead = st.sheet >= 0 && headOf(st) < PSH.len + 2 ? 1 : 0;
+    const q = [at(lead,0,PSH.y0), at(lead,0,PSH.y1), at(len,0,PSH.y1), at(len,0,PSH.y0), at(lead,t,PSH.y0), at(lead,t,PSH.y1), at(len,t,PSH.y1), at(len,t,PSH.y0)];
+    s += act('paper', pHexa(q, matOf(PAPER), tone, .7)); }
+  const win = sheetWin(st).filter(([x]) => x < 2.3);
+  if (win.length > 1) s += ribbon(win);
+  return { box: pBoxOf([...plate, at(PSH.len, 1, 40)]), svg: s };
+}
+
+function traySvg(st){
+  const k = ease(st.tray), x1 = W + .2 + TRAYL*k, zt = Z0 + 5.8;
+  if (k < .02) return null;
+  const c = [[W - 2, 9, Z0 + 5], [x1, 9, Z0 + 5], [x1, 37, Z0 + 5], [W - 2, 37, Z0 + 5], [W - 2, 9, zt], [x1, 9, zt], [x1, 37, zt], [W - 2, 37, zt]];
+  let s = pHexa(c, LIGHT, tone, .9);
+  const flip = pClamp((k - .8)/.2, 0, 1);                             // the paper stop flips up at the end
+  if (flip > 0) s += pHexa([[x1 - .8, 14, zt], [x1, 14, zt], [x1, 32, zt], [x1 - .8, 32, zt], [x1 - .8 - 3*(1 - flip), 14, zt + 3*flip], [x1 - 3*(1 - flip), 14, zt + 3*flip], [x1 - 3*(1 - flip), 32, zt + 3*flip], [x1 - .8 - 3*(1 - flip), 32, zt + 3*flip]], GREY, tone, .6);
+  if (st.stack > 0){ const h = .2 + .12*Math.min(st.stack, 12), xs = Math.min(x1 - 1, W + TRAYL - 1);
+    const q = [[W, PSH.y0, zt], [xs, PSH.y0, zt], [xs, PSH.y1, zt], [W, PSH.y1, zt]];
+    let rows = ''; for (let d = 3; d < xs - W - 1; d += 2) rows += `<path d="${pd([[xs - d, PSH.y1 - 2, zt + h + .05], [xs - d, PSH.y1 - 13, zt + h + .05]], false)}" stroke="#2b2a2e" stroke-width=".5" fill="none"/>`;
+    s += act('stack', pHexa([...q, ...q.map(([x, y, z]) => [x, y, z + h])], matOf(PAPER), tone, .7) + rows); }
+  const win = sheetWin(st).filter(([x]) => x > W - .1);
+  if (win.length > 1) s += ribbon(win) + rowsSvg(st, x => x > W);
+  return { box:[[W - 2, 9, Z0 + 5], [x1 + .5, 37, zt + 3.5]], svg: s };
+}
+
+function stickSvg(st){
+  const u = ease(st.usb), arc = 7*Math.sin(Math.PI*u);
+  const A0 = [W + 5, -17, Z0], A1 = [W - 8.2, -6.6, Z0 + 9.3];          // lying on the desk -> plugged into the side port
+  const o = lerp3(A0, A1, u); o[2] += arc;
+  const blink = st.phase === 'print' && Math.floor(st.t*8) % 2 === 0;
+  let s = box(o[0], o[1], o[2], o[0] + 3.6, o[1] + 6, o[2] + 1.6, STICK, tone, .9);
+  if (u < .95) s += box(o[0] + .6, o[1] + 6, o[2] + .3, o[0] + 3, o[1] + 8.6, o[2] + 1.3, METAL, tone, .6);   // connector (inside the port once plugged)
+  if (facing([0,0,1])) s += shape(on(PZ(o[2] + 1.65), ellUV(o[0] + 1.8, o[1] + 1.2, .5, .5, 8)), blink ? '#43c25c' : '#7d7169', .3);
+  return { box:[[o[0], o[1], o[2]], [o[0] + 3.6, o[1] + (u < .95 ? 8.6 : 6), o[2] + 1.6]], svg: act('usb', s) };
+}
+
+/* ---------- see-through ---------- */
+let MECH_LABELS = '';
+const pWire = (pts, col, w = .45) => ({ box: pBoxOf(pts), svg: `<path d="${pd(pts, false)}" fill="none" stroke="${INK}" stroke-width="${f(2*w + 1)}" stroke-linejoin="round" stroke-linecap="round"/><path d="${pd(pts, false)}" fill="none" stroke="${col}" stroke-width="${f(2*w)}" stroke-linejoin="round" stroke-linecap="round"/>` });
+function mech(st, k){
+  const parts = [], put = (b, svg) => parts.push({ box: b, svg });
+  const bx = (x0,y0,z0,x1,y1,z1,mm,w = .7) => put([[x0,y0,z0],[x1,y1,z1]], box(x0,y0,z0,x1,y1,z1,mm,toneI,w));
+  const rollY = (x, z, r, mm, y0 = 8, y1 = 38) => put([[x - r, y0, z - r], [x + r, y1, z + r]], rod([x, y0, z], [x, y1, z], r, mm, toneI, .7));
+  const run = st.phase === 'print';
+  rollY(4.4, ZT - 4.2, 1.6, RUBBER, 14, 32);                                   // pickup roller at the slot
+  rollY(8, Z0 + 5.8, 1.2, RUBBER);                                              // feed roller
+  bx(12, 6, Z0 + 5, 28, 40, Z0 + 6.5, matOf('#c9c1b2'), .7);                    // platen
+  rollY(W - 3, Z0 + 5.8, 1.2, RUBBER);                                          // exit roller
+  for (const y of [11, 18, 25, 32]) put([[W - 3.6, y, Z0 + 7.4], [W - 2.4, y + 1.4, Z0 + 9]], rod([W - 3, y, Z0 + 8.2], [W - 3, y + 1.2, Z0 + 8.2], .8, METAL, toneI, .4));  // star wheels
+  parts.push(railSvg(), ...carriage(st));
+  put([[24.2, 2, Z0 + 12.6], [24.4, D - 2, Z0 + 13.4]], shape([[24.3, 2, Z0 + 12.6], [24.3, D - 2, Z0 + 12.6], [24.3, D - 2, Z0 + 13.4], [24.3, 2, Z0 + 13.4]], '#cfd6d8', .3));   // encoder strip
+  bx(17, D - 6, Z0 + 9.5, 23, D - 2, Z0 + 14, DARK, .8);                        // carriage motor
+  put([[19, 3, Z0 + 10.5], [21, 5, Z0 + 12.5]], cylX(19, 21, 4, Z0 + 11.5, 1, METAL, toneI, .5));   // idler pulley
+  put([[19.6, 4, Z0 + 10.6], [20.4, D - 4, Z0 + 12.4]], `<path d="${pd([[20, 4, Z0 + 12.4], [20, D - 4, Z0 + 12.4]], false)}" stroke="${INK}" stroke-width="1.1" fill="none"/><path d="${pd([[20, 4, Z0 + 10.6], [20, D - 4, Z0 + 10.6]], false)}" stroke="${INK}" stroke-width="1.1" fill="none"/>`);   // belt
+  bx(14, 1.5, Z0 + 6, 26, 6.5, Z0 + 8.6, matOf('#5c6369'), .7);                 // parking (capping) station
+  bx(3, 2, Z0 + .5, 11, 11, Z0 + 5, METAL, .7);                                  // power supply
+  bx(13, 28, Z0 + .5, 30, 44, Z0 + 1.3, PCBM, .6);                               // main board
+  for (const [x, y] of [[16, 31], [22, 35], [26, 30]]) bx(x, y, Z0 + 1.3, x + 3, y + 3, Z0 + 2, DARK, .3);
+  parts.push(pWire([[11, 6, Z0 + 3], [14, 6, Z0 + 1.5], [16, 29, Z0 + 1.3]], '#e2483d'));
+  parts.push(pWire([[20, 40, Z0 + 1.3], [20, D - 4, Z0 + 6], [20, st.cy + 3, Z0 + 9]], '#cfd6d8', .35));   // ribbon cable to the carriage
+  const win = sheetWin(st).filter(([x]) => x >= 2.2 && x <= W);
+  if (win.length > 1){ const pts = win.flatMap(([x, z]) => [[x, PSH.y0, z], [x, PSH.y1, z]]);
+    put(pBoxOf(pts), ribbon(win) + rowsSvg(st, x => x <= W)); }
+  const out = byDepth(parts);
+  MECH_LABELS = k <= .6 ? '' : xrCallouts([
+    { at:[20, st.cy, Z0 + 15], text:'KARTRID CMYK', on: run || st.swap > 0 },
+    { at:[15, st.cy, Z0 + 11], text:'CARRIAGE', on: run },
+    { at:[23, D - 4, Z0 + 12], text:'MOTOR + SABUK', on: run || st.phase === 'boot' },
+    { at:[4.4, 14, ZT - 4.2], text:'ROL PENGAMBIL', on: run && st.sheet < .25 },
+    { at:[28, 20, Z0 + 6.5], text:'PLATEN', on: run },
+    { at:[W - 3, 36, Z0 + 5.8], text:'ROL KELUAR', on: run && st.sheet > .6 },
+    { at:[30, 40, Z0 + 1.3], text:'PAPAN UTAMA', on: st.on } ], [0, W, 0, D, Z0, ZT + 4]);
+  return out;
+}
+
+/* ---------- scene ---------- */
+function scene(st, m){
+  let s = board(-16, -20, W + 22, D + 5, Z0, 6, WOOD);
+  const bt = boardTop(-16, -20, W + 22, D + 5, Z0, 6);
+  s += castShadow([[0,0,Z0],[W,0,Z0],[W,D,Z0],[0,D,Z0],[0,0,ZT + HT],[W,0,ZT + HT],[W,D,ZT + HT],[0,D,ZT + HT],[-9, 6, Z0 + 30],[-9, 40, Z0 + 30]], Z0, bt);
+  const k = ease(st.xr || 0);
+  let body = bodySvg(st, m);
+  if (k > 0) body = xrGhost(body, '', k, BODY, 0, W, m) + `<g opacity="${f(k)}">${mech(st, k)}</g>`;
+  body += keysSvg(st);
+  const cov = coverSvg(st, m), cc = coverCorners(coverAngle(st));
+  s += byDepth([
+    { box:[[0, 0, Z0], [W + 1, D, ZT]], svg: body },
+    { box: pBoxOf(cc), svg: k > 0 ? `<g opacity="${f(1 - .8*k)}">${cov}</g>` : cov },
+    rearSvg(st), traySvg(st), stickSvg(st) ]);
+  if (k > .6) s += MECH_LABELS;
+  else s += [
+    tag([W + 1, 10.5, Z0 + 11], 22, 12, 'PRINT', st.phase === 'print'),
+    tag([W - 6, -4, Z0 + 10], 20, -12, 'USB', st.usb > .95),
+    tag([-6, 23, Z0 + 26], -26, -8, 'KERTAS', st.paper < 3),
+  ].join('');
+  return s;
+}
+
+/* ---------- behaviour ---------- */
+let ui, pLoop = false;
+function pStep(st, dt){
+  st.t += dt;
+  for (const [a, b, sp] of [['usb', 'usbT', 1.6], ['cover', 'coverT', 1.4], ['tray', 'trayT', 1.8]]) st[a] += pClamp(st[b] - st[a], -dt*sp, dt*sp);
+  st.kp = Math.max(0, st.kp - dt); st.kr = Math.max(0, st.kr - dt); st.warn = Math.max(0, st.warn - dt);
+  if (st.swap > 0){ const before = st.swap; st.swap = Math.min(1, st.swap + dt/1.4); if (before < .5 && st.swap >= .5) st.ink = 100; if (st.swap >= 1) st.swap = 0; }
+  let target = st.cy;
+  if (st.phase === 'boot'){ st.pt += dt / 1.8; st.cy = 6 + (D - 12) * Math.sin(Math.PI * Math.min(1, st.pt));
+    if (st.pt >= 1){ st.phase = 'idle'; st.cy = 6; ui.flash('Printer siap', 1200); } }
+  else if (st.phase === 'print'){
+    if (st.tray < .98){ st.trayT = 1; }
+    else { st.sheet += dt / 5; const printing = headOf(st) - 4 > SPRINT && headOf(st) - 26 < SPRINT;
+      st.cy = printing ? 6 + (D - 12) * tri(st.t * 2.4) : st.cy + pClamp(6 - st.cy, -dt*40, dt*40);
+      if (st.sheet >= 1){ st.sheet = -1; st.stack++; st.printed++; st.paper = Math.max(0, st.paper - 1); st.ink = Math.max(0, st.ink - 8); st.phase = 'idle';
+        ui.flash(`Tercetak: ${FILES[st.job].name}`, 1800); } } }
+  else { target = st.cover > .5 ? D/2 : 6; if (st.on) st.cy += pClamp(target - st.cy, -dt*40, dt*40); }
+}
+function pRun(){
+  if (pLoop) return; pLoop = true;
+  ui.animate(dt => { const st = ui.st; pStep(st, dt);
+    const moving = st.phase !== 'idle' || ['usb','cover','tray'].some(a => Math.abs(st[a] - st[a + 'T']) > .001) || st.kp > 0 || st.kr > 0 || st.warn > 0 || st.swap > 0
+      || (st.on && Math.abs(st.cy - (st.cover > .5 ? D/2 : 6)) > .05);
+    if (!moving) pLoop = false; return moving; });
+}
+const pBusy = st => st.phase === 'print' || st.phase === 'boot';
+function power(st){
+  st.kp = .18; pRun();
+  if (pBusy(st)) return ui.flash('Tunggu sampai selesai');
+  st.on = !st.on;
+  if (st.on){ st.phase = 'boot'; st.pt = 0; } else { st.phase = 'idle'; }
+}
+function plug(st){
+  if (st.phase === 'print') return ui.flash('Jangan cabut saat mencetak!');
+  st.usbT = st.usbT > .5 ? 0 : 1; if (st.usbT === 0) st.file = -1; pRun();
+}
+function pick(st, i){
+  if (st.usb < .95){ st.usbT = 1; pRun(); return ui.flash('Colok flashdisk dulu'); }
+  st.file = i;
+  if (FILES[i].kind === 'virus'){ st.warn = 2; pRun(); ui.flash('Awas, itu virus! Jangan dibuka.', 2200); }
+}
+function print(st){
+  st.kr = .18; pRun();
+  if (pBusy(st)) return ui.flash('Sedang mencetak…');
+  if (!st.on){ power(st); return ui.flash('Printer dinyalakan dulu…'); }
+  if (st.cover > .1){ st.coverT = 0; return ui.flash('Tutup cover dulu'); }
+  if (st.usb < .95 || st.file < 0) return ui.flash('Colok flashdisk dan pilih file dulu');
+  if (FILES[st.file].kind === 'virus'){ st.warn = 2; return ui.flash('File virus tidak bisa dicetak'); }
+  if (!st.paper) return ui.flash('Kertas habis: isi kertas di baki belakang');
+  if (st.ink < 8) return ui.flash('Tinta habis: buka cover lalu ganti tinta');
+  st.phase = 'print'; st.job = st.file; st.sheet = 0;
+}
+function cover(st){
+  if (pBusy(st)) return ui.flash('Jangan buka cover saat mencetak');
+  st.coverT = st.coverT > .5 ? 0 : 1; pRun();
+}
+function swapInk(st){
+  if (st.cover < .9){ cover(st); return ui.flash('Buka cover dulu, carriage pindah ke tengah'); }
+  if (!st.on) return ui.flash('Nyalakan printer supaya carriage ke tengah');
+  st.swap = .001; pRun();
+}
+function refill(st){ st.paper = 20; ui.flash('Baki diisi 20 lembar', 1200); }
+function take(st){ if (!st.stack) return ui.flash('Belum ada hasil'); st.stack = 0; }
+
+ui = mountFigure({
+  fig:'02', turn:'full', title:'Printer Inkjet', hint:'Nyalakan · colok flashdisk · pilih file · Print',
+  idea:'Carriage berisi empat tinta (C M Y K) bolak-balik di atas kertas, menyemprot satu pita tiap lewat, sementara kertas maju sedikit demi sedikit.',
+  size:[W + 38, D + 25, 46], center:[W/2 + 3, (D - 20)/2 + 2], palette:'monad',
+  state:{ on:false, phase:'idle', pt:0, t:0, usb:0, usbT:0, file:-1, job:-1, cover:0, coverT:0, tray:0, trayT:0,
+          cy:6, sheet:-1, stack:0, printed:0, paper:20, ink:100, swap:0, kp:0, kr:0, warn:0 },
+  scene,
+  stats: st => [{ label:'TERCETAK', value: st.printed }, { label:'TINTA', value: `${Math.round(st.ink)}%`, small:true }, { label:'KERTAS', value: st.paper, small:true }],
+  readout: st => !st.on ? 'mati · tekan Nyalakan'
+    : st.phase === 'boot' ? 'carriage memeriksa rel…'
+    : st.phase === 'print' ? (st.tray < .98 ? 'baki keluar…' : 'mencetak…')
+    : st.usb < .95 ? 'siap · colok flashdisk' : st.file < 0 ? 'pilih file' : `siap mencetak ${FILES[st.file].name}`,
+  buttons:[
+    { label:'Nyalakan', onClick:(st) => power(st) },
+    { label:'Colok flashdisk', onClick:(st) => plug(st) },
+    { label:'Pilih file', choices: st => FILES.map((fl, i) => ({ label: fl.name, current: st.file === i,
+        disabled: st.phase === 'print', why:'tunggu cetakan selesai', onClick:(st) => pick(st, i) })) },
+    { label:'Print!', onClick:(st) => print(st) },
+    { label:'Buka cover', onClick:(st) => cover(st) },
+    { label:'Ganti tinta', onClick:(st) => swapInk(st) },
+    { label:'Isi kertas', onClick:(st) => refill(st) },
+    { label:'Ambil hasil', onClick:(st) => take(st) },
+  ],
+  acts:{ power:(st) => power(st), print:(st) => print(st), usb:(st) => plug(st), cover:(st) => cover(st), stack:(st) => take(st), paper:(st) => refill(st) },
+  params:(st, q) => {
+    if (q.get('on') === '1'){ st.on = true; }
+    for (const key of ['usb', 'cover', 'tray']) if (q.has(key)){ st[key] = +q.get(key); st[key + 'T'] = st[key]; }
+    for (const key of ['file', 'sheet', 'stack', 'cy', 'ink', 'paper', 'swap']) if (q.has(key)) st[key] = +q.get(key);
+    if (q.has('job')) st.job = +q.get('job');
+    if (q.has('phase')) st.phase = q.get('phase');
+  },
+});
+addEventListener('keydown', e => {
+  if (/input|textarea|button/i.test(e.target.tagName)) return;
+  const key = e.key.toLowerCase(), st = ui.st;
+  if (key === ' ' || key === 'enter') print(st); else if (key === 'o') power(st); else if (key === 'u') plug(st); else if (key === 'c') cover(st); else if (key === 't') take(st); else return;
+  e.preventDefault(); ui.render();
+});
+xrMount(() => ui, () => '');
+</script></body></html>

@@ -1,0 +1,77 @@
+// / — landing (desain 3D): etalase toko fotokopi 3D ala key art Overcooked, logo besar, tombol MAIN.
+import '@fontsource/fredoka/500.css';
+import '@fontsource/fredoka/700.css';
+import '@fontsource/lilita-one';
+import { Canvas } from '@react-three/fiber';
+import { motion } from 'motion/react';
+import { Suspense } from 'react';
+import '../arena/arena.css';
+import { IkonLangkah, IkonOrder, KoinMon } from '../arena/Ikon';
+import { AdeganLanding, Cahaya } from '../arena3d/Adegan';
+import '../arena3d/arena3d.css';
+import { NAMA } from '../lib/merek';
+
+export default function Landing() {
+  const [kata1, ...sisa] = NAMA.toUpperCase().split(' ');
+  return (
+    <main className="halaman-game landing-3d">
+      <section className="hero-3d">
+        <Canvas shadows flat dpr={[1, 2]} camera={{ fov: 34, position: [0, 3.6, 8.6] }} onCreated={({ camera }) => camera.lookAt(0, 1.75, 0)}>
+          <color attach="background" args={['#2c2170']} />
+          <fog attach="fog" args={['#2c2170', 12, 26]} />
+          <Cahaya />
+          <Suspense fallback={null}>
+            <AdeganLanding />
+          </Suspense>
+        </Canvas>
+
+        <nav className="nav-landing">
+          <span className="logo-kecil">{NAMA}</span>
+          <div>
+            <a href="#cara">Cara main</a>
+            <a href="/layar">Layar proyektor</a>
+          </div>
+        </nav>
+        <div className="judul-hero">
+          <motion.h1 className="logo-besar" initial={{ scale: 0.6, rotate: -8, opacity: 0 }} animate={{ scale: 1, rotate: -3, opacity: 1 }} transition={{ type: 'spring', bounce: 0.5 }}>
+            <span className="baris1">{kata1}</span>
+            <span className="baris2">{sisa.join(' ')}</span>
+          </motion.h1>
+          <div className="pita">REBUTAN ORDER · ON MONAD</div>
+        </div>
+        <div className="cta cta-3d">
+          <a className="tombol-game kuning besar" href="/lobi">
+            MAIN SEKARANG
+          </a>
+          <a className="tombol-game putih" href="/pesan">
+            PESAN DARI HP
+          </a>
+        </div>
+      </section>
+
+      <section id="cara" className="fitur">
+        <div className="kartu-fitur">
+          <div className="ikon-fitur">
+            <IkonOrder jenis="ktp" ukuran={52} />
+          </div>
+          <h3>Rebutan order</h3>
+          <p>Penonton memesan dari HP. Dua toko berebut; Monad memutuskan pemenangnya dalam 0,3 detik.</p>
+        </div>
+        <div className="kartu-fitur">
+          <div className="ikon-fitur">
+            <IkonLangkah kode={2} ukuran={52} />
+          </div>
+          <h3>Makin kilat, makin cuan</h3>
+          <p>Lari ke mesin: fotokopi, print, laminating. Bayaran turun tiap detik, sisanya kembali ke pelanggan.</p>
+        </div>
+        <div className="kartu-fitur">
+          <div className="ikon-fitur">
+            <KoinMon ukuran={52} />
+          </div>
+          <h3>NFT hasil cetakan</h3>
+          <p>Order selesai, contract langsung membayar toko dan mengirim NFT berisi teks pelanggan.</p>
+        </div>
+      </section>
+    </main>
+  );
+}
