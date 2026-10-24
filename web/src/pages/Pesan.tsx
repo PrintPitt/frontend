@@ -73,19 +73,22 @@ export default function Pesan() {
   const muat = useCallback(async () => {
     setMemuat(true);
     try {
-      const [k, t, b, off, cfg] = await Promise.all([
+      // fee dibaca dari contract (sumber kebenaran); backend hanya untuk top-up & relay, jadi katalog tetap tampil saat backend mati
+      const [k, t, b, off, feeRelay, bps] = await Promise.all([
         bacaKatalog(),
         bacaToko(),
         pub.readContract({ ...kontrak, functionName: 'batasAntre' }),
         offsetChain(),
-        ambilConfig(),
+        pub.readContract({ ...kontrak, functionName: 'feeRelay' }),
+        pub.readContract({ ...kontrak, functionName: 'platformFeeBps' }),
       ]);
       setKatalog(k.filter(JENIS_DEMO));
       setNamaToko(Object.fromEntries(t.map((x) => [x.alamat.toLowerCase(), x.nama])));
       setBatasAntre(b);
       setOffset(off);
-      setFee(BigInt(cfg.feeRelay));
-      if (cfg.platformFeeBps !== undefined) setFeeBps(Number(cfg.platformFeeBps));
+      setFee(feeRelay);
+      setFeeBps(Number(bps));
+      ambilConfig().catch(() => setGalat('Server top-up/relayer tidak bisa dihubungi. Pesan tanpa gas mungkin gagal.'));
       setGalatMuat('');
     } catch (e) {
       setGalatMuat(pesanGalat(e));

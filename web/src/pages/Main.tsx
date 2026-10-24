@@ -15,6 +15,7 @@ import Tiket, { type DataTiket } from '../arena/Tiket';
 import '../arena3d/arena3d.css';
 import { UNGU } from '../arena3d/Mesin3D';
 import { Toko3D } from '../arena3d/Toko3D';
+import { jedaMusik, mulaiMusik, musikDiinginkan, musikNyala, toggleMusik } from '../game/musik';
 import { sfx } from '../game/sfx';
 import { Item3D, wujudAwal, type Item } from '../game3d/Item3D';
 import {
@@ -130,6 +131,7 @@ export default function Main() {
   const [goyang, setGoyang] = useState(0);
   const [tutorial, setTutorial] = useState(() => !localStorage.getItem('pp.tutorial'));
   const [menu, setMenu] = useState(false);
+  const [musik, setMusik] = useState(false);
   const [hati, setHati] = useState(0);
   const diamSejak = useRef(performance.now());
   const [ringan, setRingan] = useState(() => new URLSearchParams(location.search).has('ringan'));
@@ -389,11 +391,19 @@ export default function Main() {
       if (e.repeat) return;
       diamSejak.current = performance.now();
       if (e.key === 'Escape') return setMenu((m) => !m);
+      if (e.key === 'm' || e.key === 'M') return setMusik(toggleMusik());
+      if (!musikNyala() && musikDiinginkan()) {
+        mulaiMusik();
+        setMusik(true);
+      }
       if (e.key === ' ' || e.key === 'Enter') aksiRef.current();
       else if (e.key === '1' || e.key === '2' || e.key === '3') pilihRef.current(Number(e.key) - 1);
     };
     addEventListener('keydown', f);
-    return () => removeEventListener('keydown', f);
+    return () => {
+      removeEventListener('keydown', f);
+      jedaMusik();
+    };
   }, []);
 
   const tutupTutorial = useCallback(() => {
@@ -587,7 +597,7 @@ export default function Main() {
           </div>
         </div>
       )}
-      <div className="kontrol-3d">WASD gerak · Shift lari · Spasi ambil/taruh/serah · Tahan E laminating · 1–3 pilih file</div>
+      <div className="kontrol-3d">WASD gerak · Shift lari · Spasi ambil/taruh/serah · Tahan E laminating · 1–3 pilih file · M musik {musik ? '♪' : '✕'}</div>
       <div className="toast-wadah">
         <AnimatePresence>
           {toast && (
