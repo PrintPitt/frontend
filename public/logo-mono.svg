@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="328 140 546 528" role="img" aria-label="PrintPitt">
+  <defs>
+    <mask id="cut" maskUnits="userSpaceOnUse" x="328" y="140" width="546" height="528">
+      <rect x="328" y="140" width="546" height="528" fill="#fff"/>
+      <rect x="476" y="193" width="288" height="60" rx="10" fill="#000"/>
+    </mask>
+    <mask id="fold" maskUnits="userSpaceOnUse" x="328" y="140" width="546" height="528">
+      <rect x="328" y="140" width="546" height="528" fill="#fff"/>
+      <path d="M722,205 L838,326 C846,334 852,344 855,352 L780,328 C755,322 740,306 736,282 Z" fill="#000" stroke="#000" stroke-width="16" stroke-linejoin="round"/>
+    </mask>
+  </defs>
+  
+  <rect x="435" y="162" width="370" height="51" rx="25.5" fill="#0E0F12" mask="url(#cut)"/>
+  <path d="M492,205 H722 L838,326 C850,338 856,356 856,380 C856,462 790,522 705,522 H607 V626 Q607,650 583,650 H516 Q492,650 492,626 Z M669,312 A66,66 0 1 0 669,444 A66,66 0 1 0 669,312 Z" fill="#0E0F12" fill-rule="evenodd" mask="url(#fold)"/>
+  <path d="M722,205 L838,326 C846,334 852,344 855,352 L780,328 C755,322 740,306 736,282 Z" fill="#0E0F12"/>
+  <rect x="347" y="352" width="128" height="32" rx="16" fill="#0E0F12"/>
+  <rect x="347" y="410" width="128" height="32" rx="16" fill="#0E0F12"/>
+</svg>

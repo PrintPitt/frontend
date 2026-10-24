@@ -1,218 +1,31 @@
 <!doctype html>
-<html lang="id" data-pal="putih" class="no-js">
+<html lang="en" class="no-js">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>PrintPitt — Makin kilat, makin cuan.</title>
-  <meta name="description" content="PrintPitt, game toko fotokopi kilat di Monad: kamu pesan, dua toko rebutan, upah toko turun tiap detik, sisanya balik ke kamu. A print-shop game on Monad." />
+  <title>PrintPitt — More Blitz, More Money.</title>
+  <meta name="description" content="PrintPitt is an onchain print shop on Monad. You order, two print shops race for it, their payout drops every second, and the rest flows back to you." />
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="PrintPitt — Makin kilat, makin cuan." />
   <meta property="og:site_name" content="PrintPitt" />
-  <meta property="og:description" content="Toko fotokopi kilat onchain di Monad. You order, two shops race, the payout decays per second, the rest refunds." />
+  <meta property="og:title" content="PrintPitt — More Blitz, More Money." />
+  <meta property="og:description" content="Two print shops race for your order onchain. The faster they finish, the more they earn — the rest flows back to you, every second." />
   <meta property="og:image" content="/og/og.png" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="theme-color" content="#F4F5F6" />
+  <meta name="theme-color" content="#EEF3F6" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="/logo.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Anybody:wdth,wght@75..150,700..900&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anybody:wdth,wght@75..150,700..900&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" /></noscript>
-  <link rel="stylesheet" href="/src/styles.css" />
 </head>
 <body>
-<a class="skip" href="#masalah">Lewati ke isi</a>
-
-<header class="top">
-  <a class="brand" href="#top" aria-label="PrintPitt, kembali ke atas"><img class="brand-logo" src="/logo.svg" alt="" width="28" height="28" /><span data-nama>PrintPitt</span></a>
-  <nav class="topnav" aria-label="Bab">
-    <a href="#masalah">Masalah</a><a href="#tur">Cara kerja</a><a href="#rumus">Upah</a><a href="#live">Live</a><a href="#bukti">Bukti</a>
-  </nav>
-  <div class="topright">
-    <button class="pal-btn" id="palBtn" type="button" aria-label="Ganti tema">Aspal</button>
-    <a class="btn btn-sm" id="topCta" href="#" target="_blank" rel="noopener">Pesan sekarang</a>
-  </div>
-</header>
-
-<!-- 1. HERO -->
-<section class="hero" id="top">
-  <div class="kilat" aria-hidden="true"><span id="kilatWord">KILAT</span></div>
-  <div class="hero-grid">
-    <div class="hero-copy">
-      <p class="og-brand" aria-hidden="true"><img src="/logo.svg" alt="" width="56" height="56" /><span data-nama>PrintPitt</span></p>
-      <p class="eyebrow">Monad Blitz Jogja Vol. 2<span class="mode-sep"> · </span><span id="modeTag" class="tag">SIMULASI</span></p>
-      <h1>Makin kilat,<br/>makin cuan.</h1>
-      <p class="sub"><b data-nama>PrintPitt</b>: toko fotokopi kilat onchain di Monad. Kamu pesan, dua toko rebutan, upahnya turun tiap detik, sisanya balik ke kamu.</p>
-      <p class="sub-en">A print-shop game on Monad: you order, two shops race, the payout decays per second, the rest refunds.</p>
-      <div class="cta-row">
-        <a class="btn btn-lg" id="heroCta" href="#" target="_blank" rel="noopener">Pesan sekarang</a>
-        <div class="qr-mini"><canvas id="qrMini" width="112" height="112" aria-label="QR ke halaman pesan"></canvas><span>Scan untuk pesan dari HP</span></div>
-      </div>
-      <p class="counter"><b id="counterN">417</b> <span id="counterLabel">order (simulasi)</span> · <span id="konfirmasi">konfirmasi — dtk</span></p>
-    </div>
-    <div class="hero-fig">
-      <div class="fig fig-hero" id="figHero" data-fig="mesin-fotokopi"></div>
-      <div class="fig-acts" data-for="figHero">
-        <button type="button" data-act="Angkat tutup">Angkat tutup</button>
-        <button type="button" data-act="Taruh dokumen">Taruh dokumen</button>
-        <button type="button" data-act="Copy!" class="hot">Copy!</button>
-        <button type="button" data-act="Ambil hasil">Ambil hasil</button>
-      </div>
-      <p class="hint">Seret untuk memutar · ketuk 2× untuk kembali</p>
-    </div>
-  </div>
-  <a class="scroll-cue" href="#masalah" aria-label="Gulir ke bawah"><span></span></a>
-</section>
-
-<!-- 2. MASALAH -->
-<section class="masalah" id="masalah">
-  <p class="eyebrow">Masalah</p>
-  <h2 class="statement"><span class="s1">Antre fotokopi depan kampus: bayar dulu, nunggu nggak jelas.</span><span class="s2">Di <span data-nama>PrintPitt</span>, telat&nbsp;=&nbsp;uangmu balik.</span></h2>
-  <p class="lead">Uang pelanggan ditahan kontrak, bukan toko. Dua toko berebut order, upahnya turun tiap detik. Yang kilat dibayar lebih, yang telat mengembalikan semuanya. Otomatis.</p>
-</section>
-
-<!-- 3. TUR 6 BAB -->
-<section class="tur" id="tur" aria-label="Cara kerja, enam bab">
-  <div class="stage" id="stage">
-    <div class="bab-title" id="babTitle">
-      <p class="bab-no"><span id="babNo">BAB 01 / 06</span></p>
-      <h2 class="bab-verb" id="babVerb">PESAN.</h2>
-      <p class="bab-line" id="babLine">Pelanggan memesan dari HP, uangnya langsung ditahan kontrak.</p>
-    </div>
-
-    <div class="arena" id="arena" aria-hidden="true">
-      <!-- benda tetap -->
-      <div class="phone" id="phone"><div class="phone-screen"><p class="ph-k">Skripsi Hardcover</p><p class="ph-t">Analisis Antrean Fotokopi Depan Kampus</p><p class="ph-n">Ratna</p><button class="ph-btn" type="button" tabindex="-1">Bayar 0,02 MON</button></div></div>
-      <div class="vault" id="vault"><span class="vault-k">KONTRAK</span><span class="vault-v" id="vaultV">0,0000 MON</span><i class="vault-logo"></i></div>
-      <div class="coin" id="coin"></div>
-      <div class="coin coin-a" id="coinA"></div>
-      <div class="coin coin-b" id="coinB"></div>
-      <div class="sheet" id="sheet"></div>
-      <div class="ticket" id="ticket"><span class="tk-no">#0042</span><span class="tk-l">Skripsi Hardcover</span><span class="tk-t">Ratna</span><i class="tk-bar"><b id="tkBar"></b></i></div>
-      <div class="shop shop-a" id="shopA"><span class="shop-name">Fotokopi Jaya</span><span class="shop-tag" id="shopATag">siap</span></div>
-      <div class="shop shop-b" id="shopB"><span class="shop-name">Sinar Copy</span><span class="shop-tag" id="shopBTag">siap</span></div>
-      <div class="klaim" id="klaim">KLAIM!</div>
-      <div class="blok" id="blok">blok #12.345 · 0,3 dtk</div>
-      <div class="station" id="station">
-        <div class="fig fig-st" id="figSt" data-fig="mesin-fotokopi" data-lazy></div>
-        <div class="st-steps"><span id="st1" class="step">Fotokopi</span><span id="st2" class="step">Laminating</span></div>
-      </div>
-      <div class="meter" id="meter"><span class="m-k">Upah toko sekarang</span><b class="m-v" id="meterV">0,0200</b><span class="m-u">MON</span><i class="m-bar"><b id="meterBar"></b></i><span class="m-t" id="meterT">t 00 / 45 dtk</span></div>
-      <div class="result" id="result">
-        <p class="r-title">Selesai · <b id="rKerja">15</b> dtk</p>
-        <div class="r-row"><span>ke Fotokopi Jaya</span><i><b id="rBarA"></b></i><b id="rA">+0,0133 MON</b></div>
-        <div class="r-row"><span>balik ke Ratna</span><i><b id="rBarB"></b></i><b id="rB">+0,0067 MON</b></div>
-        <p class="r-stars" id="rStars">★★★</p>
-      </div>
-      <div class="nft" id="nft"><div class="nft-in"><div class="nft-front"><p class="n-k">SKRIPSI · HARDCOVER</p><p class="n-t">Analisis Antrean Fotokopi Depan Kampus</p><p class="n-by">Ratna</p><span class="n-id">#0042</span></div><div class="nft-back"><p>NFT hasil cetakan</p><p class="n-small">dicetak <span data-nama>PrintPitt</span> · 15 dtk</p></div></div></div>
-    </div>
-
-    <ol class="rail" id="rail" aria-label="Lompat ke bab">
-      <li><button type="button" data-bab="0" aria-label="Bab 1 Pesan"></button></li>
-      <li><button type="button" data-bab="1" aria-label="Bab 2 Brankas"></button></li>
-      <li><button type="button" data-bab="2" aria-label="Bab 3 Rebutan"></button></li>
-      <li><button type="button" data-bab="3" aria-label="Bab 4 Kerjakan"></button></li>
-      <li><button type="button" data-bab="4" aria-label="Bab 5 Bayar"></button></li>
-      <li><button type="button" data-bab="5" aria-label="Bab 6 Cetakanmu"></button></li>
-    </ol>
-  </div>
-  <!-- versi tanpa gerak (reduced-motion / tanpa JS): daftar bab -->
-  <ol class="tur-static" id="turStatic">
-    <li><b>01 Pesan.</b> Pelanggan memesan dari HP, uangnya langsung ditahan kontrak.</li>
-    <li><b>02 Brankas.</b> 0,02 MON masuk escrow — bukan ke toko, bukan ke kami.</li>
-    <li><b>03 Rebutan.</b> Dua toko berebut. Yang klaim duluan, Monad yang memutuskan dalam satu blok.</li>
-    <li><b>04 Kerjakan.</b> Fotokopi, print, laminating. Upah toko turun tiap detik.</li>
-    <li><b>05 Bayar.</b> Toko dibayar sesuai kecepatan, sisanya balik otomatis ke pelanggan.</li>
-    <li><b>06 Cetakanmu.</b> Pelanggan dapat NFT hasil cetakan, lengkap dengan namanya.</li>
-  </ol>
-</section>
-
-<!-- 4. RUMUS -->
-<section class="rumus" id="rumus">
-  <p class="eyebrow">Rumus upah</p>
-  <h2>Makin cepat selesai, makin besar bagian toko.</h2>
-  <div class="rumus-grid">
-    <div class="rumus-num"><b id="ruV">0,0200</b><span>MON untuk toko</span></div>
-    <div class="rumus-ctl">
-      <label for="ruT">Waktu kerja: <b id="ruTv">0</b> dtk</label>
-      <input id="ruT" type="range" min="0" max="45" value="0" step="1" />
-      <div class="ru-bars">
-        <div class="ru-bar"><span>toko</span><i><b id="ruBarA" style="width:100%"></b></i><b id="ruA">0,0200</b></div>
-        <div class="ru-bar"><span>balik ke pelanggan</span><i><b id="ruBarB" style="width:0%"></b></i><b id="ruB">0,0000</b></div>
-      </div>
-      <p class="formula">upah = 0,02 × (45 − t) / 45 · refund = 0,02 − upah · telat &gt; 45 dtk = refund penuh</p>
-    </div>
-  </div>
-</section>
-
-<!-- 5. LIVE -->
-<section class="live" id="live">
-  <div class="live-head">
-    <p class="eyebrow">Live · <span id="liveTag" class="tag">SIMULASI</span></p>
-    <h2 id="liveTitle">Toko sedang buka</h2>
-    <a class="link" id="liveLink" href="#" target="_blank" rel="noopener">Buka papan proyektor →</a>
-  </div>
-  <div class="papan">
-    <div class="kolom"><h3>Antrean</h3><div class="cards" id="colQueue"><p class="empty">Belum ada pesanan. Scan QR!</p></div></div>
-    <div class="kolom toko"><h3>Fotokopi Jaya <small id="omzetA">0,0000 MON</small></h3><div class="cards" id="colA"></div></div>
-    <div class="kolom toko"><h3>Sinar Copy <small id="omzetB">0,0000 MON</small></h3><div class="cards" id="colB"></div></div>
-  </div>
-  <ul class="ticker" id="ticker" aria-label="Transaksi terbaru"></ul>
-</section>
-
-<!-- 6. KENAPA MONAD -->
-<section class="kenapa" id="kenapa">
-  <p class="eyebrow">Kenapa Monad</p>
-  <div class="kenapa-grid">
-    <div><b>0,3 dtk</b><span>per blok — rebutan order dan upah per detik terasa langsung, bukan menunggu konfirmasi.</span></div>
-    <div><b>100%</b><span>refund kalau telat — uang ditahan kontrak, kembali penuh tanpa admin.</span></div>
-    <div><b>0 admin</b><span>siapa yang duluan diputus chain; pelanggan memegang bukti pesanannya sendiri sebagai NFT.</span></div>
-  </div>
-</section>
-
-<!-- 7. MODEL BISNIS + DUA SISI -->
-<section class="bisnis" id="bisnis">
-  <p class="eyebrow">Dua sisi &amp; model bisnis</p>
-  <div class="sisi">
-    <div><h3>Pelanggan</h3><p>Bayar pasti. Telat = uang balik. Dapat NFT cetakan dengan namamu.</p></div>
-    <div><h3>Toko</h3><p>Makin cepat, makin cuan. Rebutan adil: yang klaim duluan, chain yang memutuskan.</p></div>
-  </div>
-  <div class="bisnis-grid">
-    <div><h3>Siapa bayar apa</h3><p>Pelanggan membayar harga order ke escrow. Toko menerima upah sesuai kecepatan. Pembuat ruangan (penyelenggara acara, kios kampus) mengambil fee <b id="fee">[ISI]</b> dari tiap order yang selesai.</p></div>
-    <div><h3>Dari acara ke kios</h3><p>Mulai dari acara kampus dan booth sponsor (ruangan dibuka per sesi), lalu kios fotokopi depan kampus yang berani memberi jaminan waktu: pelanggan pesan dari HP, antre tanpa ribut, kios dapat pelanggan yang percaya.</p></div>
-    <div><h3>Yang kami klaim hari ini</h3><p id="klaimHariIni">Hanya fungsi yang jalan di demo: pesan, escrow, rebutan, upah meluruh, refund, NFT. Data di bagian Live berlabel SIMULASI sampai tersambung ke kontrak.</p></div>
-  </div>
-</section>
-
-<!-- 8. BUKTI ONCHAIN -->
-<section class="bukti" id="bukti">
-  <p class="eyebrow">Bukti onchain</p>
-  <h2>Semua bisa dicek. Sekarang.</h2>
-  <dl class="bukti-grid">
-    <div><dt>Repo GitHub</dt><dd id="bRepo">—</dd></div>
-    <div><dt>Kontrak · Monad Testnet</dt><dd id="bTest">—</dd></div>
-    <div><dt>Kontrak · Monad Mainnet</dt><dd id="bMain">—</dd></div>
-    <div><dt>URL live</dt><dd id="bLive">—</dd></div>
-    <div><dt>Deployment</dt><dd id="bDeploy">—</dd></div>
-    <div><dt>Transaksi terbaru</dt><dd id="bTx">—</dd></div>
-  </dl>
-</section>
-
-<!-- 9. CTA + FOOTER -->
-<section class="cta" id="pesan">
-  <div class="cta-in">
-    <h2>Pesan sekarang.<br/>Lihat tokonya rebutan.</h2>
-    <a class="btn btn-xl" id="ctaBtn" href="#" target="_blank" rel="noopener">Pesan sekarang</a>
-    <p class="cta-note">testnet Monad · MON gratis dari kami · tanpa install, tanpa wallet</p>
-  </div>
-  <div class="qr-big"><canvas id="qrBig" width="320" height="320" aria-label="QR besar ke halaman pesan"></canvas><span>Scan untuk pesan dari HP</span></div>
-</section>
-<footer class="foot">
-  <p><span data-nama>PrintPitt</span> — toko fotokopi kilat onchain · Monad Blitz Jogja Vol. 2, 24 Oktober 2026 · Dex Bennett · Hans Gunawan · Dave</p>
-  <p id="footLinks"></p>
-</footer>
-
-<div class="stage-help" id="stageHelp" hidden>Mode panggung: → / ← / Spasi untuk pindah bab</div>
-<script type="module" src="/src/main.ts"></script>
+  <main>
+    <section id="D" class="D" aria-label="How PrintPitt works: one order, from phone to printed card"></section>
+    <section id="E" class="E" aria-label="Why onchain, why Monad, and the proof"></section>
+  </main>
+  <div class="stage-help" id="stageHelp" hidden>Stage mode: → / ← / Space to move between scenes</div>
+  <noscript><p style="padding:24px;font:16px system-ui">PrintPitt — the onchain print shop on Monad. Enable JavaScript to see the demo.</p></noscript>
+  <script type="module" src="/src/main.ts"></script>
 </body>
 </html>
