@@ -23,7 +23,6 @@ export const BACKEND_URL: string = (env.VITE_BACKEND_URL || (IS_ANVIL ? 'http://
 const PESAN_BACKEND: Record<string, string> = {
   PENDING_ORDER: 'Pesananmu sebelumnya masih diproses, tunggu sebentar',
   BAD_CODE: 'Faucet butuh kode akses (lihat layar panggung)',
-  FAUCET_EMPTY: 'Faucet gas sedang kosong, hubungi panitia',
   RATE_LIMITED: 'Terlalu banyak permintaan dari jaringan ini, coba lagi sebentar',
   AMOUNT_TOO_LOW: 'Minimal isi saldo Rp20.000',
   AMOUNT_TOO_HIGH: 'Nominal isi saldo terlalu besar',
