@@ -5,7 +5,7 @@ import { akunAktif, type Akun } from './akun';
 import { pindah } from './navigasi';
 
 /** Halaman yang boleh dibuka tanpa login. */
-export const RUTE_PUBLIK = new Set(['/masuk']);
+export const RUTE_PUBLIK = new Set(['/', '/masuk']);
 
 // TODO(Dave): set false (atau hapus) begitu useAuth() memakai status login sebenarnya.
 const STUB_SELALU_MASUK = true;

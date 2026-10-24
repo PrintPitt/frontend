@@ -382,8 +382,8 @@ export default function Pesan() {
               <motion.section key="form" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
                 {(
                   [
-                    ['Pilih pesanan', katalog.filter(JENIS_DEMO)],
                     ['Cetak dokumenmu', katalog.filter((x) => !JENIS_DEMO(x))],
+                    ['Order kilat (demo panggung)', katalog.filter(JENIS_DEMO)],
                   ] as const
                 ).map(([judul, daftar]) =>
                   daftar.length === 0 ? null : (
@@ -700,9 +700,66 @@ function StatusPesanan(p: {
   const sisaJemput = Math.max(0, o.siapPada + p.batasJemput - now);
   const feePlatform = (payoutAkhir * BigInt(p.feeBps)) / 10_000n;
 
+  // Pelacak ala aplikasi ojek online: satu status besar + 4 tahap (cari toko → dikerjakan → siap diambil → selesai)
+  const tahapLacak = o.status === 'Open' ? 0 : o.status === 'Claimed' ? 1 : o.status === 'Siap' || o.status === 'Sengketa' ? 2 : 3;
+  const judulLacak =
+    o.status === 'Open'
+      ? sisaAntre > 0
+        ? 'Mencari fotokopi terdekat…'
+        : 'Tidak ada toko yang sempat'
+      : o.status === 'Claimed'
+        ? kerja >= o.batasKerja
+          ? 'Toko kehabisan waktu'
+          : `${toko} sedang mengerjakan`
+        : o.status === 'Siap'
+          ? `Siap diambil di ${toko}`
+          : o.status === 'Sengketa'
+            ? 'Komplain sedang ditinjau'
+            : o.status === 'Expired'
+              ? 'Dibatalkan, dana kembali'
+              : 'Selesai!';
+  const subLacak =
+    o.status === 'Open'
+      ? `Toko dalam radius 1–1,5 km sedang berebut ordermu · ${sisaAntre} dtk`
+      : o.status === 'Claimed'
+        ? `Langkah ${Math.min(o.langkahSelesai + 1, o.langkah.length)}/${o.langkah.length}: ${NAMA_LANGKAH[o.langkah[Math.min(o.langkahSelesai, o.langkah.length - 1)]]} · kembalianmu kalau selesai sekarang ${formatRupiah(o.harga - payout)}`
+        : o.status === 'Siap'
+          ? pakaiKode
+            ? 'Tunjukkan QR di bawah ke kasir toko'
+            : 'Ambil hasil cetakanmu'
+          : o.status === 'Expired'
+            ? `${formatRupiah(o.harga)} sudah kembali ke saldomu`
+            : selesai
+              ? `Dikerjakan ${o.kerja} dtk · NFT struk sudah di akunmu`
+              : '';
+
   return (
     <div className="status">
       {p.putus && <div className="banner-galat kecil">Koneksi ke Monad terputus, mencoba lagi… (ordermu aman di escrow)</div>}
+      <div className={`kartu lacak lacak-${tahapLacak} ${o.status === 'Expired' ? 'lacak-batal' : ''}`}>
+        <div className="lacak-atas">
+          <div className={`lacak-ikon ${o.status === 'Open' && sisaAntre > 0 ? 'mencari' : ''}`}>
+            {o.status === 'Open' ? '📡' : o.status === 'Claimed' ? '🖨️' : o.status === 'Siap' ? '📦' : o.status === 'Expired' ? '↺' : '✅'}
+          </div>
+          <div>
+            <b className="lacak-judul">{judulLacak}</b>
+            <div className="lacak-sub">{subLacak}</div>
+          </div>
+        </div>
+        <ol className="lacak-tahap">
+          {['Cari toko', 'Dikerjakan', 'Siap diambil', 'Selesai'].map((t, i) => (
+            <li key={t} className={i < tahapLacak ? 'lewat' : i === tahapLacak ? 'kini' : ''}>
+              <span className="lacak-titik" />
+              {t}
+            </li>
+          ))}
+        </ol>
+        {o.status === 'Claimed' && (
+          <div className="bar tebal">
+            <div style={{ width: `${Math.max(0, 1 - kerja / o.batasKerja) * 100}%` }} />
+          </div>
+        )}
+      </div>
       <div className="kartu">
         <div className="muted kecil">
           #{String(p.id)} · {label}

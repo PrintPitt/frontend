@@ -10,10 +10,11 @@ import { useJalur } from './lib/navigasi';
 import { PenyediaAuth } from './lib/privy';
 
 // Kode tiap halaman dipisah: HP penonton (/pesan) tidak ikut mengunduh /layar dan /toko.
-// Landing marketing ada di app terpisah (`landing/`, printpitt-landing.vercel.app); `/` app langsung ke lobi.
+// Landing marketing ada di app terpisah (`landing/`, printpitt-landing.vercel.app). `/` app = pilih peran:
+// pelanggan (/pesan, cetak dokumen nyata), pemilik fotokopi (/toko, dashboard radius), atau mode panggung (/lobi, game).
 const Lobi = lazy(() => import('./pages/Lobi'));
 const HALAMAN: Record<string, React.LazyExoticComponent<() => React.JSX.Element | null>> = {
-  '/': Lobi,
+  '/': lazy(() => import('./pages/Beranda')),
   '/lobi': Lobi,
   '/main': lazy(() => import('./pages/Main')),
   '/pesan': lazy(() => import('./pages/Pesan')),
