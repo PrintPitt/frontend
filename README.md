@@ -25,4 +25,4 @@ React + Vite + three.js (React Three Fiber). Halaman: `/` landing, `/lobi`, `/ma
 cd web && npm install && npm run dev
 ```
 
-Catatan: `shared/src/` di repo ini adalah salinan `@printpitt/shared` dari repo `PrintPitt/contracts` (folder `shared/src/`, contract v2.1 `0x7aa3…3181`). Setelah contract di-deploy ulang, salin lagi `index.ts` dan `fotokopiKilat.generated.ts` ke sini.
+Catatan: `shared/src/` di repo ini adalah salinan `@printpitt/shared` dari repo `PrintPitt/contracts` (folder `shared/src/`, contract v2.2 `0x08b7…c959`). Setelah contract di-deploy ulang, salin lagi `index.ts` dan `fotokopiKilat.generated.ts` ke sini.

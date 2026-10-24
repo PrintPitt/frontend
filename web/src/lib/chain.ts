@@ -17,7 +17,7 @@ export const chain: Chain = {
   rpcUrls: { default: { http: [RPC_URL], ...(WS_URL ? { webSocket: [WS_URL] } : {}) } },
 };
 
-type Deployment = { address: string; tidrx?: string; batasAntre: number; batasJemput?: number; deployBlock?: number };
+type Deployment = { address: string; tidrx?: string; batasAntre: number; batasJemput?: number; batasSengketa?: number; deployBlock?: number };
 function cariDeployment(): Deployment | undefined {
   try {
     return deploymentUntuk(chain.id) as Deployment;
@@ -35,6 +35,8 @@ export const TIDRX = (env.VITE_TIDRX_ADDRESS || dep?.tidrx) as Hex;
 export const DEPLOY_BLOCK = BigInt(dep?.deployBlock ?? 0);
 /** Detik setelah Siap sebelum order bisa ditutup tanpa serah terima (immutable di contract v2). */
 export const BATAS_JEMPUT = dep?.batasJemput ?? 600;
+/** v2.2: sengketa yang tidak diputuskan operator dalam waktu ini (setelah batas jemput) dibagi 50/50 oleh keeper (`tutupSengketa`). */
+export const BATAS_SENGKETA = dep?.batasSengketa ?? 86_400;
 
 /**
  * RPC publik Monad membatasi 15 call/dtk per IP (error -32011, juga per call di dalam batch) dan viem tidak mengulangnya.
