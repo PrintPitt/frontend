@@ -1,4 +1,4 @@
-// Tiket order ala Overcooked: bar waktu di atas, ikon dokumen, ikon langkah, harga, cap toko yang merebut.
+// Overcooked-style order ticket: timer bar on top, document icon, step icons, price, stamp of the shop that claimed it.
 import { motion } from 'motion/react';
 import { IkonLangkah, IkonOrder, type JenisOrder } from './Ikon';
 import { PALET, type NamaPalet } from './kamera';

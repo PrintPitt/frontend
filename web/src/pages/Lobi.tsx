@@ -1,6 +1,6 @@
-// /lobi — profil pemain sebelum matchmaking: atur nama, rupa (topi koran / visor), warna baju, kulit, rambut.
-// Karakter tampil besar di balik konter toko (ala barisan chef di lobi Overcooked) dan melompat tiap kali diubah.
-// Akun masuk di sini dan dibawa ke match tanpa minta passkey lagi.
+// /lobi — player profile before matchmaking: set name, look (paper hat / visor), shirt, skin and hair color.
+// The character stands big behind the shop counter (like the chef line-up in the Overcooked lobby) and jumps on every change.
+// The account signs in here and is carried into the match without asking for a passkey again.
 import '@fontsource/fredoka/500.css';
 import '@fontsource/fredoka/700.css';
 import '@fontsource/lilita-one';
@@ -22,13 +22,14 @@ import { useLive } from '../lib/live';
 import { NAMA } from '../lib/merek';
 import { pindah } from '../lib/navigasi';
 import { bacaPro, langgananPro, tanggalPro, type InfoPro } from '../lib/pro';
+import { daftarkanToko, ubahNamaToko } from '../lib/toko';
 import { bacaProfil, MAKS_NAMA, rapikanNama, simpanProfil, WARNA_BAJU, WARNA_KULIT, WARNA_RAMBUT, type Profil } from '../lib/profil';
 import { formatRupiah } from '../../../shared/src/index.ts';
 import { pesanError } from '../lib/tx';
 
 const sama = (a?: string, b?: string) => !!a && !!b && a.toLowerCase() === b.toLowerCase();
 
-/** Karakter di panggung: menoleh pelan ke kiri-kanan, melompat setiap `versi` berubah. */
+/** Character on stage: slowly looks left-right, jumps whenever `versi` changes. */
 function KarakterPanggung({ p, versi }: { p: Profil; versi: number }) {
   const grup = useRef<THREE.Group>(null);
   const mulai = useRef(-10);
@@ -73,7 +74,7 @@ function PanggungProfil({ p, versi, nama }: { p: Profil; versi: number; nama: st
       <Fotokopi3D posisi={[-2.9, 0, -1.5]} putar={0.35} skala={1.45} />
       <Konter posisi={[2.75, 0, -1.55]} lebar={1.55} dalam={1.1} muka="laci" les={UNGU.m} />
       <Printer3D posisi={[2.75, 0.78, -1.62]} skala={2.3} />
-      {/* konter depan: karakter berdiri di belakangnya */}
+      {/* front counter: the character stands behind it */}
       {[-1, 0, 1].map((x) => (
         <Konter key={x} posisi={[x, 0, 1.05]} muka={x === 0 ? 'polos' : 'pintu'} badan={x === 0 ? UNGU.l : '#fbf4e4'} les={UNGU.m} />
       ))}
@@ -103,6 +104,10 @@ export default function Lobi() {
   const [pro, setPro] = useState<InfoPro | null>(null);
   const [proJalan, setProJalan] = useState(false);
   const [proPesan, setProPesan] = useState('');
+  const [namaTokoBaru, setNamaTokoBaru] = useState('');
+  const [tokoJalan, setTokoJalan] = useState(false);
+  const [tokoPesan, setTokoPesan] = useState('');
+  const [gantiNama, setGantiNama] = useState(false);
 
   useEffect(() => {
     if (!akun && new URLSearchParams(location.search).has('dev')) masuk().then(setAkun);
@@ -113,13 +118,32 @@ export default function Lobi() {
   }, [akun]);
   useEffect(segarkanPro, [segarkanPro]);
 
+  async function simpanToko(daftar: boolean) {
+    if (!akun) return;
+    const nama = namaTokoBaru.trim() || (profil.nama.trim() ? `${profil.nama.trim()}'s Shop` : '');
+    if (!nama) return setTokoPesan('Enter a shop name first');
+    setTokoJalan(true);
+    setTokoPesan(daftar ? 'Registering shop on Monad…' : 'Renaming shop…');
+    try {
+      await (daftar ? daftarkanToko(akun, nama) : ubahNamaToko(akun, nama));
+      setTokoPesan(daftar ? `Shop "${nama}" registered!` : 'Shop renamed');
+      setGantiNama(false);
+      setNamaTokoBaru('');
+      segarkanPro();
+    } catch (e) {
+      setTokoPesan(e instanceof Error ? e.message : String(e));
+    } finally {
+      setTokoJalan(false);
+    }
+  }
+
   async function beliPro() {
     if (!akun || !pro) return;
     setProJalan(true);
     setProPesan('');
     try {
       await langgananPro(akun, 1, pro.hargaPro);
-      setProPesan('Toko Pro aktif!');
+      setProPesan('Shop Pro active!');
       segarkanPro();
     } catch (e) {
       setProPesan(pesanError(e));
@@ -134,7 +158,7 @@ export default function Lobi() {
   };
 
   const saya = akun ? s.toko.find((t) => sama(t.alamat, akun.address)) : undefined;
-  const namaToko = saya?.nama ?? 'TOKO';
+  const namaToko = saya?.nama ?? 'SHOP';
   const namaTampil = profil.nama.trim() || namaToko;
 
   async function mulaiMasuk(burner: boolean) {
@@ -142,7 +166,7 @@ export default function Lobi() {
     try {
       setAkun(burner ? pakaiAkun(akunBurner()) : await masuk());
     } catch {
-      /* passkey dibatalkan: tetap di lobi */
+      /* passkey cancelled: stay in the lobby */
     } finally {
       setMasukJalan(false);
     }
@@ -156,17 +180,17 @@ export default function Lobi() {
     });
   }
 
-  const alasan = !akun ? 'Masuk dulu untuk main' : !saya ? 'Alamatmu belum terdaftar sebagai toko' : !s.sesiAktif ? 'Sesi belum dibuka operator' : null;
+  const alasan = !akun ? 'Sign in to play' : !saya ? 'Register your shop in the account card first' : !s.sesiAktif ? 'Session not opened by the operator yet' : null;
 
   return (
     <main className="halaman-game lobi lobi-profil">
       <header className="kepala-lobi">
         <button className="tombol-game putih kecil" onClick={() => pindah('/')}>
-          ‹ KEMBALI
+          ‹ BACK
         </button>
-        <h1 className="judul-game">LOBI</h1>
+        <h1 className="judul-game">LOBBY</h1>
         <div className="pil-live">
-          <span className={`titik ${s.sesiAktif ? '' : 'mati'}`} /> {IS_ANVIL ? 'ANVIL LOKAL' : 'MONAD TESTNET'} · {s.sesiAktif ? `SESI #${s.sesiId}` : 'SESI BELUM DIBUKA'}
+          <span className={`titik ${s.sesiAktif ? '' : 'mati'}`} /> {IS_ANVIL ? 'LOCAL ANVIL' : 'MONAD TESTNET'} · {s.sesiAktif ? `SESSION #${s.sesiId}` : 'SESSION NOT OPEN'}
         </div>
       </header>
 
@@ -188,14 +212,14 @@ export default function Lobi() {
 
         <aside className="panel-profil">
           <label className="judul-kecil" htmlFor="nama-pemain">
-            NAMA PEMAIN
+            PLAYER NAME
           </label>
           <div className="isian-nama">
             <input
               id="nama-pemain"
               value={profil.nama}
               maxLength={MAKS_NAMA}
-              placeholder={saya ? saya.nama : 'Tulis namamu'}
+              placeholder={saya ? saya.nama : 'Your name'}
               onChange={(e) => setProfil((p) => ({ ...p, nama: rapikanNama(e.target.value) }))}
               onBlur={() => setVersi((v) => v + 1)}
               autoComplete="off"
@@ -205,12 +229,12 @@ export default function Lobi() {
             </span>
           </div>
 
-          <div className="judul-kecil">RUPA</div>
+          <div className="judul-kecil">LOOK</div>
           <div className="pilih-rupa">
             {(
               [
-                ['tukang', 'Topi koran'],
-                ['tukang-visor', 'Visor hijau'],
+                ['tukang', 'Paper hat'],
+                ['tukang-visor', 'Green visor'],
               ] as const
             ).map(([m, label]) => (
               <button key={m} className={profil.model === m ? 'aktif' : ''} onClick={() => ubah({ model: m })}>
@@ -219,50 +243,78 @@ export default function Lobi() {
             ))}
           </div>
 
-          <div className="judul-kecil">WARNA BAJU</div>
-          <Swatch warna={WARNA_BAJU} aktif={profil.warna} onPilih={(w) => ubah({ warna: w })} label="Warna baju" />
-          <div className="judul-kecil">WARNA KULIT</div>
-          <Swatch warna={WARNA_KULIT} aktif={profil.kulit} onPilih={(w) => ubah({ kulit: w })} label="Warna kulit" />
+          <div className="judul-kecil">SHIRT COLOR</div>
+          <Swatch warna={WARNA_BAJU} aktif={profil.warna} onPilih={(w) => ubah({ warna: w })} label="Shirt color" />
+          <div className="judul-kecil">SKIN COLOR</div>
+          <Swatch warna={WARNA_KULIT} aktif={profil.kulit} onPilih={(w) => ubah({ kulit: w })} label="Skin color" />
           {profil.model === 'tukang-visor' && (
             <>
-              <div className="judul-kecil">RAMBUT</div>
-              <Swatch warna={WARNA_RAMBUT} aktif={profil.rambut} onPilih={(w) => ubah({ rambut: w })} label="Warna rambut" />
+              <div className="judul-kecil">HAIR</div>
+              <Swatch warna={WARNA_RAMBUT} aktif={profil.rambut} onPilih={(w) => ubah({ rambut: w })} label="Hair color" />
             </>
           )}
 
           <div className="kartu-akun">
             {!akun ? (
               <>
-                <b>Akun</b>
-                <span>Belum masuk</span>
+                <b>Account</b>
+                <span>Not signed in</span>
                 <div className="tombol-akun">
                   <button className="tombol-game kuning kecil" disabled={masukJalan} onClick={() => pindah('/masuk?ke=/lobi', false)}>
-                    MASUK / DAFTAR
+                    SIGN IN / SIGN UP
                   </button>
                   <button className="tombol-game putih kecil" disabled={masukJalan} onClick={() => mulaiMasuk(true)}>
-                    TAMU
+                    GUEST
                   </button>
                 </div>
               </>
             ) : (
               <>
-                <b>{saya ? `✓ ${saya.nama.toUpperCase()}` : 'Belum terdaftar sebagai toko'}</b>
-                <button className="alamat-akun" onClick={salinAlamat} title="Salin alamat">
-                  {pendek(akun.address)} · {disalin ? 'tersalin!' : 'salin'}
+                <b>
+                  {saya ? `✓ ${saya.nama.toUpperCase()}` : 'No shop yet'}
+                  {saya && !gantiNama && (
+                    <button className="tautan-kecil" onClick={() => (setGantiNama(true), setNamaTokoBaru(saya.nama))}>
+                      rename
+                    </button>
+                  )}
+                </b>
+                {saya && !saya.aktif && <span className="kecil-akun galat-teks">This shop was disabled by the operator and can't claim orders.</span>}
+                <button className="alamat-akun" onClick={salinAlamat} title="Copy address">
+                  {pendek(akun.address)} · {disalin ? 'copied!' : 'copy'}
                 </button>
-                <span className="kecil-akun">{akun.jenis === 'privy' ? (akun.label ?? 'Akun Privy') : akun.jenis === 'mera' ? 'Passkey' : akun.jenis === 'dev' ? 'Akun dev anvil' : 'Akun tamu'}</span>
-                {!saya && <span className="kecil-akun">Kirim alamat ini ke operator supaya didaftarkan sebagai toko.</span>}
+                <span className="kecil-akun">{akun.jenis === 'privy' ? (akun.label ?? 'Privy account') : akun.jenis === 'mera' ? 'Passkey' : akun.jenis === 'dev' ? 'Anvil dev account' : 'Guest account'}</span>
+                {(!saya || gantiNama) && (
+                  <div className="form-toko">
+                    <input
+                      value={namaTokoBaru}
+                      maxLength={40}
+                      placeholder={profil.nama.trim() ? `${profil.nama.trim()}'s Shop` : 'Your shop name, e.g. Lucky Copy'}
+                      onChange={(e) => setNamaTokoBaru(e.target.value)}
+                      aria-label="Shop name"
+                    />
+                    <button className="tombol-game kuning kecil" disabled={tokoJalan} onClick={() => simpanToko(!saya)}>
+                      {tokoJalan ? '…' : saya ? 'SAVE' : 'REGISTER SHOP'}
+                    </button>
+                    {saya && (
+                      <button className="tombol-game putih kecil" disabled={tokoJalan} onClick={() => setGantiNama(false)}>
+                        CANCEL
+                      </button>
+                    )}
+                  </div>
+                )}
+                {!saya && !tokoPesan && <span className="kecil-akun">Shop sign-up is free, right on the contract. The faucet covers your first gas.</span>}
+                {tokoPesan && <span className="kecil-akun">{tokoPesan}</span>}
                 {saya && pro && (
                   <div className="baris-pro">
                     {pro.proSampai * 1000 > Date.now() ? (
-                      <span className="badge-pro">★ TOKO PRO · sampai {tanggalPro(pro.proSampai)}</span>
+                      <span className="badge-pro">★ SHOP PRO · until {tanggalPro(pro.proSampai)}</span>
                     ) : (
                       <button className="tombol-game kuning kecil" disabled={proJalan || pro.saldo < pro.hargaPro} onClick={beliPro}>
-                        {proJalan ? 'MEMPROSES…' : `LANGGANAN PRO ${formatRupiah(pro.hargaPro)}/30 HARI`}
+                        {proJalan ? 'PROCESSING…' : `GET PRO ${formatRupiah(pro.hargaPro)}/30 DAYS`}
                       </button>
                     )}
                     <span className="kecil-akun">
-                      Saldo toko {formatRupiah(pro.saldo)} · fee platform {pro.feeBps / 100}% dari payout. Pro: radius feed 3 km + badge, rebutan tetap adil.
+                      Shop balance {formatRupiah(pro.saldo)} · platform fee {pro.feeBps / 100}% of payout. Pro: 3 km feed radius + badge, claiming stays fair.
                     </span>
                     {proPesan && <span className="kecil-akun">{proPesan}</span>}
                   </div>
@@ -274,9 +326,9 @@ export default function Lobi() {
       </div>
 
       <footer className="kaki-lobi">
-        <span className="muted-game">{alasan ?? 'Profil tersimpan di perangkat ini. Siap merebut order?'}</span>
+        <span className="muted-game">{alasan ?? 'Profile saved on this device. Ready to claim orders?'}</span>
         <button className={`tombol-game kuning besar ${akun ? '' : 'redup'}`} disabled={!akun} onClick={() => pindah('/cari')}>
-          CARI LAWAN ▸
+          FIND MATCH ▸
         </button>
       </footer>
     </main>

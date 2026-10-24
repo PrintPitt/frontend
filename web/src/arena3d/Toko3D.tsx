@@ -1,4 +1,4 @@
-// Interior toko fotokopi 3D (12 × 8 m): konter + rak dari Delixia, mesin dari figures/, loket SERAH, jalan di luar.
+// 3D copy-shop interior (12 × 8 m): counters + shelves from Delixia, machines from figures/, DELIVER counter, street outside.
 import { Billboard, Html, useGLTF } from '@react-three/drei';
 import { useMemo, type ReactNode } from 'react';
 import * as THREE from 'three';
@@ -14,7 +14,7 @@ export const LEBAR_TOKO = L;
 export const DALAM_TOKO = D;
 const TINGGI_DINDING = 2.4;
 
-/** Ukuran model setelah diskalakan ke lebar target. */
+/** Model size after scaling to the target width. */
 function useUkuran(url: string, lebar: number) {
   const { scene } = useGLTF(url);
   return useMemo(() => {
@@ -76,7 +76,7 @@ export function Label({ posisi, children, warna = UNGU.m }: { posisi: [number, n
   );
 }
 
-/** Papan bergambar kanvas di dinding (ikut perspektif kamera, tidak bergantung pada elemen HTML). */
+/** Canvas-drawn board on the wall (follows camera perspective, no HTML elements needed). */
 export function PapanKanvas({ posisi, lebar, tinggi, px = 640, gambar, putar = 0, miring = 0 }: {
   posisi: [number, number, number]; lebar: number; tinggi: number; px?: number; putar?: number; miring?: number;
   gambar: (g: CanvasRenderingContext2D, w: number, h: number) => void;
@@ -103,9 +103,9 @@ export function PapanKanvas({ posisi, lebar, tinggi, px = 640, gambar, putar = 0
 const gambarHarga = (g: CanvasRenderingContext2D, w: number, h: number) => {
   g.fillStyle = '#231e16'; g.fillRect(0, 0, w, h);
   g.fillStyle = '#2a2163'; g.fillRect(12, 12, w - 24, h - 24);
-  g.fillStyle = '#f4b829'; g.font = '58px "Lilita One", system-ui'; g.fillText('DAFTAR HARGA', 40, 86);
+  g.fillStyle = '#f4b829'; g.font = '58px "Lilita One", system-ui'; g.fillText('PRICE LIST', 40, 86);
   g.font = '700 38px "Fredoka", system-ui'; g.fillStyle = '#fbfaf3';
-  [['Fotokopi KTP', '5.000'], ['Boarding pass', '5.000'], ['Laminating ijazah', '10.000'], ['Menu warung', '10.000']].forEach(([a, b], i) => {
+  [['ID card copy', '5.000'], ['Boarding pass', '5.000'], ['Laminate diploma', '10.000'], ['Café menu', '10.000']].forEach(([a, b], i) => {
     g.fillText(a, 40, 160 + i * 58); g.fillText(`Rp${b}`, 420, 160 + i * 58);
   });
 };
@@ -121,11 +121,11 @@ const gambarPoster = (g: CanvasRenderingContext2D, w: number, h: number) => {
   g.fillStyle = '#231e16'; g.fillRect(0, 0, w, h);
   g.fillStyle = '#fbfaf3'; g.fillRect(10, 10, w - 20, h - 20);
   g.fillStyle = '#cf5038'; g.font = '64px "Lilita One", system-ui'; g.textAlign = 'center';
-  g.fillText('PRINT · JILID', w / 2, 100); g.fillText('LAMINATING', w / 2, 172);
-  g.fillStyle = '#231e16'; g.font = '700 34px "Fredoka", system-ui'; g.fillText('buka 24 jam · bayar Rupiah', w / 2, 232);
+  g.fillText('PRINT · BIND', w / 2, 100); g.fillText('LAMINATING', w / 2, 172);
+  g.fillStyle = '#231e16'; g.font = '700 34px "Fredoka", system-ui'; g.fillText('open 24h · pay in Rupiah', w / 2, 232);
 };
 
-/** Dinding krem toko fotokopi: les ungu di bawah, jendela di samping, papan harga + poster di belakang. */
+/** Cream copy-shop walls: purple trim at the bottom, windows on the sides, price board + poster at the back. */
 function Dinding({ warna }: { warna: string }) {
   const L = LEBAR_TOKO, D = DALAM_TOKO, H = TINGGI_DINDING;
   const krem = '#f6efe0';
@@ -178,7 +178,7 @@ function Dinding({ warna }: { warna: string }) {
 export type PemainToko ={ posisi: [number, number, number]; putar?: number; gaya?: Gaya; bawa?: Bawa; warna: string };
 export type Pelanggan = { x: number; warna: string; bawa?: Bawa; rambut?: string; kulit?: string };
 
-/** Lantai keramik krem kotak-kotak (1 m per ubin). */
+/** Cream checkered tile floor (1 m per tile). */
 function Lantai() {
   const tekstur = useMemo(() => {
     const c = document.createElement('canvas');
@@ -217,22 +217,22 @@ function Lantai() {
 
 export function Toko3D({
   warna = UNGU.m,
-  nama = 'TOKO A',
+  nama = 'SHOP A',
   pemain = [],
   pelanggan = [],
   progres,
   children,
   mesinJalan,
 }: {
-  /** Id mesin fotokopi yang sedang jalan, dipisah koma (primitif supaya memo stabil). */
+  /** Ids of photocopiers currently running, comma-separated (a primitive so the memo stays stable). */
   mesinJalan?: string;
-  /** Isi dinamis game (barang, sorotan stasiun, bar progres). */
+  /** Dynamic game content (items, station highlights, progress bars). */
   children?: ReactNode;
   warna?: string;
   nama?: string;
   pemain?: PemainToko[];
   pelanggan?: Pelanggan[];
-  /** Progres mesin yang sedang dipakai: kode 1 fotokopi, 2 printer, 3 laminator. */
+  /** Progress of the machine in use: code 1 photocopier, 2 printer, 3 laminator. */
   progres?: { kode: 1 | 2 | 3; nilai: number };
 }) {
   const tMeja = TINGGI_MEJA;
@@ -240,7 +240,7 @@ export function Toko3D({
   const zDepan = Z_DEPAN;
 
   const papanNama = useMemo(() => gambarPapan(`PRINTPITT · ${nama}`, warna), [nama, warna]);
-  // semua konter + meja mesin dalam satu daftar → digabung jadi beberapa mesh
+  // all counters + machine tables in one list → merged into a few meshes
   const daftarKonter = useMemo<SpecKonter[]>(
     () => [
       ...ID_MESIN.filter((id) => MESIN[id].kode !== 1).map((id) => ({ posisi: [MESIN[id].x, 0, MESIN[id].z] as V3, putar: MESIN[id].putar, lebar: MEJA_MESIN.lebar, dalam: MEJA_MESIN.dalam, muka: 'laci' as const, les: warna, atas: '#e9d2a6' })),
@@ -255,7 +255,7 @@ export function Toko3D({
 
   return (
     <group>
-      {/* tanah: rumput di belakang/samping, trotoar + jalan di depan */}
+      {/* ground: grass behind/at the sides, sidewalk + street in front */}
       <Lantai />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.06, 0]} receiveShadow>
         <planeGeometry args={[70, 50]} />
@@ -291,7 +291,7 @@ export function Toko3D({
       <RakBinder posisi={[4.05, 1.45, -DALAM_TOKO / 2 + 0.16]} lebar={1.8} />
       <JamDinding posisi={[-1.3, 2.0, -DALAM_TOKO / 2 + 0.04]} />
 
-      {/* mesin: 3 fotokopi berjajar, 2 printer + 3 laminator di meja mesin yang pas ukurannya */}
+      {/* machines: 3 photocopiers in a row, 2 printers + 3 laminators on fitted machine tables */}
       {ID_MESIN.map((id) => {
         const m = MESIN[id];
         if (m.kode === 1)
@@ -304,24 +304,24 @@ export function Toko3D({
           </group>
         );
       })}
-      {/* konter belakang kanan: stok rim kertas */}
+      {/* back-right counter: paper ream stock */}
       <Rim posisi={[2.6, tMeja, zBelakang]} tumpuk={3} />
       <Rim posisi={[4.6, tMeja, zBelakang]} tumpuk={4} warna="#fdf3c4" />
       <Dispenser posisi={[5.45, 0, -3.45]} />
 
-      {/* rak kertas (gudang) di pojok kiri belakang */}
+      {/* paper shelf (storage) in the back-left corner */}
       <Rim posisi={[-4.5, tMeja, zBelakang]} tumpuk={5} />
       <Rim posisi={[-3.5, tMeja, zBelakang]} tumpuk={4} warna="#fdf3c4" />
       <Rim posisi={[-2.5, tMeja, zBelakang]} tumpuk={3} />
       <Tanaman posisi={[-5.45, 0, 2.75]} s={0.95} />
 
-      {/* meja kerja di tengah: 4 ubin, semua bisa ditaruhi barang */}
+      {/* work table in the middle: 4 tiles, items can be placed on all of them */}
 
-      {/* sisi kanan depan: kardus */}
+      {/* front-right side: boxes */}
       <Model url={MODEL('Crate')} lebar={0.7} posisi={[LEBAR_TOKO / 2 - 0.6, 0, 1.45]} />
       <Model url={MODEL('Crate')} lebar={0.6} posisi={[LEBAR_TOKO / 2 - 0.65, 0, 2.2]} putar={0.3} />
 
-      {/* konter depan + loket SERAH */}
+      {/* front counter + DELIVER counter */}
       <KonterGabung daftar={daftarKonter} />
       <PermukaanSerah posisi={[-0.5, tMeja + 0.006, zDepan]} warna={warna} />
       <mesh position={[0.65, tMeja + 0.02, zDepan + 0.1]} castShadow>
@@ -333,24 +333,24 @@ export function Toko3D({
         <KursiTunggu key={x} posisi={[x, 0, DALAM_TOKO / 2 + 0.75]} putar={Math.PI} warna={i % 2 ? '#f4b829' : '#76a0e2'} />
       ))}
 
-      {/* papan nama toko di dinding belakang */}
+      {/* shop name sign on the back wall */}
       <PapanKanvas posisi={[-0.4, 2.85, -DALAM_TOKO / 2 + 0.05]} lebar={3.2} tinggi={0.62} px={900} miring={-0.5} gambar={papanNama} />
 
-      {/* perabot kecil di meja + lantai, kanopi teras, lampu gantung */}
+      {/* small props on tables + floor, porch canopy, hanging lamps */}
       <Stapler posisi={[-1.55, tMeja, 0.5]} putar={0.4} />
       <GelasPulpen posisi={[1.75, tMeja, 0.45]} />
       <Selotip posisi={[0.2, tMeja, 0.8]} />
       <Stapler posisi={[3.3, tMeja, zBelakang + 0.15]} putar={-0.3} />
       <GelasPulpen posisi={[-4.95, tMeja, zBelakang - 0.2]} />
       <Selotip posisi={[2.9, tMeja, zDepan - 0.1]} />
-      <Karpet posisi={[-0.5, 0.004, Z_DEPAN - 1.35]} teks="SERAH DI SINI" warna={warna} lebar={2.2} dalam={0.8} />
+      <Karpet posisi={[-0.5, 0.004, Z_DEPAN - 1.35]} teks="DELIVER HERE" warna={warna} lebar={2.2} dalam={0.8} />
       <Sobekan posisi={[-3.2, 0, 1.4]} putar={0.4} />
       <Sobekan posisi={[2.6, 0, -1.2]} putar={1.3} s={0.8} />
       <Sobekan posisi={[-1.8, 0, -1.9]} putar={2.2} s={0.9} />
 
       {children}
 
-      {/* pemain + pelanggan antre di luar loket */}
+      {/* players + customers queueing outside the counter */}
       {pemain.map((p, i) => (
         <Pekerja3D key={i} warna={p.warna} posisi={p.posisi} putar={p.putar} gaya={p.gaya} bawa={p.bawa} fase={i * 1.7} />
       ))}

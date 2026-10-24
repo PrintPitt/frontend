@@ -85,3 +85,53 @@
 .meter-bawah { display: flex; justify-content: space-between; }
 .tombol-tahan { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; padding: 22px; font-size: 1.2rem; }
 .tombol-tahan:active { background: #6b56e6; }
+
+/* ===== Dashboard toko (pemilik fotokopi) ===== */
+.dasbor { max-width: 1320px; margin: 0 auto; width: 100%; }
+.dasbor-head { display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; }
+.dasbor-head .brand { font-size: 1.8rem; }
+.online { color: #5fd39a; }
+.dasbor-stat { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.stat-kecil { display: grid; background: #fbfaf3; color: #231e16; border: 3px solid #231e16; border-radius: 14px; box-shadow: 0 4px 0 #231e16; padding: 6px 14px 8px; min-width: 7.5em; }
+.stat-kecil span { font: 700 0.72rem 'Fredoka', system-ui; opacity: 0.65; }
+.stat-kecil b { font: 1.35rem 'Lilita One', system-ui; }
+.dasbor-isi { display: grid; grid-template-columns: minmax(320px, 42%) 1fr; gap: 16px; align-items: start; }
+.dasbor-kiri, .dasbor-kanan { display: grid; gap: 14px; min-width: 0; }
+.judul-kartu { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+.judul-kartu b { font: 1.25rem 'Lilita One', system-ui; }
+.radar { position: relative; width: min(100%, 340px); margin: 0 auto; }
+.radar svg { width: 100%; height: auto; display: block; }
+.label-radar { font: 700 10px 'Fredoka', system-ui; fill: #6b6457; }
+.label-titik { font: 700 11px 'Fredoka', system-ui; fill: #231e16; paint-order: stroke; stroke: #fbfaf3; stroke-width: 3px; }
+.sapu-radar { animation: sapu 3.2s linear infinite; transform-origin: 0 0; }
+@keyframes sapu { to { transform: rotate(360deg); } }
+.denyut { animation: denyut 1.4s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes denyut { 0% { transform: scale(0.6); opacity: 0.6; } 100% { transform: scale(1.6); opacity: 0; } }
+.radar-kosong { position: absolute; left: 50%; bottom: 8px; translate: -50% 0; width: 86%; text-align: center; background: #231e16; color: #fbfaf3; border-radius: 10px; padding: 6px 10px; font: 700 0.78rem 'Fredoka', system-ui; }
+.baris-alat { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+.daftar-order { display: grid; gap: 10px; max-height: 62vh; overflow: auto; padding: 2px 4px 8px 2px; }
+.kartu-order { display: flex; gap: 12px; align-items: center; background: #fbfaf3; color: #231e16; border: 3px solid #231e16; border-radius: 16px; box-shadow: 0 5px 0 #231e16; padding: 12px 14px; }
+.kartu-order.nyata { box-shadow: 0 5px 0 #231e16, inset 6px 0 0 #f4b829; }
+.kartu-order.sorot { outline: 4px solid #836ef9; outline-offset: 2px; }
+.isi-order { flex: 1; min-width: 0; display: grid; gap: 4px; }
+.baris-judul-order { display: flex; justify-content: space-between; gap: 8px; }
+.baris-judul-order b { font: 1.05rem 'Lilita One', system-ui; }
+.harga-order { font: 1.1rem 'Lilita One', system-ui; color: #836ef9; white-space: nowrap; }
+.chip-order { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip-order span { background: #efe8fd; border-radius: 999px; padding: 1px 9px; font: 700 0.75rem 'Fredoka', system-ui; }
+.kosong-order { color: #e9e4ff !important; text-align: center; padding: 18px; }
+.kartu-info { display: grid; gap: 4px; }
+.dasbor .tombol-rebut { min-width: 5.5em; }
+@media (max-width: 900px) {
+  .dasbor-isi { grid-template-columns: 1fr; }
+  .daftar-order { max-height: none; }
+}
+.notif-order { position: fixed; right: 20px; bottom: 20px; z-index: 50; width: min(400px, calc(100vw - 32px)); display: grid; gap: 10px; background: #fbfaf3; color: #231e16; border: 3px solid #231e16; border-radius: 20px; box-shadow: 0 8px 0 #231e16, 0 0 0 6px #f4b82966; padding: 14px 16px 16px; font-family: 'Fredoka', system-ui; }
+.notif-kepala { display: flex; justify-content: space-between; align-items: center; }
+.notif-kepala b { font: 1.15rem 'Lilita One', system-ui; }
+.notif-hitung { background: #ef6a4c; color: #fbfaf3; border: 2px solid #231e16; border-radius: 999px; padding: 1px 10px; font: 0.95rem 'Lilita One', system-ui; }
+.notif-isi { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; }
+.notif-jarak { width: 64px; height: 64px; display: grid; place-items: center; text-align: center; background: #efe8fd; border: 3px solid #231e16; border-radius: 50%; font: 0.95rem 'Lilita One', system-ui; }
+.notif-harga { font: 1.4rem 'Lilita One', system-ui; color: #836ef9; }
+.notif-tombol { display: grid; grid-template-columns: 1fr 2fr; gap: 8px; }
+@media (max-width: 600px) { .notif-order { right: 16px; bottom: 16px; } }

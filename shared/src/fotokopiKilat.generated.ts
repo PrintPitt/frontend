@@ -142,19 +142,6 @@ export const fotokopiKilatAbi = [
   },
   {
     "type": "function",
-    "name": "MAX_TOKO",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "PERIODE_PRO",
     "inputs": [],
     "outputs": [
@@ -441,6 +428,19 @@ export const fotokopiKilatAbi = [
       }
     ],
     "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "daftarkanToko",
+    "inputs": [
+      {
+        "name": "nama",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
     "type": "function",
@@ -1269,6 +1269,24 @@ export const fotokopiKilatAbi = [
   },
   {
     "type": "function",
+    "name": "setTokoAktif",
+    "inputs": [
+      {
+        "name": "alamat",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "aktif",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "startSession",
     "inputs": [],
     "outputs": [],
@@ -1355,6 +1373,11 @@ export const fotokopiKilatAbi = [
         "internalType": "bool"
       },
       {
+        "name": "aktif",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
         "name": "orderAktif",
         "type": "uint64",
         "internalType": "uint64"
@@ -1411,6 +1434,19 @@ export const fotokopiKilatAbi = [
         "name": "id",
         "type": "uint64",
         "internalType": "uint64"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "ubahNamaToko",
+    "inputs": [
+      {
+        "name": "nama",
+        "type": "string",
+        "internalType": "string"
       }
     ],
     "outputs": [],
@@ -1953,6 +1989,44 @@ export const fotokopiKilatAbi = [
   },
   {
     "type": "event",
+    "name": "ShopRenamed",
+    "inputs": [
+      {
+        "name": "toko",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "nama",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ShopStatusSet",
+    "inputs": [
+      {
+        "name": "toko",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "aktif",
+        "type": "bool",
+        "indexed": false,
+        "internalType": "bool"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "StepCompleted",
     "inputs": [
       {
@@ -2280,6 +2354,11 @@ export const fotokopiKilatAbi = [
   },
   {
     "type": "error",
+    "name": "ShopInactive",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "SignatureExpired",
     "inputs": []
   },
@@ -2297,11 +2376,6 @@ export const fotokopiKilatAbi = [
   {
     "type": "error",
     "name": "TooLate",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "TooManyShops",
     "inputs": []
   },
   {
@@ -3101,9 +3175,23 @@ export const tidrxAbi = [
 ] as const;
 
 export const deployments = {
+  "143": {
+    "address": "0x1F8061d653896fF48EbFDD3Fee7C0684E2995f77",
+    "tidrx": "0x18Bc5bcC660cf2B9cE3cd51a404aFe1a0cBD3C22",
+    "minter": "0x0000000000000000000000000000000000000000",
+    "operator": "0x87C623386314120eD44E0F710923570484cDB6D1",
+    "tokoA": "0x0000000000000000000000000000000000000000",
+    "tokoB": "0x0000000000000000000000000000000000000000",
+    "batasAntre": 45,
+    "batasJemput": 600,
+    "batasSengketa": 86400,
+    "treasury": "0x87C623386314120eD44E0F710923570484cDB6D1",
+    "platformFeeBps": 300,
+    "deployBlock": 116125896
+  },
   "10143": {
-    "address": "0x08b700EEcbabcfFBe53c0dAbe4C2acF9aF4dc959",
-    "tidrx": "0x6F11E9dd404AF78522DAb5104fF0b6153c7E4841",
+    "address": "0x24b045E3B4155232F81c709dF3DD43595a5C5101",
+    "tidrx": "0xcCf26C3b02a610fB87327f41a13384aF8ff57F45",
     "minter": "0x382D1cfe4036f977C1d7A4ecF8B81E1e67F89e7d",
     "operator": "0xf94e039dc723De798F065cFC3202Eedb040D8415",
     "tokoA": "0xD9B470dd86E9876B59Ec4CCd797811D5a8f293e0",
@@ -3113,20 +3201,20 @@ export const deployments = {
     "batasSengketa": 86400,
     "treasury": "0x1D3a9498F7e32661f3729677d0D773b40F70EAF4",
     "platformFeeBps": 300,
-    "deployBlock": 73741333
+    "deployBlock": 73752547
   },
   "31337": {
-    "address": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+    "address": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
     "tidrx": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
-    "minter": "0x976EA74026E726554dB657fA54763abd0C3a0aa9",
+    "minter": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
     "operator": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-    "tokoA": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
-    "tokoB": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+    "tokoA": "0x0000000000000000000000000000000000000000",
+    "tokoB": "0x0000000000000000000000000000000000000000",
     "batasAntre": 45,
     "batasJemput": 600,
     "batasSengketa": 86400,
     "treasury": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
     "platformFeeBps": 300,
-    "deployBlock": 2
+    "deployBlock": 1
   }
 } as const;

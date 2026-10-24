@@ -1,4 +1,4 @@
-// Efek mesin saat bekerja (dibaca tiap frame dari ref dunia, tanpa render ulang React) + angka/teks melayang (juice).
+// Machine effects while working (read every frame from the world ref, no React re-render) + floating numbers/text (juice).
 import { Billboard } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { useRef, type RefObject } from 'react';
@@ -8,7 +8,7 @@ import { MESIN, TINGGI_MEJA, type IdMesin } from './peta';
 
 const aktif = (st: string) => st === 'jalan' || st === 'tahan';
 
-/** Fotokopi: lampu hijau menyapu di bawah kaca + tumpukan kertas keluar di baki depan. */
+/** Copier: green light sweeps under the glass + paper stack comes out on the front tray. */
 function EfekFotokopi({ id, dunia }: { id: IdMesin; dunia: RefObject<Dunia> }) {
   const sapu = useRef<THREE.Mesh>(null);
   const kertas = useRef<THREE.Group>(null);
@@ -29,7 +29,7 @@ function EfekFotokopi({ id, dunia }: { id: IdMesin; dunia: RefObject<Dunia> }) {
   });
   return (
     <group>
-      {/* kilatan di kaca scanner */}
+      {/* flash on the scanner glass */}
       <mesh position={[0, 1.575, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[0.8, 0.8]} />
         <meshBasicMaterial ref={kilat} color="#9bffb0" transparent opacity={0} toneMapped={false} />
@@ -38,7 +38,7 @@ function EfekFotokopi({ id, dunia }: { id: IdMesin; dunia: RefObject<Dunia> }) {
         <planeGeometry args={[0.8, 0.06]} />
         <meshBasicMaterial color="#5fff8a" toneMapped={false} />
       </mesh>
-      {/* kertas hasil di baki depan (tumbuh sesuai progres) */}
+      {/* output paper on the front tray (grows with progress) */}
       <group ref={kertas} position={[-0.1, 0.62, 0.62]} visible={false}>
         {[0, 1, 2, 3].map((i) => (
           <mesh key={i} position={[0, i * 0.02, i * 0.012]} rotation={[0, (i % 2 ? 1 : -1) * 0.05, 0]}>
@@ -51,7 +51,7 @@ function EfekFotokopi({ id, dunia }: { id: IdMesin; dunia: RefObject<Dunia> }) {
   );
 }
 
-/** Printer: lembar kertas meluncur keluar dari depan, LED hijau berkedip; macet = lembar miring + LED merah. */
+/** Printer: a sheet slides out the front, green LED blinks; jam = tilted sheet + red LED. */
 function EfekPrinter({ id, dunia }: { id: IdMesin; dunia: RefObject<Dunia> }) {
   const lembar = useRef<THREE.Mesh>(null);
   const led = useRef<THREE.MeshBasicMaterial>(null);
@@ -83,7 +83,7 @@ function EfekPrinter({ id, dunia }: { id: IdMesin; dunia: RefObject<Dunia> }) {
   );
 }
 
-/** Laminator: cahaya oranye berdenyut + uap panas naik + lembar laminasi keluar dari depan. */
+/** Laminator: pulsing orange glow + rising hot steam + laminated sheet comes out the front. */
 function EfekLaminator({ id, dunia }: { id: IdMesin; dunia: RefObject<Dunia> }) {
   const cahaya = useRef<THREE.MeshBasicMaterial>(null);
   const lembar = useRef<THREE.Mesh>(null);
@@ -136,7 +136,7 @@ export function EfekMesin({ id, dunia }: { id: IdMesin; dunia: RefObject<Dunia> 
   );
 }
 
-// ---------- teks melayang ----------
+// ---------- floating text ----------
 export type Melayang = { teks: string; warna: string; x: number; y: number; z: number; t0: number; tekstur?: THREE.CanvasTexture; lebar?: number };
 const UMUR = 1.5;
 
@@ -161,7 +161,7 @@ function teksturTeks(teks: string, warna: string) {
   return [t, w / 90] as const;
 }
 
-/** Sampai 8 teks melayang sekaligus; `daftar` diisi dari luar (push), dibersihkan di sini. */
+/** Up to 8 floating texts at once; `daftar` is filled from outside (push), cleaned up here. */
 export function TeksMelayang({ daftar }: { daftar: RefObject<Melayang[]> }) {
   const slot = useRef<(THREE.Mesh | null)[]>([]);
   useFrame(() => {

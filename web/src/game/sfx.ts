@@ -1,8 +1,8 @@
-// SFX prosedural ZzFX (BLZ-16.T1): tanpa file audio.
+// Procedural ZzFX SFX (BLZ-16.T1): no audio files.
 import { ZZFX, zzfx } from 'zzfx';
 
 ZZFX.volume = 0.35;
-// Browser menahan audio sampai ada gesture; bangunkan di sentuhan pertama.
+// Browsers hold audio until a gesture; wake it on the first touch.
 addEventListener('pointerdown', () => ZZFX.audioContext.state === 'suspended' && ZZFX.audioContext.resume(), { once: true });
 
 const S = {

@@ -1,6 +1,6 @@
-// /main — match: toko fotokopi 3D ala Overcooked yang bisa dimainkan, terhubung ke kontrak FotokopiKilat.
-// Anvil: /main?dev=1 (Toko A) atau /main?dev=2 (Toko B). Testnet: alamat passkey harus terdaftar sebagai toko (registerShop).
-// Alur: rebut order di loket (claim) → bawa dokumen/flashdisk ke mesin → tiap mesin beres = completeStep → serahkan di loket = langkah terakhir.
+// /main — match: playable Overcooked-style 3D copy shop, wired to the FotokopiKilat contract.
+// Anvil: /main?dev=1 (Shop A) or /main?dev=2 (Shop B). Testnet: the passkey address must be registered as a shop (registerShop).
+// Flow: claim an order at the counter → carry document/flash drive to machines → each finished machine = completeStep → hand over at the counter = last step.
 import '@fontsource/fredoka/500.css';
 import '@fontsource/fredoka/700.css';
 import '@fontsource/lilita-one';
@@ -47,17 +47,17 @@ import { kirim, kirimLangkah, pesanError } from '../lib/tx';
 
 const TokoStatis = memo(Toko3D);
 const sama = (a?: string, b?: string) => !!a && !!b && a.toLowerCase() === b.toLowerCase();
-const NAMA_MESIN: Record<KodeMesin, string> = { 1: 'Mesin fotokopi', 2: 'Printer', 3: 'Laminator' };
-const LABEL_JENIS: Record<number, string> = { 1: 'Fotokopi KTP', 2: 'Boarding pass', 3: 'Laminating ijazah', 4: 'Menu warung' };
-/** Rupiah bulat untuk HUD (tIDRX punya 2 desimal; payout yang meluruh menghasilkan sen). */
+const NAMA_MESIN: Record<KodeMesin, string> = { 1: 'Copier', 2: 'Printer', 3: 'Laminator' };
+const LABEL_JENIS: Record<number, string> = { 1: 'ID card copy', 2: 'Boarding pass', 3: 'Diploma lamination', 4: 'Food stall menu' };
+/** Whole Rupiah for the HUD (tIDRX has 2 decimals; decaying payouts produce cents). */
 const rp = (v: bigint) => 'Rp' + Math.round(Number(satuanKeRupiah(v))).toLocaleString('id-ID');
 const batas01 = (v: number) => Math.max(0, Math.min(1, v));
-const KATA_TELAT = ['Lewat batas waktu kerja', 'Order sudah tidak dikerjakan', 'Ini bukan order tokomu'];
+const KATA_TELAT = ['Past the work deadline', 'Order is no longer being worked on', 'This order is not yours'];
 
 type Toast = { teks: string; jenis: 'ok' | 'kalah' | 'info'; n: number };
 type Prompt = { tombol?: string; teks: string } | null;
 
-/** Detak game di dalam kanvas: memajukan mesin tiap frame tanpa render ulang React. */
+/** Game tick inside the canvas: advances machines every frame without a React re-render. */
 function Detak({
   dunia,
   tombol,
@@ -91,12 +91,12 @@ function Detak({
   return null;
 }
 
-/** Kalau rata-rata FPS < 38 selama 3 detik, pindah ke mode ringan (tanpa bayangan, dpr 1). */
+/** If average FPS < 38 for 3 seconds, switch to lite mode (no shadows, dpr 1). */
 function PengawasFps({ onBerat }: { onBerat: () => void }) {
   const akumulasi = useRef({ n: 0, t: 0, mulai: 0 });
   useFrame(({ clock }, dt) => {
     const a = akumulasi.current;
-    if (clock.elapsedTime < 4) return; // lewati pemuatan awal
+    if (clock.elapsedTime < 4) return; // skip initial loading
     a.n++;
     a.t += dt;
     if (a.t >= 3) {
@@ -122,9 +122,9 @@ export default function Main() {
   const pos = useRef<PosPemain>({ x: 0, z: -1.3, arah: 0 });
   const tombol = useTombol();
   const fokusRef = useRef<IdStasiun | null>(null);
-  const beres = useRef(new Set<string>()); // order yang sudah diserahkan/hangus (jangan dipulihkan lagi)
-  const terkirim = useRef(new Map<string, number>()); // langkah yang tx-nya sudah sukses
-  const antrian = useRef<Promise<unknown>>(Promise.resolve()); // completeStep dikirim berurutan
+  const beres = useRef(new Set<string>()); // orders already handed over/expired (do not restore again)
+  const terkirim = useRef(new Map<string, number>()); // steps whose tx already succeeded
+  const antrian = useRef<Promise<unknown>>(Promise.resolve()); // completeStep is sent in order
   const menyerahkan = useRef(false);
   const toastT = useRef<ReturnType<typeof setTimeout>>(undefined);
   const melayang = useRef<Melayang[]>([]);
@@ -156,12 +156,12 @@ export default function Main() {
   const aktifMentah = saya && saya.orderAktif ? s.order[String(saya.orderAktif)] : undefined;
   const aktif = aktifMentah?.status === 'Claimed' && !beres.current.has(String(aktifMentah.id)) ? aktifMentah : undefined;
   const antre = Object.values(s.order)
-    // jenis 1–4 tanpa kode QR = order mini-game (mode demo, selesai di langkah terakhir); dokumen nyata dikerjakan di /toko
+    // types 1–4 without a QR code = mini-game orders (demo mode, finished at the last step); real documents are handled in /toko
     .filter((o) => o.status === 'Open' && o.jenis <= 4 && BigInt(o.kodeHash) === 0n && o.sesi === s.sesiId && now - o.dibuatPada < s.batasAntre)
     .sort((a, b) => a.dibuatPada - b.dibuatPada);
   const d = dunia.current;
 
-  // Bunyi "ding" saat order baru masuk; kabar kalau toko lain merebut duluan.
+  // "Ding" when a new order arrives; notice when another shop claims first.
   useEffect(() => {
     const baru = s.kejadian.find((x) => x.jenis === 'baru');
     if (baru && baru.kunci !== dingTerakhir.current) {
@@ -172,22 +172,22 @@ export default function Main() {
     if (rebut && rebut.kunci !== rebutTerakhir.current) {
       rebutTerakhir.current = rebut.kunci;
       if (rebut.waktu > 0 && akun && rebut.toko && !sama(rebut.toko, akun.address)) {
-        const nama = s.toko.find((t) => sama(t.alamat, rebut.toko))?.nama ?? 'Toko lain';
-        tampil(`${nama} merebut order #${rebut.id}!`, 'info', 1800);
+        const nama = s.toko.find((t) => sama(t.alamat, rebut.toko))?.nama ?? 'Another shop';
+        tampil(`${nama} claimed order #${rebut.id}!`, 'info', 1800);
       }
     }
   }, [s.kejadian, s.toko, akun, tampil]);
 
-  /** Kirim completeStep berurutan sampai `sampai` langkah tercatat. Mengembalikan payout bila order selesai. */
+  /** Send completeStep in order until `sampai` steps are recorded. Returns the payout if the order finishes. */
   const catat = useCallback(
     (it: Item, sampai: number) => {
       const kunci = String(it.id);
       const p = antrian.current.then(async () => {
-        if (!akun) throw new Error('Belum masuk');
+        if (!akun) throw new Error('Not signed in');
         let hasil: { payout: bigint; refund: bigint } | undefined;
         const mulai = Math.max(bacaLive().order[kunci]?.langkahSelesai ?? 0, terkirim.current.get(kunci) ?? 0);
         for (let i = mulai; i < sampai; i++) {
-          const r = await kirimLangkah(akun, it.id, it.langkah[i]); // tunggu/ulang sebentar kalau RPC tertinggal setelah claim
+          const r = await kirimLangkah(akun, it.id, it.langkah[i]); // wait/retry briefly if the RPC lags after claim
           terkirim.current.set(kunci, i + 1);
           const f = r.events.find((e) => e.eventName === 'OrderFinished');
           if (f) hasil = { payout: f.args.payout as bigint, refund: f.args.refund as bigint };
@@ -205,25 +205,25 @@ export default function Main() {
       beres.current.add(String(id));
       buangItem(dunia.current, id);
       sfx('kalah');
-      terbang('HANGUS', '#ef6a4c', POS_SERAH[0], POS_SERAH[2] - 1, 1.2);
+      terbang('EXPIRED', '#ef6a4c', POS_SERAH[0], POS_SERAH[2] - 1, 1.2);
       setGoyang((g) => g + 1);
       tampil(teks, 'kalah', 3400);
-      if (akun) kirim(akun, 'expire', [id]).catch(() => {}); // bebaskan toko; boleh gagal kalau keeper sudah duluan
+      if (akun) kirim(akun, 'expire', [id]).catch(() => {}); // free the shop; may fail if the keeper got there first
       ubah();
     },
     [akun, tampil],
   );
 
-  // Sinkron dunia dengan chain: pulihkan barang order aktif (mis. setelah reload), buang barang order yang hangus.
+  // Sync the world with the chain: restore the active order item (e.g. after reload), drop items of expired orders.
   useEffect(() => {
     const dd = dunia.current;
     for (const it of semuaItem(dd)) {
       const o = s.order[String(it.id)];
-      if (o?.status === 'Expired' && !beres.current.has(String(it.id))) hangus(it.id, `Order #${it.id} hangus — uang balik ke pelanggan`);
+      if (o?.status === 'Expired' && !beres.current.has(String(it.id))) hangus(it.id, `Order #${it.id} expired — money back to the customer`);
     }
     if (!aktif) return;
     if (now - aktif.diclaimPada >= aktif.batasKerja + 0.5) {
-      if (!menyerahkan.current) hangus(aktif.id, `Waktu habis! Order #${aktif.id} hangus — uang balik ke pelanggan`);
+      if (!menyerahkan.current) hangus(aktif.id, `Time's up! Order #${aktif.id} expired — money back to the customer`);
       return;
     }
     if (dd.merebut === null && !semuaItem(dd).some((x) => x.id === aktif.id)) {
@@ -238,9 +238,10 @@ export default function Main() {
 
   async function rebut(o: Order | undefined) {
     if (!akun || d.merebut !== null) return;
-    if (!saya) return tampil('Alamat ini belum terdaftar sebagai toko', 'kalah');
-    if (!s.sesiAktif) return tampil('Sesi belum dibuka operator', 'info');
-    if (!o) return tampil('Belum ada pelanggan. Tunggu order masuk!', 'info');
+    if (!saya) return tampil("You don't have a shop yet. Register in the lobby first", 'kalah');
+    if (!saya.aktif) return tampil('This shop was disabled by the operator', 'kalah');
+    if (!s.sesiAktif) return tampil('The operator has not opened the session yet', 'info');
+    if (!o) return tampil('No customers yet. Wait for an order!', 'info');
     d.merebut = o.id;
     ubah();
     sfx('klik');
@@ -248,13 +249,13 @@ export default function Main() {
       await kirim(akun, 'claim', [o.id]);
       if (!semuaItem(d).some((x) => x.id === o.id)) d.pegang = { id: o.id, jenis: o.jenis, langkah: o.langkah, tahap: 0, wujud: wujudAwal(o.langkah), teks: o.teks };
       sfx('ambil');
-      tampil(`Order #${o.id} milikmu! ${o.langkah.map((l) => NAMA_LANGKAH[l]).join(' → ')} → serahkan`, 'ok', 2800);
+      tampil(`Order #${o.id} is yours! ${o.langkah.map((l) => NAMA_LANGKAH[l]).join(' → ')} → hand over`, 'ok', 2800);
     } catch (e) {
       sfx('kalah');
       const pesan = pesanError(e);
       const oo = bacaLive().order[String(o.id)];
       const nama = oo && oo.toko !== ZERO ? bacaLive().toko.find((t) => sama(t.alamat, oo.toko))?.nama : undefined;
-      tampil(pesan === 'Diambil toko lain' && nama ? `Kalah cepat! Diambil ${nama}` : pesan, 'kalah');
+      tampil(pesan === 'Diambil toko lain' ? (nama ? `Too slow! Taken by ${nama}` : 'Taken by another shop') : pesan, 'kalah');
     } finally {
       d.merebut = null;
       ubah();
@@ -275,13 +276,13 @@ export default function Main() {
       confetti({ particleCount: 150, spread: 95, startVelocity: 45, origin: { x: 0.5, y: 0.78 }, colors: ['#836ef9', '#fbfaf3', '#f4b829', '#5fd39a'] });
       if (h) terbang(`+${rp(h.payout)}`, '#5fd39a', POS_SERAH[0], POS_SERAH[2]);
       setHati((n) => n + 1);
-      tampil(h ? `Beres! +${rp(h.payout)} bersih (fee platform 3% sudah dipotong) · NFT terkirim` : 'Beres! NFT terkirim ke pelanggan', 'ok', 3400);
+      tampil(h ? `Done! +${rp(h.payout)} net (3% platform fee deducted) · NFT sent` : 'Done! NFT sent to the customer', 'ok', 3400);
     } catch (e) {
       const pesan = pesanError(e);
-      if (KATA_TELAT.includes(pesan)) hangus(it.id, `Telat! Order #${it.id} hangus — uang balik ke pelanggan`);
+      if (KATA_TELAT.includes(pesan)) hangus(it.id, `Too late! Order #${it.id} expired — money back to the customer`);
       else {
         sfx('gagal');
-        tampil(`${pesan} — tekan Spasi di loket untuk coba lagi`, 'kalah', 3400);
+        tampil(`${pesan} — press Space at the counter to retry`, 'kalah', 3400);
       }
     } finally {
       menyerahkan.current = false;
@@ -299,7 +300,7 @@ export default function Main() {
       m.item = { ...m.item, tahap: m.item.tahap + 1, wujud: k === 3 ? 'laminasi' : 'kertas' };
       sfx('lulus');
       terbang('\u2713', '#5fd39a', MESIN[id].x, MESIN[id].z, MESIN[id].y + 1.1);
-      // Langkah tengah dicatat sekarang; langkah terakhir dicatat saat diserahkan di loket.
+      // Middle steps are recorded now; the last step is recorded at hand-over.
       if (m.item.tahap < m.item.langkah.length) catat(m.item, m.item.tahap).catch((e) => tampil(pesanError(e), 'kalah'));
       ubah();
     },
@@ -312,10 +313,10 @@ export default function Main() {
     if (f === 'serah') {
       if (d.pegang) {
         if (d.pegang.tahap >= d.pegang.langkah.length) serahkan(d.pegang);
-        else tampil(`Belum beres — masih perlu ${NAMA_LANGKAH[d.pegang.langkah[d.pegang.tahap]]}`, 'info');
+        else tampil(`Not done yet — still needs ${NAMA_LANGKAH[d.pegang.langkah[d.pegang.tahap]]}`, 'info');
       } else if (d.diSerah) {
         if (!menyerahkan.current) serahkan(d.diSerah);
-      } else if (aktif || semuaItem(d).length) tampil('Selesaikan order yang sedang jalan dulu', 'info');
+      } else if (aktif || semuaItem(d).length) tampil('Finish the current order first', 'info');
       else rebut(antre[0]);
       return;
     }
@@ -340,14 +341,14 @@ export default function Main() {
         d.pegang = m.item;
         d.mesin[f] = mesinKosong();
         sfx('ambil');
-      } else if (m.status === 'jalan') tampil('Sabar, mesin masih jalan…');
-      else if (m.status === 'tahan') tampil('Tahan E buat laminating');
-      else if (m.status === 'macet') tampil('Printer kena virus! Tunggu sebentar', 'kalah');
-    } else if (m.status !== 'kosong') tampil(m.status === 'selesai' ? 'Tangan penuh — taruh dulu barangmu' : 'Mesin lagi dipakai');
+      } else if (m.status === 'jalan') tampil('Hang on, machine still running…');
+      else if (m.status === 'tahan') tampil('Hold E to laminate');
+      else if (m.status === 'macet') tampil('Printer got a virus! Wait a moment', 'kalah');
+    } else if (m.status !== 'kosong') tampil(m.status === 'selesai' ? 'Hands full — put your item down first' : 'Machine is busy');
     else {
       const butuh = d.pegang.langkah[d.pegang.tahap];
-      if (butuh === undefined) tampil('Sudah beres — serahkan ke loket SERAH!', 'info');
-      else if (butuh !== k) tampil(`Salah mesin! Ini butuh ${NAMA_LANGKAH[butuh]}`, 'kalah');
+      if (butuh === undefined) tampil('All done — hand it over at the DELIVER counter!', 'info');
+      else if (butuh !== k) tampil(`Wrong machine! This needs ${NAMA_LANGKAH[butuh]}`, 'kalah');
       else {
         m.item = d.pegang;
         d.pegang = null;
@@ -375,7 +376,7 @@ export default function Main() {
       sfx('gagal');
       terbang('VIRUS!', '#ef6a4c', MESIN[f].x, MESIN[f].z + 0.3, 1.5);
       setGoyang((g) => g + 1);
-      tampil(`VIRUS! ${m.file[i]} bikin printer macet`, 'kalah');
+      tampil(`VIRUS! ${m.file[i]} jammed the printer`, 'kalah');
     }
     ubah();
   }
@@ -429,7 +430,7 @@ export default function Main() {
     try {
       setAkun(burner ? pakaiAkun(akunBurner()) : await masuk());
     } catch {
-      tampil('Passkey dibatalkan', 'info');
+      tampil('Passkey cancelled', 'info');
     } finally {
       setMasukJalan(false);
     }
@@ -460,7 +461,7 @@ export default function Main() {
   ];
   const kerja = aktif ? Math.max(0, now - aktif.diclaimPada) : 0;
   const sisaDetik = aktif ? Math.max(0, Math.ceil(aktif.batasKerja - kerja)) : 0;
-  // bersih setelah potongan platform (v2.1), sama dengan yang diterima toko di OrderFinished
+  // net after the platform cut (v2.1), same as what the shop receives in OrderFinished
   const payoutKini = aktif ? payoutBersih(hitungPayout(aktif.harga, aktif.batasKerja, Math.floor(kerja)), s.feeBps) : 0n;
 
   const m2 = adalahMesin(fokus) && MESIN[fokus].kode === 2 ? d.mesin[fokus] : null;
@@ -496,7 +497,7 @@ export default function Main() {
           shadow-bias={-0.0004}
         />
         <Suspense fallback={null}>
-          <TokoStatis nama={(saya?.nama ?? 'Toko A').toUpperCase()} warna={UNGU.m} mesinJalan={ID_MESIN.filter((id) => MESIN[id].kode === 1 && d.mesin[id].status === 'jalan').join(',')} />
+          <TokoStatis nama={(saya?.nama ?? 'Shop A').toUpperCase()} warna={UNGU.m} mesinJalan={ID_MESIN.filter((id) => MESIN[id].kode === 1 && d.mesin[id].status === 'jalan').join(',')} />
           <BarangDunia dunia={d} />
           {ID_MESIN.map((id) => (
             <BarMesin key={id} id={id} dunia={dunia} />
@@ -520,7 +521,7 @@ export default function Main() {
             model={profil.model}
             kulit={profil.kulit}
             rambut={profil.rambut}
-            nama={namaTampil(profil, saya?.nama ?? 'Kamu')}
+            nama={namaTampil(profil, saya?.nama ?? 'You')}
             tombol={tombol}
             pos={pos}
             pegang={d.pegang ? <Item3D item={d.pegang} /> : undefined}
@@ -549,10 +550,10 @@ export default function Main() {
             const ol = lawan[0].orderAktif ? s.order[String(lawan[0].orderAktif)] : undefined;
             return ol && ol.status === 'Claimed' ? (
               <div className="lawan-order">
-                mengerjakan #{String(ol.id)} · {ol.langkahSelesai}/{ol.langkah.length} langkah · {Math.max(0, Math.ceil(ol.batasKerja - (now - ol.diclaimPada)))} dtk
+                working on #{String(ol.id)} · {ol.langkahSelesai}/{ol.langkah.length} steps · {Math.max(0, Math.ceil(ol.batasKerja - (now - ol.diclaimPada)))}s
               </div>
             ) : (
-              <div className="lawan-order">{lawan[0].orderAktif ? 'menyerahkan…' : 'menganggur'}</div>
+              <div className="lawan-order">{lawan[0].orderAktif ? 'handing over…' : 'idle'}</div>
             );
           })()}
         </div>
@@ -564,7 +565,7 @@ export default function Main() {
             {rp(saya?.omzet ?? 0n)}
           </motion.div>
           <div className="skor-label">
-            {saya ? `${namaTampil(profil, saya.nama)} · ${saya.nama.toUpperCase()}` : akun ? 'Belum terdaftar sebagai toko' : 'Belum masuk'}
+            {saya ? `${namaTampil(profil, saya.nama)} · ${saya.nama.toUpperCase()}` : akun ? 'Not registered as a shop' : 'Not signed in'}
           </div>
         </div>
       </div>
@@ -574,20 +575,20 @@ export default function Main() {
           <div className="bar-timer">
             <div style={{ width: `${aktif ? batas01(sisaDetik / aktif.batasKerja) * 100 : 0}%` }} />
           </div>
-          <div className="timer-label">{aktif ? `Payout ${rp(payoutKini)}` : 'Rebut order di loket'}</div>
+          <div className="timer-label">{aktif ? `Payout ${rp(payoutKini)}` : 'Claim an order at the counter'}</div>
         </div>
         <Jam ukuran={46} />
       </div>
 
       {pilihTerbuka && (
         <div className="pilih-file">
-          <h4>FLASHDISK (E:) — {LABEL_JENIS[m2!.item!.jenis]}</h4>
+          <h4>FLASH DRIVE (E:) — {LABEL_JENIS[m2!.item!.jenis]}</h4>
           {m2!.file.map((f, i) => (
             <button key={f} onClick={() => pilihFile(i)}>
               <b>{i + 1}</b> {f}
             </button>
           ))}
-          <p>Cetak file asli. Salah pilih = printer kena virus!</p>
+          <p>Print the real file. Wrong pick = printer gets a virus!</p>
         </div>
       )}
       {prompt && (
@@ -598,7 +599,7 @@ export default function Main() {
           </div>
         </div>
       )}
-      <div className="kontrol-3d">WASD gerak · Shift lari · Spasi ambil/taruh/serah · Tahan E laminating · 1–3 pilih file · M musik {musik ? '♪' : '✕'}</div>
+      <div className="kontrol-3d">WASD move · Shift run · Space pick/drop/hand over · Hold E laminate · 1–3 pick file · M music {musik ? '♪' : '✕'}</div>
       <div className="toast-wadah">
         <AnimatePresence>
           {toast && (
@@ -618,13 +619,13 @@ export default function Main() {
       {!akun && (
         <div className="masuk-3d">
           <div className="kartu-masuk">
-            <h2>Buka toko</h2>
-            <p>Rebut order penonton di loket, kerjakan di mesin, serahkan secepat kilat. Makin cepat, makin cuan.</p>
+            <h2>Open your shop</h2>
+            <p>Claim audience orders at the counter, run them through the machines, hand them over lightning fast. Faster = more profit.</p>
             <button className="tombol utama besar" disabled={masukJalan} onClick={() => pindah('/masuk?ke=/main', false)}>
-              Masuk / daftar
+              Sign in / sign up
             </button>
             <button className="tautan" disabled={masukJalan} onClick={() => mulai(true)}>
-              Main sebagai tamu
+              Play as guest
             </button>
           </div>
         </div>
@@ -633,37 +634,37 @@ export default function Main() {
       {akun && tutorial && (
         <div className="tutorial" onClick={tutupTutorial}>
           <div className="kartu-tutorial">
-            <h2>CARA MAIN</h2>
+            <h2>HOW TO PLAY</h2>
             <ol className="langkah-tutorial">
-              <li><span className="no">1</span><span>Lari ke loket <b>SERAH</b>, tekan <kbd>Spasi</kbd> untuk merebut order pelanggan (rebutan dengan toko lawan!)</span></li>
-              <li><span className="no">2</span><span>Bawa dokumen ke mesin yang diminta tiket: <b>fotokopi</b> otomatis, <b>printer</b> pilih file asli <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> (awas virus), <b>laminator</b> tahan <kbd>E</kbd></span></li>
-              <li><span className="no">3</span><span>Ambil hasilnya, serahkan di loket. Makin cepat, makin besar bayarannya. Telat = hangus</span></li>
+              <li><span className="no">1</span><span>Run to the <b>DELIVER</b> counter, press <kbd>Space</kbd> to claim a customer order (race the rival shop!)</span></li>
+              <li><span className="no">2</span><span>Take the document to the machine on the ticket: <b>copier</b> runs itself, <b>printer</b> pick the real file <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> (watch out for viruses), <b>laminator</b> hold <kbd>E</kbd></span></li>
+              <li><span className="no">3</span><span>Grab the result, hand it over at the counter. Faster = bigger payout. Late = expired</span></li>
             </ol>
-            <div className="kecil-akun" style={{ textAlign: 'center', marginBottom: 10 }}>Gerak <kbd>WASD</kbd> · lari <kbd>Shift</kbd> · menu <kbd>Esc</kbd></div>
-            <button className="tombol-game kuning besar" onClick={tutupTutorial}>SIAP, GAS!</button>
+            <div className="kecil-akun" style={{ textAlign: 'center', marginBottom: 10 }}>Move <kbd>WASD</kbd> · run <kbd>Shift</kbd> · menu <kbd>Esc</kbd></div>
+            <button className="tombol-game kuning besar" onClick={tutupTutorial}>READY, LET'S GO!</button>
           </div>
         </div>
       )}
       {menu && (
         <div className="menu-esc" onClick={() => setMenu(false)}>
           <div className="kartu-menu" onClick={(e) => e.stopPropagation()}>
-            <h2>JEDA</h2>
-            <button className="tombol-game kuning besar" onClick={() => setMenu(false)}>LANJUT</button>
-            <button className="tombol-game putih" onClick={() => (setMenu(false), setTutorial(true))}>CARA MAIN</button>
-            <button className="tombol-game putih" onClick={() => pindah('/lobi')}>KEMBALI KE LOBI</button>
-            <span className="kecil-akun">Order yang sedang dikerjakan tetap jalan di chain.</span>
+            <h2>PAUSED</h2>
+            <button className="tombol-game kuning besar" onClick={() => setMenu(false)}>RESUME</button>
+            <button className="tombol-game putih" onClick={() => (setMenu(false), setTutorial(true))}>HOW TO PLAY</button>
+            <button className="tombol-game putih" onClick={() => pindah('/lobi')}>BACK TO LOBBY</button>
+            <span className="kecil-akun">Orders in progress keep running on-chain.</span>
           </div>
         </div>
       )}
-      {ringan && <div className="mode-ringan">mode ringan</div>}
-      {(!s.siap || s.galat) && <div className="status-3d">{s.galat ?? 'Menyambung ke Monad…'}</div>}
-      {s.siap && !s.galat && !s.sesiAktif && s.sesiId === 0 && <div className="status-3d">Menunggu operator membuka sesi… pelanggan belum bisa memesan</div>}
+      {ringan && <div className="mode-ringan">lite mode</div>}
+      {(!s.siap || s.galat) && <div className="status-3d">{s.galat ?? 'Connecting to Monad…'}</div>}
+      {s.siap && !s.galat && !s.sesiAktif && s.sesiId === 0 && <div className="status-3d">Waiting for the operator to open the session… customers cannot order yet</div>}
       {sesiUsai && (
         <div className="masuk-3d">
           <motion.div className="kartu-masuk kartu-hasil" initial={{ scale: 0.7, rotate: -4, opacity: 0 }} animate={{ scale: 1, rotate: 0, opacity: 1 }} transition={{ type: 'spring', bounce: 0.45 }}>
-            <h2>SESI #{s.sesiId} SELESAI</h2>
+            <h2>SESSION #{s.sesiId} OVER</h2>
             <div className="hasil-judul">
-              {!saya ? 'Kamu menonton' : peringkat[0] && sama(peringkat[0].alamat, saya.alamat) && (peringkat[1]?.omzet ?? 0n) < peringkat[0].omzet ? '🏆 TOKOMU JUARA!' : peringkat[0] && peringkat[0].omzet === (saya.omzet ?? 0n) ? 'SERI' : 'Kalah cepat, lain kali!'}
+              {!saya ? 'You are watching' : peringkat[0] && sama(peringkat[0].alamat, saya.alamat) && (peringkat[1]?.omzet ?? 0n) < peringkat[0].omzet ? '🏆 YOUR SHOP WINS!' : peringkat[0] && peringkat[0].omzet === (saya.omzet ?? 0n) ? 'DRAW' : 'Too slow, next time!'}
             </div>
             <ol className="peringkat">
               {peringkat.map((t, i) => (
@@ -676,7 +677,7 @@ export default function Main() {
               ))}
             </ol>
             <button className="tombol utama besar" onClick={() => pindah('/lobi')}>
-              Kembali ke lobi
+              Back to lobby
             </button>
           </motion.div>
         </div>
@@ -690,18 +691,18 @@ function teksPrompt(f: IdStasiun | null, d: Dunia, adaOrder: boolean, depan: Ord
   if (f === 'serah') {
     if (d.pegang) {
       const butuh = d.pegang.langkah[d.pegang.tahap];
-      return butuh === undefined ? { tombol: 'Spasi', teks: 'Serahkan ke pelanggan' } : { teks: `Belum beres — perlu ${NAMA_LANGKAH[butuh]}` };
+      return butuh === undefined ? { tombol: 'Space', teks: 'Hand over to customer' } : { teks: `Not done yet — needs ${NAMA_LANGKAH[butuh]}` };
     }
-    if (d.diSerah) return menyerahkan ? { teks: 'Mencatat ke Monad…' } : { tombol: 'Spasi', teks: 'Coba serahkan lagi' };
-    if (d.merebut !== null) return { teks: `Merebut order #${d.merebut}…` };
-    if (adaOrder) return { teks: 'Satu order dulu sampai beres' };
-    return depan ? { tombol: 'Spasi', teks: `Rebut order #${depan.id} · ${LABEL_JENIS[depan.jenis] ?? ''}` } : { teks: 'Menunggu pelanggan…' };
+    if (d.diSerah) return menyerahkan ? { teks: 'Recording on Monad…' } : { tombol: 'Space', teks: 'Try handing over again' };
+    if (d.merebut !== null) return { teks: `Claiming order #${d.merebut}…` };
+    if (adaOrder) return { teks: 'One order at a time' };
+    return depan ? { tombol: 'Space', teks: `Claim order #${depan.id} · ${LABEL_JENIS[depan.jenis] ?? ''}` } : { teks: 'Waiting for customers…' };
   }
   if (f.startsWith('meja')) {
     const isi = d.meja[Number(f.slice(4))];
-    if (d.pegang && !isi) return { tombol: 'Spasi', teks: 'Taruh di meja' };
-    if (!d.pegang && isi) return { tombol: 'Spasi', teks: 'Ambil dari meja' };
-    return { teks: 'Meja kerja' };
+    if (d.pegang && !isi) return { tombol: 'Space', teks: 'Put on table' };
+    if (!d.pegang && isi) return { tombol: 'Space', teks: 'Take from table' };
+    return { teks: 'Work table' };
   }
   if (!adalahMesin(f)) return null;
   const k = MESIN[f].kode;
@@ -711,18 +712,18 @@ function teksPrompt(f: IdStasiun | null, d: Dunia, adaOrder: boolean, depan: Ord
     case 'kosong': {
       if (!d.pegang) return { teks: nama };
       const butuh = d.pegang.langkah[d.pegang.tahap];
-      if (butuh === undefined) return { teks: 'Sudah beres — bawa ke loket SERAH' };
-      return butuh === k ? { tombol: 'Spasi', teks: `Masukkan ke ${nama.toLowerCase()}` } : { teks: `Bukan di sini — perlu ${NAMA_LANGKAH[butuh]}` };
+      if (butuh === undefined) return { teks: 'All done — bring it to the DELIVER counter' };
+      return butuh === k ? { tombol: 'Space', teks: `Load into ${nama.toLowerCase()}` } : { teks: `Not here — needs ${NAMA_LANGKAH[butuh]}` };
     }
     case 'pilih':
-      return { tombol: '1–3', teks: 'Pilih file asli dari flashdisk' };
+      return { tombol: '1–3', teks: 'Pick the real file from the flash drive' };
     case 'jalan':
-      return { teks: `${nama} jalan…` };
+      return { teks: `${nama} running…` };
     case 'tahan':
-      return { tombol: 'Tahan E', teks: 'Laminating' };
+      return { tombol: 'Hold E', teks: 'Laminating' };
     case 'macet':
-      return { teks: 'Printer kena virus! Tunggu…' };
+      return { teks: 'Printer got a virus! Wait…' };
     case 'selesai':
-      return d.pegang ? { teks: 'Tangan penuh — taruh dulu barangmu' } : { tombol: 'Spasi', teks: 'Ambil hasil' };
+      return d.pegang ? { teks: 'Hands full — put your item down first' } : { tombol: 'Space', teks: 'Take result' };
   }
 }

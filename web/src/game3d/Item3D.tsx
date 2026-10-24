@@ -1,11 +1,11 @@
-// Barang yang dibawa/diproses: dokumen asli, flashdisk (order printer), kertas hasil cetak/fotokopi, hasil laminasi.
+// Items carried/processed: original document, flash drive (printer order), printed/copied paper, laminated result.
 export type Wujud = 'dokumen' | 'flashdisk' | 'kertas' | 'laminasi';
 export type Item = { id: bigint; jenis: number; langkah: number[]; tahap: number; wujud: Wujud; teks: string };
 
-/** Warna khas tiap jenis order (1 KTP, 2 boarding pass, 3 ijazah, 4 menu warung). */
+/** Color per order type (1 ID card, 2 boarding pass, 3 diploma, 4 food stall menu). */
 export const WARNA_JENIS: Record<number, string> = { 1: '#76a0e2', 2: '#f4b829', 3: '#fbfaf3', 4: '#93d3b0' };
 
-/** Order dengan langkah pertama Print datang sebagai flashdisk; lainnya dokumen asli. */
+/** Orders whose first step is Print arrive as a flash drive; others as an original document. */
 export const wujudAwal = (langkah: number[]): Wujud => (langkah[0] === 2 ? 'flashdisk' : 'dokumen');
 
 export function Item3D({ item, skala = 1 }: { item: Pick<Item, 'jenis' | 'wujud'>; skala?: number }) {

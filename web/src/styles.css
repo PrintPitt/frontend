@@ -213,3 +213,47 @@ body[data-halaman='layar'] { overflow: hidden; }
 .baris-manual input { flex: 1; min-width: 0; font: inherit; font-family: var(--mono); font-size: 0.8rem; padding: 8px; border-radius: 10px; border: 1px solid var(--garis-2); background: var(--panel-2); color: inherit; }
 .baris-siap { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; padding: 4px 0; }
 .form-teks input[type='file'] { font-size: 0.85rem; padding: 8px; }
+
+/* ===== /pesan: pelacak ala aplikasi ojek online ===== */
+.lacak { display: grid; gap: 12px; }
+.lacak-atas { display: flex; gap: 12px; align-items: center; }
+.lacak-ikon { width: 58px; height: 58px; flex-shrink: 0; display: grid; place-items: center; font-size: 1.8rem; background: #efe8fd; border: 3px solid #231e16; border-radius: 50%; position: relative; }
+.lacak-ikon.mencari::after { content: ''; position: absolute; inset: -3px; border-radius: 50%; border: 3px solid #836ef9; animation: cari-toko 1.4s ease-out infinite; }
+@keyframes cari-toko { from { transform: scale(1); opacity: 0.9; } to { transform: scale(1.9); opacity: 0; } }
+.lacak-judul { display: block; font: 1.35rem 'Lilita One', system-ui; line-height: 1.15; }
+.lacak-sub { font-size: 0.9rem; opacity: 0.8; margin-top: 2px; }
+.lacak-tahap { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; font: 700 0.72rem 'Fredoka', system-ui; text-align: center; color: #9a958a; }
+.lacak-tahap li { display: grid; justify-items: center; gap: 4px; position: relative; }
+.lacak-tahap li::before { content: ''; position: absolute; top: 7px; right: 50%; width: 100%; height: 4px; background: #e2dccd; z-index: 0; }
+.lacak-tahap li:first-child::before { display: none; }
+.lacak-titik { width: 18px; height: 18px; border-radius: 50%; background: #e2dccd; border: 3px solid #231e16; z-index: 1; }
+.lacak-tahap li.lewat, .lacak-tahap li.kini { color: #231e16; }
+.lacak-tahap li.lewat .lacak-titik { background: #5fd39a; }
+.lacak-tahap li.lewat::before, .lacak-tahap li.kini::before { background: #5fd39a; }
+.lacak-tahap li.kini .lacak-titik { background: #f4b829; animation: kedip 1s infinite; }
+.lacak-batal .lacak-ikon { background: #fde1da; }
+/* v2.3: daftar toko sendiri dari dashboard */
+.daftar-toko { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 6px; }
+.daftar-toko input { flex: 1 1 180px; min-width: 0; font: inherit; padding: 8px 10px; border-radius: 10px; border: 2px solid currentColor; background: #fff; color: #231e16; }
+.daftar-toko .galat { flex-basis: 100%; }
+/* lencana jaringan (testnet / mainnet) */
+.lencana-jaringan { position: fixed; left: 10px; bottom: 10px; z-index: 50; font: 600 11px/1 system-ui, sans-serif; letter-spacing: 0.04em; padding: 6px 9px; border-radius: 999px; border: 2px solid #231e16; background: #fbfaf3; color: #231e16; cursor: pointer; opacity: 0.85; }
+.lencana-jaringan.mainnet { background: #5fd39a; }
+.lencana-jaringan span { font-weight: 400; opacity: 0.7; margin-left: 4px; }
+.lencana-jaringan:hover { opacity: 1; }
+/* /akun panel + tombol akun mengambang */
+[data-halaman='akun'] { --bg: #2c2170; --panel: #fbfaf3; --panel-2: #f1e8d4; --garis: #231e16; --garis-2: #231e16; --teks: #231e16; --muted: #6b6457; --aksen: #836ef9; color-scheme: light; background: var(--bg); }
+[data-halaman='akun'] .kartu { border-width: 3px; border-radius: 16px; box-shadow: 0 5px 0 #231e16; margin-bottom: 12px; }
+[data-halaman='akun'] .brand { color: #f4b829; font-family: 'Lilita One', system-ui; }
+[data-halaman='akun'] .pesan-head .tautan { color: #fbfaf3; }
+.akun-profil { display: flex; gap: 14px; align-items: center; }
+.akun-avatar { width: 56px; height: 56px; border-radius: 50%; background: #836ef9; color: #fbfaf3; display: grid; place-items: center; font: 1.6rem 'Lilita One', system-ui; border: 3px solid #231e16; flex-shrink: 0; }
+.alamat-akun-kecil { margin-top: 4px; font: inherit; font-size: 0.8rem; background: none; border: 0; padding: 0; color: #6b6457; text-decoration: underline; cursor: pointer; }
+.akun-baris-info { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.akun-baris-info > div { display: grid; gap: 2px; }
+@media (max-width: 420px) { .akun-baris-info { grid-template-columns: 1fr 1fr; } }
+.tombol-akun-apung { position: fixed; right: 12px; top: calc(10px + env(safe-area-inset-top)); z-index: 50; font: 600 13px/1 system-ui, sans-serif; padding: 9px 13px; border-radius: 999px; border: 2px solid #231e16; background: #fbfaf3; color: #231e16; box-shadow: 0 3px 0 #231e16; cursor: pointer; }
+.tombol-akun-apung.masuk { background: #f4b829; }
+.lencana-jaringan { bottom: calc(10px + env(safe-area-inset-bottom)); }
+/* tombol akun di kanan atas: header halaman memberi ruang supaya chip saldo / skor tidak tertutup */
+body:has(.tombol-akun-apung) .pesan-head, body:has(.tombol-akun-apung) .toko-head, body:has(.tombol-akun-apung) .kepala-beranda { padding-right: 96px; }
