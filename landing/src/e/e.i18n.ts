@@ -7,8 +7,8 @@ export const E_DICT = {
   // ---------- umum ----------
   'e.unit.s': { en: 's', id: 'dtk' },
   'e.name': { en: 'Ratna', id: 'Ratna' },
-  'e.shop.a': { en: 'Toko A', id: 'Toko A' },
-  'e.shop.b': { en: 'Toko B', id: 'Toko B' },
+  'e.shop.a': { en: 'Fotokopi Jaya', id: 'Fotokopi Jaya' },
+  'e.shop.b': { en: 'Sinar Copy', id: 'Sinar Copy' },
   'e.order.kind': { en: 'Diploma Lamination', id: 'Laminating Ijazah' },
   'e.order.title': { en: 'Bachelor’s Diploma, Informatics', id: 'Ijazah S1 Teknik Informatika' },
   'e.fig.fk': { en: 'Photocopier', id: 'Mesin fotokopi' },

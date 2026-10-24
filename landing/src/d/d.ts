@@ -1,5 +1,5 @@
 /* Bagian D — "Arena Toko+".
-   Layar VS (Toko A vs Toko B) lalu tur satu tiket: HP → brankas kontrak → arena → stasiun figur → papan hasil + kartu NFT.
+   Layar VS (Fotokopi Jaya vs Sinar Copy) lalu tur satu tiket: HP → brankas kontrak → arena → stasiun figur → papan hasil + kartu NFT.
    Satu dunia besar digerakkan kamera (translate + scale). Scroll dipetakan ke "waktu cerita" lewat PETA:
    tiap bab punya plateau diam, bagian yang dulu terasa kecepatan diberi ruang lebih. Angka di sini contoh alur, bukan data chain. */
 import QRCode from 'qrcode';

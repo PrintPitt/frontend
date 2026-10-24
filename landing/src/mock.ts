@@ -23,7 +23,7 @@ const JENIS = [
 
 export class MockSim {
   orders = new Map<number, Order>();
-  shops: Shop[] = [{ nama: 'Toko A', omzet: 0, aktif: null }, { nama: 'Toko B', omzet: 0, aktif: null }];
+  shops: Shop[] = [{ nama: 'Fotokopi Jaya', omzet: 0, aktif: null }, { nama: 'Sinar Copy', omzet: 0, aktif: null }];
   txs: Tx[] = [];
   total = 417;
   private nextId = 418;
