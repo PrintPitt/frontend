@@ -26,7 +26,7 @@ function pilihChainId(): number {
 const CHAIN_ID = pilihChainId();
 /** Per-chain env (address, RPC, WS) only applies to the build's default network; a chosen network uses shared + defaults. */
 const PAKAI_ENV = CHAIN_ID === CHAIN_BAWAAN;
-// 143 = Monad mainnet (real IDRX), 10143 = testnet (tIDRX), anything else = local anvil
+// 143 = Monad mainnet, 10143 = testnet (both use tIDRX, see shared deployments), anything else = local anvil
 const dasar = CHAIN_ID === monad.id ? monad : CHAIN_ID === monadTestnet.id ? monadTestnet : anvil;
 
 export const RPC_URL: string =
@@ -36,8 +36,6 @@ export const WS_URL: string | undefined =
 export const IS_ANVIL = dasar.id === anvil.id;
 export const IS_MAINNET = dasar.id === monad.id;
 export const JARINGAN: Jaringan = IS_MAINNET ? 'mainnet' : 'testnet';
-/** Real IDRX (mainnet) has no EIP-2612 `permit`: gasless orders need a one-time `approve` from the user's wallet. */
-export const TOKEN_PUNYA_PERMIT = !IS_MAINNET;
 
 export const chain: Chain = {
   ...dasar,
@@ -57,7 +55,7 @@ const alamat = ((PAKAI_ENV && env.VITE_CONTRACT_ADDRESS) || dep?.address) as Hex
 if (!alamat) throw new Error(`No contract address for chain ${chain.id}. Set VITE_CONTRACT_ADDRESS or export the deployment.`);
 
 export const kontrak = { address: alamat, abi: fotokopiKilatAbi } as const;
-/** Rupiah token for escrow: tIDRX on testnet, real IDRX on mainnet (old variable name kept). */
+/** Rupiah token for escrow (tIDRX on testnet and mainnet; any token works, permit is detected at order time). */
 export const TIDRX = ((PAKAI_ENV && env.VITE_TIDRX_ADDRESS) || dep?.tidrx) as Hex;
 export const DEPLOY_BLOCK = BigInt(dep?.deployBlock ?? 0);
 /** Seconds after Siap before an order can be closed without hand-over (immutable in contract v2). */

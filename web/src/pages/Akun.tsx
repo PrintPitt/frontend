@@ -106,7 +106,7 @@ export default function Akun() {
         </div>
         <div>
           <span className="muted kecil">Network</span>
-          <b>{IS_MAINNET ? 'Mainnet · IDRX' : 'Testnet · tIDRX'}</b>
+          <b>{IS_MAINNET ? 'Mainnet · tIDRX' : 'Testnet · tIDRX'}</b>
           <button className="tautan inline kecil" onClick={gantiJaringan}>
             switch
           </button>

@@ -1,4 +1,4 @@
-// Lencana kecil di pojok: jaringan aktif (testnet tIDRX / mainnet IDRX asli) + tautan ganti jaringan (muat ulang halaman).
+// Small corner badge: active network (testnet / mainnet, both tIDRX) + link to switch network (reloads the page).
 import { IS_ANVIL, JARINGAN } from '../lib/chain';
 
 export default function LencanaJaringan() {
@@ -10,8 +10,8 @@ export default function LencanaJaringan() {
     location.href = u.toString();
   };
   return (
-    <button className={`lencana-jaringan ${JARINGAN}`} onClick={ganti} title={`Pindah ke ${lain}`}>
-      {JARINGAN === 'mainnet' ? 'MAINNET · IDRX' : 'TESTNET'} <span>ganti ke {lain}</span>
+    <button className={`lencana-jaringan ${JARINGAN}`} onClick={ganti} title={`Switch to ${lain}`}>
+      {JARINGAN === 'mainnet' ? 'MAINNET' : 'TESTNET'} <span>switch to {lain}</span>
     </button>
   );
 }
