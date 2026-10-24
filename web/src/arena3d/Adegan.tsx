@@ -1,4 +1,4 @@
-// Adegan 3D kecil untuk landing (etalase toko) dan lobi (panggung pilih karakter).
+// Small 3D scenes for the landing page (shop window) and lobby (character select stage).
 import { Float } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { useRef, type ReactNode } from 'react';
@@ -37,7 +37,7 @@ function Lompat({ children, tunda = 0, tinggi = 0.35 }: { children: ReactNode; t
   return <group ref={g}>{children}</group>;
 }
 
-/** Etalase toko: konter + mesin + dua tukang fotokopi melompat + kertas melayang. */
+/** Shop window: counter + machines + two jumping copy-shop workers + floating paper. */
 export function AdeganLanding() {
   const tMeja = 0.78;
   return (
@@ -71,7 +71,7 @@ export function AdeganLanding() {
   );
 }
 
-/** Panggung lobi: dua podium berwarna + tukang fotokopi. */
+/** Lobby stage: two colored podiums + copy-shop workers. */
 export function PanggungLobi({ warna }: { warna: string[] }) {
   return (
     <group>

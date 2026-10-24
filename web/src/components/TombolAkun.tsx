@@ -1,4 +1,4 @@
-// Tombol akun mengambang (pojok kanan bawah) menuju /akun. Disembunyikan di layar proyektor, game, dan halaman masuk.
+// Floating account button (bottom right) that opens /akun. Hidden on the projector board, the game and the sign-in page.
 import { akunAktif } from '../lib/akun';
 import { pindah } from '../lib/navigasi';
 
@@ -8,8 +8,8 @@ export default function TombolAkun({ jalur }: { jalur: string }) {
   if (SEMBUNYI.has(jalur)) return null;
   const masuk = !!akunAktif();
   return (
-    <button className={`tombol-akun-apung ${masuk ? 'masuk' : ''}`} onClick={() => pindah('/akun', false)} aria-label="Akun">
-      <span aria-hidden="true">👤</span> Akun
+    <button className={`tombol-akun-apung ${masuk ? 'masuk' : ''}`} onClick={() => pindah('/akun', false)} aria-label="Account">
+      <span aria-hidden="true">👤</span> Account
     </button>
   );
 }

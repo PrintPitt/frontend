@@ -1,5 +1,5 @@
-// /akun — panel akun: siapa yang masuk (Google/email, passkey, tamu), alamat, jaringan, saldo Rupiah + MON gas,
-// status toko, kode juri (mainnet), dan keluar. Satu tempat untuk pengguna HP (PWA).
+// /akun — account panel: who is signed in (Google/email, passkey, guest), address, network, Rupiah balance + MON gas,
+// shop status, judge code (mainnet) and sign out. One place for phone users (PWA).
 import { useCallback, useEffect, useState } from 'react';
 import { formatEther, type Hex } from 'viem';
 import { formatRupiah } from '../../../shared/src/index.ts';
@@ -11,7 +11,7 @@ import { NAMA } from '../lib/merek';
 import { pindah } from '../lib/navigasi';
 
 type InfoToko = { terdaftar: boolean; aktif: boolean; nama: string };
-const NAMA_JENIS: Record<Akun['jenis'], string> = { privy: 'Google / email', mera: 'Passkey', burner: 'Tamu', dev: 'Akun dev (anvil)' };
+const NAMA_JENIS: Record<Akun['jenis'], string> = { privy: 'Google / email', mera: 'Passkey', burner: 'Guest', dev: 'Dev account (anvil)' };
 
 export default function Akun() {
   const [akun, setAkun] = useState<Akun | null>(akunAktif);
@@ -58,16 +58,16 @@ export default function Akun() {
     return (
       <main className="pesan akun">
         <header className="pesan-head">
-          <div className="brand">{NAMA} · Akun</div>
+          <div className="brand">{NAMA} · Account</div>
         </header>
         <section className="kartu mulai">
-          <h2>Belum masuk</h2>
-          <p className="muted">Masuk dengan Google, email, atau passkey. Tanpa password, tanpa install dompet.</p>
+          <h2>Not signed in</h2>
+          <p className="muted">Sign in with Google, email or a passkey. No password, no wallet to install.</p>
           <button className="tombol utama besar" onClick={() => pindah('/masuk?ke=/akun', false)}>
-            Masuk / daftar
+            Sign in / sign up
           </button>
           <button className="tautan" onClick={() => setAkun(pakaiAkun(akunBurner()))}>
-            Lanjut sebagai tamu
+            Continue as guest
           </button>
         </section>
       </main>
@@ -76,9 +76,9 @@ export default function Akun() {
   return (
     <main className="pesan akun">
       <header className="pesan-head">
-        <div className="brand">{NAMA} · Akun</div>
+        <div className="brand">{NAMA} · Account</div>
         <button className="tautan inline" onClick={() => history.length > 1 ? history.back() : pindah('/', false)}>
-          ‹ kembali
+          ‹ back
         </button>
       </header>
 
@@ -88,16 +88,16 @@ export default function Akun() {
         </div>
         <div>
           <b>{akun.label ?? NAMA_JENIS[akun.jenis]}</b>
-          <div className="muted kecil">Masuk dengan {NAMA_JENIS[akun.jenis]}</div>
+          <div className="muted kecil">Signed in with {NAMA_JENIS[akun.jenis]}</div>
           <button className="alamat-akun-kecil" onClick={salin} title={akun.address}>
-            {pendek(akun.address)} · {disalin ? 'tersalin!' : 'salin alamat'}
+            {pendek(akun.address)} · {disalin ? 'copied!' : 'copy address'}
           </button>
         </div>
       </section>
 
       <section className="kartu akun-baris-info">
         <div>
-          <span className="muted kecil">Saldo Rupiah</span>
+          <span className="muted kecil">Rupiah balance</span>
           <b>{rupiah === null ? '…' : formatRupiah(rupiah)}</b>
         </div>
         <div>
@@ -105,52 +105,52 @@ export default function Akun() {
           <b>{mon === null ? '…' : Number(formatEther(mon)).toLocaleString('id-ID', { maximumFractionDigits: 4 })}</b>
         </div>
         <div>
-          <span className="muted kecil">Jaringan</span>
+          <span className="muted kecil">Network</span>
           <b>{IS_MAINNET ? 'Mainnet · IDRX' : 'Testnet · tIDRX'}</b>
           <button className="tautan inline kecil" onClick={gantiJaringan}>
-            ganti
+            switch
           </button>
         </div>
       </section>
 
       <section className="kartu">
-        <span className="muted kecil">Toko</span>
+        <span className="muted kecil">Shop</span>
         {toko?.terdaftar ? (
           <p>
-            <b>{toko.nama}</b> {toko.aktif ? <span className="badge">aktif</span> : <span className="badge">nonaktif</span>}
+            <b>{toko.nama}</b> {toko.aktif ? <span className="badge">active</span> : <span className="badge">inactive</span>}
           </p>
         ) : (
-          <p className="muted">Belum punya toko. Pemilik fotokopi bisa daftar gratis dari dashboard toko.</p>
+          <p className="muted">No shop yet. Copy shop owners can register for free from the shop dashboard.</p>
         )}
         <button className="tombol" onClick={() => pindah('/toko', false)}>
-          {toko?.terdaftar ? 'Buka dashboard toko' : 'Daftarkan toko'}
+          {toko?.terdaftar ? 'Open shop dashboard' : 'Register a shop'}
         </button>
       </section>
 
       <section className="kartu">
-        <span className="muted kecil">Pesanan</span>
-        <p className="muted">Pesan cetak, isi saldo, dan lacak pesanan aktif.</p>
+        <span className="muted kecil">Orders</span>
+        <p className="muted">Order prints, top up and track your active order.</p>
         <button className="tombol" onClick={() => pindah('/pesan', false)}>
-          Buka halaman pesan
+          Open the order page
         </button>
       </section>
 
       {IS_MAINNET && (
         <section className="kartu">
-          <span className="muted kecil">Kode juri</span>
-          <p className="muted">{adaKode ? 'Tersimpan di perangkat ini (dipakai untuk saldo MON gas).' : 'Belum ada. Masukkan kode juri di halaman pesan.'}</p>
+          <span className="muted kecil">Judge code</span>
+          <p className="muted">{adaKode ? 'Saved on this device (used for MON gas balance).' : 'None yet. Enter the judge code on the order page.'}</p>
           {adaKode && (
             <button className="tautan inline" onClick={() => (simpanKode(''), setAdaKode(false))}>
-              hapus kode dari perangkat
+              remove code from this device
             </button>
           )}
         </section>
       )}
 
       <section className="kartu">
-        {akun.jenis === 'burner' && <p className="muted kecil">Akun tamu tersimpan di browser ini saja. Menghapus data browser = akun dan saldonya hilang.</p>}
+        {akun.jenis === 'burner' && <p className="muted kecil">Guest accounts live in this browser only. Clearing browser data removes the account and its balance.</p>}
         <button className="tombol besar" onClick={keluar}>
-          Keluar
+          Sign out
         </button>
       </section>
     </main>

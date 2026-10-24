@@ -1,7 +1,7 @@
-// /toko — dashboard pemilik fotokopi (BLZ-10, BLZ-22.T4): radar order dalam radius toko, ambil (claim), kerjakan, serahkan pakai QR.
-// Anvil: /toko?dev=1 (Toko A) atau /toko?dev=2 (Toko B). Testnet: alamat passkey harus didaftarkan operator (registerShop).
-// v2.1 (toko fotokopi nyata): lokasi toko → feed radius dari backend (1,5 km; Toko Pro 3 km), unduh dokumen order,
-// langkah ditandai manual, order Siap → pindai QR pelanggan → `serahkan`. Order mini-game (kodeHash 0) tetap seperti dulu.
+// /toko — print shop owner dashboard (BLZ-10, BLZ-22.T4): radar of orders within the shop radius, claim, work, hand over via QR.
+// Anvil: /toko?dev=1 (Shop A) or /toko?dev=2 (Shop B). Testnet: the passkey address must be registered by the operator (registerShop).
+// v2.1 (real print shops): shop location → radius feed from the backend (1.5 km; Shop Pro 3 km), download order document,
+// steps marked manually, Siap order → scan customer QR → `serahkan`. Mini-game orders (kodeHash 0) work as before.
 import confetti from 'canvas-confetti';
 import { AnimatePresence, motion } from 'motion/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -27,7 +27,7 @@ import { kirim, kirimLangkah, pesanError } from '../lib/tx';
 
 const MINIGAME: Record<number, (p: PropsMiniGame) => React.JSX.Element> = { 1: Fotokopi, 2: Print, 3: Laminating };
 const sama = (a?: string, b?: string) => !!a && !!b && a.toLowerCase() === b.toLowerCase();
-/** Order dokumen nyata (bukan mini-game): punya file atau kode serah terima. */
+/** Real document order (not a mini-game): has a file or a handover code. */
 const orderNyata = (o: Order) => BigInt(o.dokumen) !== 0n || BigInt(o.kodeHash) !== 0n;
 const FEED_MS = 3000;
 const pesanGalat = (e: unknown) => (e instanceof Error && !('walk' in e) ? e.message : pesanError(e));
@@ -45,14 +45,14 @@ export default function Toko() {
   const [hasil, setHasil] = useState<Hasil | null>(null);
   const toastT = useRef<ReturnType<typeof setTimeout>>(undefined);
   const dingTerakhir = useRef('');
-  // feed radius dari backend + id order tertinggi saat feed diambil (order lebih baru belum terindeks: tetap tampil)
+  // radius feed from the backend + highest order id when the feed was fetched (newer orders not yet indexed: still shown)
   const [feed, setFeed] = useState<{ f: Feed; batas: bigint } | null>(null);
   const [pro, setPro] = useState<InfoPro | null>(null);
   const [alatJalan, setAlatJalan] = useState('');
   const [pindai, setPindai] = useState(false);
   const [halamanFile, setHalamanFile] = useState<Record<string, number>>({});
   const [sorot, setSorot] = useState<bigint | null>(null);
-  // notifikasi order masuk ala aplikasi driver: satu kartu pop-up per order baru dalam radius
+  // incoming-order notification like a driver app: one pop-up card per new order within the radius
   const [notif, setNotif] = useState<bigint | null>(null);
   const sudahNotif = useRef(new Set<string>());
 
@@ -68,7 +68,7 @@ export default function Toko() {
     else if (new URLSearchParams(location.search).has('dev')) masuk().then(setAkun);
   }, []);
 
-  // Bunyi "ding" saat order baru masuk.
+  // Play a "ding" when a new order comes in.
   useEffect(() => {
     const k = s.kejadian.find((x) => x.jenis === 'baru');
     if (k && k.kunci !== dingTerakhir.current) {
@@ -83,12 +83,12 @@ export default function Toko() {
   const dalamFeed = feed?.f.toko ? new Map(feed.f.order.map((x) => [x.id, x])) : null;
   const antre = Object.values(s.order)
     .filter((o) => o.status === 'Open' && o.sesi === s.sesiId && now - o.dibuatPada < s.batasAntre)
-    // lokasi toko diatur → hanya order dalam radius (+ order tanpa lokasi / yang belum sempat terindeks backend)
+    // shop location set → only orders within the radius (+ orders without a location / not yet indexed by the backend)
     .filter((o) => !dalamFeed || dalamFeed.has(String(o.id)) || o.id > feed!.batas)
     .sort((a, b) => a.dibuatPada - b.dibuatPada);
   const siapSerah = akun ? Object.values(s.order).filter((o) => o.status === 'Siap' && sama(o.toko, akun.address)) : [];
 
-  // Feed radius (backend) dipolling pelan; order live tetap dari event chain supaya rebutan tidak tertunda indeks.
+  // Radius feed (backend) is polled slowly; live orders still come from chain events so claiming is not delayed by indexing.
   const alamatSaya = saya?.alamat;
   useEffect(() => {
     if (!alamatSaya) return;
@@ -100,7 +100,7 @@ export default function Toko() {
         const f = await ambilFeed(alamatSaya);
         if (!berhenti) setFeed({ f, batas });
       } catch {
-        /* backend mati: tampilkan semua order dari chain */
+        /* backend down: show all orders from the chain */
       }
       if (!berhenti) t = setTimeout(putar, FEED_MS);
     };
@@ -115,7 +115,7 @@ export default function Toko() {
     if (alamatSaya) bacaPro(alamatSaya).then(setPro).catch(() => {});
   }, [alamatSaya]);
 
-  // Perkiraan halaman dari file (backend) untuk dibandingkan dengan halaman yang dibayar, sebelum claim (BLZ-22.T4).
+  // Page estimate from the file (backend) to compare with the paid page count, before claiming (BLZ-22.T4).
   useEffect(() => {
     for (const o of antre) {
       const k = String(o.id);
@@ -127,7 +127,7 @@ export default function Toko() {
     }
   }, [antre, halamanFile]);
 
-  // Order baru dalam radius → pop-up (sekali per order), hanya saat toko sedang tidak mengerjakan apa-apa.
+  // New order within the radius → pop-up (once per order), only while the shop is idle.
   useEffect(() => {
     if (!saya || kerjaAktif || notif !== null) return;
     const baru = antre.find((o) => !sudahNotif.current.has(String(o.id)) && now - o.dibuatPada < s.batasAntre - 5);
@@ -137,7 +137,7 @@ export default function Toko() {
   }, [antre, saya, kerjaAktif, notif, now, s.batasAntre]);
   const orderNotif = notif !== null ? antre.find((o) => o.id === notif) : undefined;
   useEffect(() => {
-    if (notif !== null && !orderNotif) setNotif(null); // sudah diambil toko lain / hangus
+    if (notif !== null && !orderNotif) setNotif(null); // taken by another shop / expired
   }, [notif, orderNotif]);
 
   async function aturLokasi() {
@@ -145,7 +145,7 @@ export default function Toko() {
     setAlatJalan('lokasi');
     try {
       const r = await kirimLokasiToko(akun, await lokasiPerangkat());
-      tampil({ teks: `Lokasi toko tersimpan · radius feed ${r.radiusKm} km`, jenis: 'ok' });
+      tampil({ teks: `Shop location saved · order radius ${r.radiusKm} km`, jenis: 'ok' });
     } catch (e) {
       tampil({ teks: pesanGalat(e), jenis: 'kalah' });
     } finally {
@@ -159,7 +159,7 @@ export default function Toko() {
     try {
       await langgananPro(akun, 1, pro.hargaPro);
       setPro(await bacaPro(akun.address));
-      tampil({ teks: 'Toko Pro aktif 30 hari · radius feed 3 km', jenis: 'ok' });
+      tampil({ teks: 'Shop Pro active for 30 days · order radius 3 km', jenis: 'ok' });
     } catch (e) {
       tampil({ teks: pesanError(e), jenis: 'kalah' });
     } finally {
@@ -172,9 +172,9 @@ export default function Toko() {
     setPindai(false);
     const q = bacaQr(teks);
     const o = q && siapSerah.find((x) => x.id === q.orderId);
-    if (!q) return tampil({ teks: 'QR bukan kode serah terima PrintPitt', jenis: 'kalah' });
-    if (!o) return tampil({ teks: `QR untuk order #${q.orderId}, bukan order Siap milik tokomu`, jenis: 'kalah' });
-    if (!cocok(q.rahasia, o.kodeHash)) return tampil({ teks: 'QR tidak cocok dengan order ini', jenis: 'kalah' });
+    if (!q) return tampil({ teks: 'This QR is not a PrintPitt handover code', jenis: 'kalah' });
+    if (!o) return tampil({ teks: `QR is for order #${q.orderId}, not a ready order from your shop`, jenis: 'kalah' });
+    if (!cocok(q.rahasia, o.kodeHash)) return tampil({ teks: 'QR does not match this order', jenis: 'kalah' });
     setAlatJalan(`serah-${o.id}`);
     try {
       const r = await kirim(akun, 'serahkan', [o.id, q.rahasia]);
@@ -204,13 +204,14 @@ export default function Toko() {
     try {
       await kirim(akun, 'claim', [id]);
       sfx('ambil');
-      tampil({ teks: `Order #${id} milikmu! Kerjakan secepatnya`, jenis: 'ok' });
+      tampil({ teks: `Order #${id} is yours! Get it done fast`, jenis: 'ok' });
     } catch (e) {
       sfx('kalah');
       const pesan = pesanError(e);
       const o = bacaLive().order[String(id)];
       const nama = o && o.toko !== ZERO ? bacaLive().toko.find((t) => sama(t.alamat, o.toko))?.nama : undefined;
-      tampil({ teks: pesan === 'Diambil toko lain' && nama ? `Kalah cepat! Diambil ${nama}` : pesan, jenis: 'kalah' });
+      // lib/tx.ts still returns Indonesian text for AlreadyClaimed: compare it, but display English
+      tampil({ teks: pesan === 'Diambil toko lain' ? (nama ? `Too slow! Taken by ${nama}` : 'Taken by another shop') : pesan, jenis: 'kalah' });
     } finally {
       setRebut(null);
     }
@@ -229,7 +230,7 @@ export default function Toko() {
     try {
       setAkun(burner ? pakaiAkun(akunBurner()) : await masuk());
     } catch {
-      tampil({ teks: 'Passkey dibatalkan', jenis: 'info' });
+      tampil({ teks: 'Passkey cancelled', jenis: 'info' });
     } finally {
       setMasukJalan(false);
     }
@@ -239,16 +240,16 @@ export default function Toko() {
     return (
       <main className="pesan">
         <header className="pesan-head">
-          <div className="brand">{NAMA} · Toko</div>
+          <div className="brand">{NAMA} · Shop</div>
         </header>
         <section className="kartu mulai">
-          <h2>Dashboard toko fotokopi</h2>
-          <p className="muted">Order cetak dari pelanggan di sekitar tokomu masuk real-time. Rebut, kerjakan, serahkan pakai QR, uang langsung masuk.</p>
+          <h2>Print shop dashboard</h2>
+          <p className="muted">Print orders from customers near your shop arrive in real time. Claim, print, hand over via QR, get paid instantly.</p>
           <button className="tombol utama besar" disabled={masukJalan} onClick={() => pindah('/masuk?ke=/toko', false)}>
-            Masuk / daftar
+            Sign in / sign up
           </button>
           <button className="tautan" disabled={masukJalan} onClick={() => mulai(true)}>
-            Coba sebagai tamu
+            Try as guest
           </button>
         </section>
         {toast && <p className="galat">{toast.teks}</p>}
@@ -262,45 +263,45 @@ export default function Toko() {
     <main className="toko dasbor">
       <header className="dasbor-head">
         <div>
-          <div className="brand">{saya?.nama ?? 'Toko belum terdaftar'}</div>
+          <div className="brand">{saya?.nama ?? 'Shop not registered'}</div>
           <div className="muted kecil">
-            {pendek(akun.address)} · {s.sesiAktif ? <b className="online">● buka, menerima order</b> : 'sesi belum dibuka'}
+            {pendek(akun.address)} · {s.sesiAktif ? <b className="online">● open, accepting orders</b> : 'session not open yet'}
           </div>
         </div>
         <div className="dasbor-stat">
           <div className="stat-kecil">
-            <span>Omzet sesi</span>
+            <span>Session revenue</span>
             <motion.b key={String(saya?.omzet ?? 0n)} initial={{ scale: 1.3, color: '#5fd39a' }} animate={{ scale: 1, color: '#231e16' }}>
               {mon(saya?.omzet ?? 0n)}
             </motion.b>
           </div>
           <div className="stat-kecil">
-            <span>Order di sekitar</span>
+            <span>Nearby orders</span>
             <b>{antre.length}</b>
           </div>
           <div className="stat-kecil">
-            <span>Siap diambil</span>
+            <span>Ready for pickup</span>
             <b>{siapSerah.length}</b>
           </div>
-          {pro && pro.proSampai > now && <span className="badge-pro">★ PRO s.d. {tanggalPro(pro.proSampai)}</span>}
+          {pro && pro.proSampai > now && <span className="badge-pro">★ PRO until {tanggalPro(pro.proSampai)}</span>}
         </div>
       </header>
 
       {s.siap && !saya && (
         <div className="kartu kecil">
-          Alamat ini belum punya toko. Daftarkan sekarang (gratis, langsung di contract):
+          This address has no shop yet. Register now (free, directly on the contract):
           <DaftarToko akun={akun} />
         </div>
       )}
-      {s.siap && !s.sesiAktif && <div className="kartu muted kecil">Sesi belum dibuka operator: order baru belum bisa direbut.</div>}
+      {s.siap && !s.sesiAktif && <div className="kartu muted kecil">The operator has not opened the session yet: new orders can't be claimed.</div>}
       {s.galat && <div className="banner-galat">RPC: {s.galat}</div>}
 
       <div className="dasbor-isi">
         <section className="dasbor-kiri">
           <div className="kartu kartu-radar">
             <div className="judul-kartu">
-              <b>Order di sekitar tokomu</b>
-              <span className="muted kecil">{feed?.f.toko ? `radius ${radiusKm} km` : 'lokasi toko belum diatur'}</span>
+              <b>Orders near your shop</b>
+              <span className="muted kecil">{feed?.f.toko ? `radius ${radiusKm} km` : 'shop location not set'}</span>
             </div>
             <Radar
               radiusKm={radiusKm}
@@ -318,15 +319,15 @@ export default function Toko() {
             <div className="baris-alat">
               {saya && (
                 <button className="tombol" disabled={!!alatJalan} onClick={aturLokasi}>
-                  📍 {alatJalan === 'lokasi' ? 'Membaca lokasi…' : feed?.f.toko ? 'Perbarui lokasi toko' : 'Atur lokasi toko'}
+                  📍 {alatJalan === 'lokasi' ? 'Reading location…' : feed?.f.toko ? 'Update shop location' : 'Set shop location'}
                 </button>
               )}
               {saya && pro && pro.proSampai <= now && pro.hargaPro > 0n && (
-                <button className="tombol" disabled={!!alatJalan} onClick={langganan} title="Radius feed 3 km, dibayar tIDRX dari saldo toko">
-                  {alatJalan === 'pro' ? 'Memproses…' : `★ Pro: radius 3 km · ${formatRupiah(pro.hargaPro)}/30 hari`}
+                <button className="tombol" disabled={!!alatJalan} onClick={langganan} title="3 km order radius, paid in tIDRX from the shop balance">
+                  {alatJalan === 'pro' ? 'Processing…' : `★ Pro: 3 km radius · ${formatRupiah(pro.hargaPro)}/30 days`}
                 </button>
               )}
-              {tanpaLokasi > 0 && <span className="muted kecil">+{tanpaLokasi} order demo tanpa lokasi</span>}
+              {tanpaLokasi > 0 && <span className="muted kecil">+{tanpaLokasi} demo orders without location</span>}
             </div>
           </div>
 
@@ -355,14 +356,14 @@ export default function Toko() {
                       <div className="chip-order">
                         {f?.jarakKm != null ? <span>📍 {f.jarakKm} km</span> : <span className="muted">demo</span>}
                         <span>{o.langkah.map((l) => NAMA_LANGKAH[l]).join(' → ')}</span>
-                        {orderNyata(o) && <span>📄 {o.halaman} hlm{halamanFile[String(o.id)] ? ` (file ±${halamanFile[String(o.id)]})` : ''}</span>}
+                        {orderNyata(o) && <span>📄 {o.halaman} pp{halamanFile[String(o.id)] ? ` (file ±${halamanFile[String(o.id)]})` : ''}</span>}
                         {BigInt(o.kodeHash) !== 0n && <span>🔐 QR</span>}
-                        <span>⏱ maks. {o.batasKerja} dtk</span>
+                        <span>⏱ max {o.batasKerja}s</span>
                       </div>
                       <div className="bar tipis">
                         <div style={{ width: `${(sisa / s.batasAntre) * 100}%` }} />
                       </div>
-                      <span className="muted kecil">{sisa} dtk lagi sebelum hangus</span>
+                      <span className="muted kecil">{sisa}s left before it expires</span>
                     </div>
                     <motion.button
                       whileTap={{ scale: 0.9 }}
@@ -370,20 +371,20 @@ export default function Toko() {
                       disabled={!saya || !!kerjaAktif || rebut !== null}
                       onClick={() => claim(o.id)}
                     >
-                      {rebut === o.id ? '…' : kerjaAktif ? 'Sibuk' : 'Ambil'}
+                      {rebut === o.id ? '…' : kerjaAktif ? 'Busy' : 'Claim'}
                     </motion.button>
                   </motion.div>
                 );
               })}
             </AnimatePresence>
-            {antre.length === 0 && <p className="muted kosong-order">{s.siap ? 'Belum ada order di sekitarmu. Notif berbunyi saat ada yang masuk.' : 'Menyambung…'}</p>}
+            {antre.length === 0 && <p className="muted kosong-order">{s.siap ? 'No orders near you yet. You will hear a ding when one comes in.' : 'Connecting…'}</p>}
           </div>
         </section>
 
         <section className="dasbor-kanan">
           <div className="kartu kartu-kerja">
             <div className="judul-kartu">
-              <b>Sedang dikerjakan</b>
+              <b>In progress</b>
               {kerjaAktif && <span className="muted kecil">#{String(kerjaAktif.id)}</span>}
             </div>
             {kerjaAktif ? (
@@ -395,52 +396,52 @@ export default function Toko() {
                 feeBps={s.feeBps}
                 now={now}
                 onSelesai={selesai}
-                onSiap={() => tampil({ teks: 'Siap! Minta pelanggan menunjukkan QR, lalu pindai', jenis: 'ok' }, 4000)}
+                onSiap={() => tampil({ teks: 'Ready! Ask the customer to show their QR, then scan it', jenis: 'ok' }, 4000)}
                 onUnduh={unduh}
                 onGalat={galat}
               />
             ) : hasil ? (
               <motion.div className="hasil" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
-                <div className="muted">{hasil.label} selesai dalam {hasil.kerja} dtk</div>
+                <div className="muted">{hasil.label} done in {hasil.kerja}s</div>
                 <div className="angka-hasil">+{mon(hasil.payout, 5)}</div>
-                <div className="muted">Kembali ke pelanggan {mon(hasil.refund, 5)} · NFT terkirim · potongan platform {s.feeBps / 100}%</div>
+                <div className="muted">Refund to customer {mon(hasil.refund, 5)} · NFT sent · platform fee {s.feeBps / 100}%</div>
               </motion.div>
             ) : (
-              <div className="meja-kosong">{saya ? 'Belum ada order. Ambil order terdekat di sebelah kiri.' : 'Menunggu pendaftaran toko'}</div>
+              <div className="meja-kosong">{saya ? 'No order yet. Claim the nearest order on the left.' : 'Waiting for shop registration'}</div>
             )}
           </div>
 
           <div className="kartu kartu-siap">
             <div className="judul-kartu">
-              <b>Siap diambil pelanggan</b>
+              <b>Ready for customer pickup</b>
               <button className="tombol utama" disabled={!!alatJalan || siapSerah.length === 0} onClick={() => setPindai(true)}>
-                📷 Pindai QR pelanggan
+                📷 Scan customer QR
               </button>
             </div>
             {siapSerah.length === 0 ? (
-              <p className="muted kecil">Order yang sudah dikerjakan menunggu di sini sampai pelanggan datang dan menunjukkan QR.</p>
+              <p className="muted kecil">Finished orders wait here until the customer arrives and shows their QR.</p>
             ) : (
               siapSerah.map((o) => (
                 <div key={String(o.id)} className="baris-siap">
                   <span>
-                    <b>#{String(o.id)}</b> · {s.katalog[o.jenis]?.label} · “{o.teks}” · bayaran terkunci{' '}
+                    <b>#{String(o.id)}</b> · {s.katalog[o.jenis]?.label} · “{o.teks}” · payout locked{' '}
                     <b>{mon(payoutBersih(hitungPayout(o.harga, o.batasKerja, o.kerja), s.feeBps))}</b>
                   </span>
                   {BigInt(o.dokumen) !== 0n && (
                     <button className="tautan inline" onClick={() => unduh(o)}>
-                      unduh dokumen
+                      download document
                     </button>
                   )}
-                  {alatJalan === `serah-${o.id}` && <span className="muted"> menyerahkan…</span>}
+                  {alatJalan === `serah-${o.id}` && <span className="muted"> handing over…</span>}
                 </div>
               ))
             )}
           </div>
 
           <div className="kartu kartu-info kecil">
-            <b>Cara bayaranmu dihitung</b>
-            <span>Bayaran turun tiap detik sejak order kamu ambil sampai siap. Sisanya kembali ke pelanggan sebagai cashback.</span>
-            <span>Dana cair saat QR pelanggan dipindai. Potongan platform {s.feeBps / 100}% hanya dari order yang selesai.</span>
+            <b>How your payout works</b>
+            <span>Your payout drops every second from claim until the order is ready. The rest goes back to the customer as cashback.</span>
+            <span>Funds are released when the customer's QR is scanned. The {s.feeBps / 100}% platform fee applies only to completed orders.</span>
           </div>
         </section>
       </div>
@@ -450,8 +451,8 @@ export default function Toko() {
         {orderNotif && (
           <motion.div className="notif-order" initial={{ y: 120, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 120, opacity: 0 }} transition={{ type: 'spring', bounce: 0.35 }}>
             <div className="notif-kepala">
-              <b>🔔 Order baru di dekatmu!</b>
-              <span className="notif-hitung">{Math.max(0, s.batasAntre - (now - orderNotif.dibuatPada))} dtk</span>
+              <b>🔔 New order nearby!</b>
+              <span className="notif-hitung">{Math.max(0, s.batasAntre - (now - orderNotif.dibuatPada))}s</span>
             </div>
             <div className="notif-isi">
               <div className="notif-jarak">{dalamFeed?.get(String(orderNotif.id))?.jarakKm != null ? `${dalamFeed.get(String(orderNotif.id))!.jarakKm} km` : 'demo'}</div>
@@ -460,7 +461,7 @@ export default function Toko() {
                 <div className="teks-kecil">“{orderNotif.teks}”</div>
                 <div className="muted kecil">
                   {orderNotif.langkah.map((l) => NAMA_LANGKAH[l]).join(' → ')}
-                  {orderNyata(orderNotif) && ` · ${orderNotif.halaman} hlm`}
+                  {orderNyata(orderNotif) && ` · ${orderNotif.halaman} pp`}
                 </div>
               </div>
               <div className="notif-harga">{mon(orderNotif.harga)}</div>
@@ -470,7 +471,7 @@ export default function Toko() {
             </div>
             <div className="notif-tombol">
               <button className="tombol" onClick={() => setNotif(null)}>
-                Lewati
+                Skip
               </button>
               <button
                 className="tombol utama"
@@ -481,7 +482,7 @@ export default function Toko() {
                   void claim(id);
                 }}
               >
-                {rebut === orderNotif.id ? '…' : 'Ambil order'}
+                {rebut === orderNotif.id ? '…' : 'Claim order'}
               </button>
             </div>
           </motion.div>
@@ -498,20 +499,20 @@ export default function Toko() {
   );
 }
 
-/** Radar radius toko: toko di tengah, order sebagai titik sesuai jarak (sudut dari id supaya stabil). */
+/** Shop radius radar: shop in the center, orders as dots by distance (angle derived from id so it stays stable). */
 function Radar(p: { radiusKm: number; adaLokasi: boolean; titik: { id: bigint; jarakKm: number; label: string; nyata: boolean }[]; sorot: bigint | null; onPilih: (id: bigint) => void }) {
   const R = 130;
   const cincin = [0.33, 0.66, 1];
   return (
     <div className="radar">
-      <svg viewBox="-150 -150 300 300" role="img" aria-label={`Radar order radius ${p.radiusKm} km`}>
+      <svg viewBox="-150 -150 300 300" role="img" aria-label={`Order radar, ${p.radiusKm} km radius`}>
         <circle r={R + 6} fill="#efe8fd" stroke="#231e16" strokeWidth={3} />
         {cincin.map((c) => (
           <circle key={c} r={R * c} fill="none" stroke="#836ef9" strokeOpacity={0.35} strokeWidth={2} strokeDasharray="5 6" />
         ))}
         {cincin.map((c) => (
           <text key={`t${c}`} x={4} y={-R * c + 14} className="label-radar">
-            {(p.radiusKm * c).toLocaleString('id-ID', { maximumFractionDigits: 1 })} km
+            {(p.radiusKm * c).toLocaleString('en-US', { maximumFractionDigits: 1 })} km
           </text>
         ))}
         <g className="sapu-radar">
@@ -540,12 +541,12 @@ function Radar(p: { radiusKm: number; adaLokasi: boolean; titik: { id: bigint; j
           🏪
         </text>
       </svg>
-      {!p.adaLokasi && <div className="radar-kosong">Atur lokasi toko supaya hanya order dalam radius yang masuk</div>}
+      {!p.adaLokasi && <div className="radar-kosong">Set your shop location so only orders within the radius come in</div>}
     </div>
   );
 }
 
-/** Menjalankan resep: satu mini-game per langkah; tiap lulus → completeStep (tx jalan sambil langkah berikutnya dimainkan). */
+/** Runs the recipe: one mini-game per step; each pass → completeStep (tx runs while the next step is played). */
 function Runner(p: {
   akun: Akun;
   o: Order;
@@ -569,7 +570,7 @@ function Runner(p: {
   const payout = payoutBersih(kotor, p.feeBps);
   const frac = Number((kotor * 1000n) / o.harga) / 1000;
   const nyata = orderNyata(o);
-  // order dokumen nyata: langkah dikerjakan di mesin sungguhan, ditandai dengan tombol (bukan mini-game)
+  // real document order: steps are done on a real machine and marked with a button (not a mini-game)
   const Game = nyata ? undefined : MINIGAME[o.langkah[idx]];
 
   const lulus = useCallback(async () => {
@@ -580,7 +581,7 @@ function Runner(p: {
     if (terakhir) setMenyimpan(true);
     else setIdx(idx + 1);
     try {
-      const r = await kirimLangkah(p.akun, o.id, kode); // tunggu/ulang sebentar kalau RPC tertinggal setelah claim
+      const r = await kirimLangkah(p.akun, o.id, kode); // wait/retry briefly if the RPC lags behind after claim
       setTercatat((t) => [...t, idx]);
       const ev = r.events.find((e) => e.eventName === 'OrderFinished');
       if (ev)
@@ -590,7 +591,7 @@ function Runner(p: {
       p.onGalat(pesanError(e));
       sudah.current.delete(idx);
       setMenyimpan(false);
-      setIdx(idx); // ulangi langkah yang gagal tercatat
+      setIdx(idx); // retry the step that failed to record
     }
   }, [idx, n, o.id, o.langkah, p]);
 
@@ -604,12 +605,12 @@ function Runner(p: {
           <div className="kertas kertas-hud">“{o.teks}”</div>
           {nyata && (
             <div className="muted kecil">
-              {o.halaman} halaman
+              {o.halaman} pages
               {BigInt(o.dokumen) !== 0n && (
                 <>
                   {' · '}
                   <button className="tautan inline" onClick={() => p.onUnduh(o)}>
-                    unduh dokumen
+                    download document
                   </button>
                 </>
               )}
@@ -625,28 +626,28 @@ function Runner(p: {
           </div>
         </div>
         <div className="hud-payout">
-          <span className="muted kecil">Bayaranmu kalau selesai sekarang</span>
+          <span className="muted kecil">Your payout if you finish now</span>
           <span className="angka-payout">{mon(payout, 5)}</span>
           <div className="bar tebal">
             <div style={{ width: `${frac * 100}%` }} />
           </div>
           <span className="muted kecil">
-            {kerja} / {o.batasKerja} dtk · sisanya kembali ke pelanggan · bersih setelah potongan platform
+            {kerja} / {o.batasKerja}s · the rest goes back to the customer · net of platform fee
           </span>
         </div>
       </div>
       {telat ? (
-        <div className="meja-kosong telat">Waktu habis! Dana dikembalikan penuh ke pelanggan.</div>
+        <div className="meja-kosong telat">Time's up! Full refund to the customer.</div>
       ) : menyimpan ? (
-        <div className="meja-kosong">Mencatat langkah terakhir ke Monad…</div>
+        <div className="meja-kosong">Recording the final step on Monad…</div>
       ) : Game ? (
         <Game key={`${String(o.id)}-${idx}`} teks={o.teks} label={p.k?.label ?? ''} onLulus={lulus} />
       ) : nyata && idx < n ? (
         <div className="meja-kosong">
           <button className="tombol utama besar" onClick={lulus}>
-            ✓ {NAMA_LANGKAH[o.langkah[idx]]} selesai
+            ✓ {NAMA_LANGKAH[o.langkah[idx]]} done
           </button>
-          {idx === n - 1 && BigInt(o.kodeHash) !== 0n && <p className="muted kecil">Setelah ini order Siap: bayaran terkunci, dana cair saat QR pelanggan dipindai.</p>}
+          {idx === n - 1 && BigInt(o.kodeHash) !== 0n && <p className="muted kecil">After this the order is ready: payout locked, funds released when the customer's QR is scanned.</p>}
         </div>
       ) : null}
     </div>

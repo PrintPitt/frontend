@@ -1,8 +1,8 @@
 {
-  "name": "PrintPitt — fotokopi kilat onchain",
+  "name": "PrintPitt — the onchain print shop",
   "short_name": "PrintPitt",
-  "description": "Pesan cetak dari HP, toko fotokopi terdekat rebutan order. Bayar Rupiah di Monad, tanpa gas.",
-  "lang": "id",
+  "description": "Order prints from your phone; nearby copy shops race for the job. Pay in Rupiah on Monad, no gas.",
+  "lang": "en",
   "start_url": "/?sumber=pwa",
   "scope": "/",
   "display": "standalone",
@@ -17,8 +17,8 @@
     { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
   ],
   "shortcuts": [
-    { "name": "Pesan cetak", "url": "/pesan", "icons": [{ "src": "/ikon/ikon-192.png", "sizes": "192x192" }] },
-    { "name": "Dashboard toko", "url": "/toko", "icons": [{ "src": "/ikon/ikon-192.png", "sizes": "192x192" }] },
-    { "name": "Akun", "url": "/akun", "icons": [{ "src": "/ikon/ikon-192.png", "sizes": "192x192" }] }
+    { "name": "Order a print", "url": "/pesan", "icons": [{ "src": "/ikon/ikon-192.png", "sizes": "192x192" }] },
+    { "name": "Shop dashboard", "url": "/toko", "icons": [{ "src": "/ikon/ikon-192.png", "sizes": "192x192" }] },
+    { "name": "Account", "url": "/akun", "icons": [{ "src": "/ikon/ikon-192.png", "sizes": "192x192" }] }
   ]
 }

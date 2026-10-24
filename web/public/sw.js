@@ -1,5 +1,5 @@
-// Service worker PrintPitt (PWA): app shell bisa dibuka lagi tanpa sinyal, aset ber-hash di-cache.
-// Hanya GET same-origin. RPC Monad, backend, Privy, dan /api tidak pernah di-cache (data chain harus segar).
+// PrintPitt service worker (PWA): the app shell opens again without signal; hashed assets are cached.
+// Same-origin GET only. Monad RPC, backend, Privy and /api are never cached (chain data must stay fresh).
 const CACHE = 'printpitt-v1';
 const SHELL = ['/', '/manifest.webmanifest', '/favicon.svg', '/ikon/ikon-192.png'];
 
@@ -22,7 +22,7 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(req.url);
   if (url.origin !== location.origin || url.pathname.startsWith('/api/')) return;
 
-  // Halaman (SPA): network-first supaya deploy baru langsung terpakai; offline → shell terakhir.
+  // Pages (SPA): network-first so a new deploy is used right away; offline → last shell.
   if (req.mode === 'navigate') {
     e.respondWith(
       fetch(req)
@@ -36,7 +36,7 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // Aset build ber-hash (/assets/*) dan ikon/figur: cache-first.
+  // Hashed build assets (/assets/*) and icons/figures: cache-first.
   if (url.pathname.startsWith('/assets/') || url.pathname.startsWith('/ikon/') || url.pathname.startsWith('/figures/') || url.pathname.startsWith('/models/')) {
     e.respondWith(
       caches.match(req).then(

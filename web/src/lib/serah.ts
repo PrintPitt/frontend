@@ -1,9 +1,9 @@
-// Serah terima QR (contract v2, Desain Contract bagian 17): pelanggan membuat `rahasia` acak di HP, hanya
-// keccak256(rahasia) yang masuk order. Saat ambil, HP pelanggan menampilkan QR; toko memindai lalu memanggil `serahkan`.
+// QR handover (contract v2, Contract Design section 17): the customer makes a random `rahasia` (secret) on the phone; only
+// keccak256(rahasia) goes into the order. At pickup the customer's phone shows a QR; the shop scans it and calls `serahkan`.
 import { bytesToHex, isHex, keccak256, type Hex } from 'viem';
 
 const AWALAN = 'pp.rahasia.';
-/** Isi QR: `printpitt:<orderId>:<rahasia>`. Order id ikut supaya toko tahu order mana yang diserahkan. */
+/** QR content: `printpitt:<orderId>:<rahasia>`. The order id is included so the shop knows which order is handed over. */
 const POLA_QR = /^printpitt:(\d{1,19}):(0x[0-9a-fA-F]{64})$/;
 
 export function buatRahasia(): { rahasia: Hex; kodeHash: Hex } {
@@ -11,12 +11,12 @@ export function buatRahasia(): { rahasia: Hex; kodeHash: Hex } {
   return { rahasia, kodeHash: keccak256(rahasia) };
 }
 
-/** Disimpan per kodeHash (diketahui sebelum order punya id), jadi aman disimpan sebelum tx dikirim. */
+/** Stored per kodeHash (known before the order has an id), so it is safe to store before the tx is sent. */
 export function simpanRahasia(kodeHash: Hex, rahasia: Hex) {
   try {
     localStorage.setItem(AWALAN + kodeHash.toLowerCase(), rahasia);
   } catch {
-    /* mode privat: rahasia hanya ada di memori halaman ini */
+    /* private mode: the secret only lives in this page's memory */
   }
 }
 
@@ -42,5 +42,5 @@ export function bacaQr(teks: string): { orderId: bigint; rahasia: Hex } | null {
   return m ? { orderId: BigInt(m[1]), rahasia: m[2].toLowerCase() as Hex } : null;
 }
 
-/** Cek lokal sebelum `serahkan`, supaya QR salah tidak menghabiskan gas tx yang pasti revert. */
+/** Local check before `serahkan`, so a wrong QR doesn't waste gas on a tx that will surely revert. */
 export const cocok = (rahasia: Hex, kodeHash: Hex) => keccak256(rahasia) === kodeHash.toLowerCase();

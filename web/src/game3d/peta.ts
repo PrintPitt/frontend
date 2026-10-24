@@ -1,21 +1,21 @@
-// Tata letak toko (meter, x kanan, z ke kamera): kotak tabrakan + titik stasiun. Dipakai Toko3D dan logika game.
-// Mesin tersebar: 3 fotokopi berjajar di dinding kiri, 2 printer di meja mesin belakang, 3 laminator di meja mesin samping.
+// Shop layout (meters, x right, z toward camera): collision boxes + station points. Used by Toko3D and game logic.
+// Machines spread out: 3 copiers along the left wall, 2 printers on the back machine table, 3 laminators on the side machine tables.
 export const L = 12;
 export const D = 8;
 export const TINGGI_MEJA = 0.78;
 export const DALAM_MEJA = 0.75;
 
-export const Z_BELAKANG = -D / 2 + DALAM_MEJA / 2 + 0.25; // pusat konter belakang
-export const Z_DEPAN = D / 2 - DALAM_MEJA / 2; // pusat konter depan (loket)
+export const Z_BELAKANG = -D / 2 + DALAM_MEJA / 2 + 0.25; // back counter center
+export const Z_DEPAN = D / 2 - DALAM_MEJA / 2; // front counter center (service window)
 export const X_KIRI = -L / 2 + DALAM_MEJA / 2 + 0.15;
 export const X_KANAN = L / 2 - DALAM_MEJA / 2 - 0.15;
 
-/** Meja khusus mesin (printer/laminator): lebih lebar & dalam dari ubin konter supaya mesin tidak menggantung. */
+/** Machine table (printer/laminator): wider & deeper than a counter tile so machines don't overhang. */
 export const MEJA_MESIN = { lebar: 1.55, dalam: 1.1 };
 
 export type KodeMesin = 1 | 2 | 3;
 export type IdMesin = 'f1' | 'f2' | 'f3' | 'p1' | 'p2' | 'l1' | 'l2' | 'l3';
-/** x, z = pusat mesin/meja; putar = arah muka (0 → +z); y = tinggi alas mesin; dalam = kedalaman tapak. */
+/** x, z = machine/table center; putar = facing (0 → +z); y = machine base height; dalam = footprint depth. */
 export type DefMesin = { kode: KodeMesin; x: number; z: number; putar: number; y: number; dalam: number };
 
 const Z_MEJA_BELAKANG = -D / 2 + MEJA_MESIN.dalam / 2 + 0.02;
@@ -33,47 +33,47 @@ export const MESIN: Record<IdMesin, DefMesin> = {
 export const ID_MESIN = Object.keys(MESIN) as IdMesin[];
 export const adalahMesin = (id: string | null | undefined): id is IdMesin => !!id && id in MESIN;
 
-/** Titik di muka mesin (tempat pemain berdiri), atau titik lain sejauh `jarak` ke arah muka. */
+/** Point in front of the machine (where the player stands), or another point `jarak` away in the facing direction. */
 export function mukaMesin(m: DefMesin, jarak = m.dalam / 2): [number, number] {
   return [m.x + Math.sin(m.putar) * jarak, m.z + Math.cos(m.putar) * jarak];
 }
 
 export const POS_SERAH: [number, number, number] = [-0.5, TINGGI_MEJA, Z_DEPAN];
-/** Meja kerja tengah: 4 ubin, semuanya bisa ditaruhi barang. */
+/** Center work table: 4 tiles, items can go on all of them. */
 export const POS_MEJA: [number, number, number][] = [-1.5, -0.5, 0.5, 1.5].map((x) => [x, TINGGI_MEJA, 0.6]);
 
 type Kotak = { x0: number; x1: number; z0: number; z1: number };
 const k = (x0: number, x1: number, z0: number, z1: number): Kotak => ({ x0, x1, z0, z1 });
 
-/** Tapak meja mesin yang diputar (lebar sepanjang dinding, dalam ke arah ruangan). */
+/** Rotated machine table footprint (width along the wall, depth into the room). */
 function tapak(m: DefMesin): Kotak {
   const samping = Math.abs(Math.sin(m.putar)) > 0.5;
   const [w, d] = samping ? [MEJA_MESIN.dalam, MEJA_MESIN.lebar] : [MEJA_MESIN.lebar, MEJA_MESIN.dalam];
   return k(m.x - w / 2, m.x + w / 2, m.z - d / 2, m.z + d / 2);
 }
 
-/** Rintangan (AABB di lantai). */
+/** Obstacles (AABB on the floor). */
 export const RINTANGAN: Kotak[] = [
-  k(-5.95, -4.9, -2.95, 0.55), // deretan 3 mesin fotokopi (dinding kiri)
-  k(-5.0, -2.0, Z_BELAKANG - DALAM_MEJA / 2, Z_BELAKANG + DALAM_MEJA / 2), // konter belakang kiri (rak kertas)
+  k(-5.95, -4.9, -2.95, 0.55), // row of 3 copiers (left wall)
+  k(-5.0, -2.0, Z_BELAKANG - DALAM_MEJA / 2, Z_BELAKANG + DALAM_MEJA / 2), // back-left counter (paper shelf)
   tapak(MESIN.p1),
   tapak(MESIN.p2),
   tapak(MESIN.l1),
   tapak(MESIN.l2),
   tapak(MESIN.l3),
-  k(2.1, 5.1, Z_BELAKANG - DALAM_MEJA / 2, Z_BELAKANG + DALAM_MEJA / 2), // konter belakang kanan (rim kertas)
+  k(2.1, 5.1, Z_BELAKANG - DALAM_MEJA / 2, Z_BELAKANG + DALAM_MEJA / 2), // back-right counter (paper reams)
   k(5.1, 5.9, -3.95, -2.95), // dispenser
-  k(-5.85, -5.05, 2.4, 3.1), // pot tanaman kiri depan
-  k(-2, 2, 0.6 - DALAM_MEJA / 2, 0.6 + DALAM_MEJA / 2), // meja kerja tengah
-  k(5.0, 5.85, 1.05, 2.45), // kardus
-  k(-6, 6, Z_DEPAN - DALAM_MEJA / 2, Z_DEPAN + DALAM_MEJA / 2), // konter depan + loket
+  k(-5.85, -5.05, 2.4, 3.1), // front-left plant pot
+  k(-2, 2, 0.6 - DALAM_MEJA / 2, 0.6 + DALAM_MEJA / 2), // center work table
+  k(5.0, 5.85, 1.05, 2.45), // cardboard boxes
+  k(-6, 6, Z_DEPAN - DALAM_MEJA / 2, Z_DEPAN + DALAM_MEJA / 2), // front counter + service window
 ];
 export const BATAS = { x0: -5.75, x1: 5.75, z0: -3.9, z1: 3.15 };
 export const RADIUS_PEMAIN = 0.32;
 
 export type IdStasiun = 'serah' | IdMesin | 'meja0' | 'meja1' | 'meja2' | 'meja3';
 type Titik = { x: number; z: number; jangkau: number };
-/** Titik stasiun: pemain harus berdiri dalam jarak `jangkau` dari titik ini. */
+/** Station points: the player must stand within `jangkau` of this point. */
 export const STASIUN: Record<IdStasiun, Titik> = {
   serah: { x: -0.5, z: Z_DEPAN, jangkau: 1.25 },
   meja0: { x: -1.5, z: 0.6, jangkau: 1.05 },
@@ -88,7 +88,7 @@ export const STASIUN: Record<IdStasiun, Titik> = {
   ) as Record<IdMesin, Titik>),
 };
 
-/** Geser posisi (x, z) supaya lingkaran pemain tidak menembus rintangan/dinding. */
+/** Push position (x, z) so the player circle doesn't pass through obstacles/walls. */
 export function selesaikanTabrakan(x: number, z: number): [number, number] {
   x = Math.max(BATAS.x0, Math.min(BATAS.x1, x));
   z = Math.max(BATAS.z0, Math.min(BATAS.z1, z));
@@ -116,7 +116,7 @@ export function selesaikanTabrakan(x: number, z: number): [number, number] {
   return [x, z];
 }
 
-/** Stasiun terdekat dalam jangkauan, mengutamakan yang ada di depan pemain. */
+/** Nearest station in reach, preferring the one in front of the player. */
 export function stasiunTerdekat(x: number, z: number, arah: number): IdStasiun | null {
   let terbaik: IdStasiun | null = null;
   let skor = Infinity;
@@ -127,7 +127,7 @@ export function stasiunTerdekat(x: number, z: number, arah: number): IdStasiun |
     const dz = s.z - z;
     const d = Math.hypot(dx, dz);
     if (d > s.jangkau) continue;
-    const hadap = d > 0.01 ? (dx * fx + dz * fz) / d : 1; // 1 = tepat di depan
+    const hadap = d > 0.01 ? (dx * fx + dz * fz) / d : 1; // 1 = straight ahead
     const nilai = d - hadap * 0.5;
     if (nilai < skor) {
       skor = nilai;

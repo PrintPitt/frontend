@@ -1,5 +1,5 @@
-// Figur mesin isometrik (BLZ-16.T3) dari figures/ (Colorfigures, MIT). Halaman figur dimuat di iframe same-origin,
-// bingkai halamannya disembunyikan, lalu mesinnya digerakkan lewat fungsi milik figur itu sendiri.
+// Isometric machine figures (BLZ-16.T3) from figures/ (Colorfigures, MIT). The figure page loads in a same-origin iframe,
+// its page chrome is hidden, and the machine is driven through the figure's own functions.
 import { useEffect, useRef } from 'react';
 
 const SUMBER: Record<number, string> = {
@@ -13,8 +13,8 @@ html,body{background:transparent!important;margin:0!important;padding:0!importan
 body{display:block!important}.stage{max-width:none!important;width:100%!important;height:100%!important;margin:0!important}
 svg#fig{width:100%!important;height:100%!important;display:block}`;
 
-/** Satu "tick" demo per mesin; dipanggil berkala selama toko mengerjakan langkah itu. */
-// Menangani kejadian bawaan figur juga: kertas macet (fotokopi tiap lembar ke-4), tinta/kertas habis (printer).
+/** One demo "tick" per machine; called periodically while the shop works on that step. */
+// Also handles the figure's built-in events: paper jam (copier every 4th sheet), out of ink/paper (printer).
 const TICK: Record<number, string> = {
   1: `{ const s = ui.st;
         if (s.jam) { if (s.door < .9) frontDoor(s); else pullJam(s); }
@@ -45,7 +45,7 @@ export default function MesinFigur({
 }: {
   kode: number;
   jalan?: boolean;
-  /** Sudut kamera figur (Colorfigures ?yaw=&pitch=); arena memakai yaw 0, pitch 55. */
+  /** Figure camera angle (Colorfigures ?yaw=&pitch=); the arena uses yaw 0, pitch 55. */
   yaw?: number;
   pitch?: number;
   kelas?: string;
@@ -73,7 +73,7 @@ export default function MesinFigur({
       <iframe
         ref={ref}
         src={SUMBER[kode] + q}
-        title="Mesin"
+        title="Machine"
         tabIndex={-1}
         onLoad={() => {
           const d = ref.current?.contentDocument;

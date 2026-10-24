@@ -1,5 +1,5 @@
-// State live untuk /layar dan /toko (BLZ-12.T1): snapshot awal + event lewat satu koneksi WebSocket.
-// Transisi status hanya maju, jadi event yang datang tidak berurutan (snapshot vs langganan) tetap aman.
+// Live state for /layar and /toko (BLZ-12.T1): initial snapshot + events over one WebSocket connection.
+// Status only moves forward, so out-of-order events (snapshot vs subscription) are still safe.
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import type { Hex } from 'viem';
 import { hitungPayout, NOL32 } from '../../../shared/src/index.ts';
@@ -16,7 +16,7 @@ export type Kejadian = {
   payout?: bigint;
   refund?: bigint;
   kerja?: number;
-  waktu: number; // ms lokal
+  waktu: number; // local ms
 };
 export type LiveState = {
   siap: boolean;
@@ -24,7 +24,7 @@ export type LiveState = {
   sesiId: number;
   sesiAktif: boolean;
   batasAntre: number;
-  /** v2.1: potongan platform (bps) dari payout toko; event/omzet sudah bersih, hitungPayout masih kotor. */
+  /** v2.1: platform fee (bps) taken from shop payout; events/revenue are net, hitungPayout is still gross. */
   feeBps: number;
   katalog: Record<number, Katalog>;
   toko: TokoLive[];
@@ -118,7 +118,7 @@ function terapkan(logs: LogAny[]) {
               { kunci, jenis: 'baru', id, waktu },
             ),
           );
-        segarkanOrder(id); // salinan resep yang pasti dari storage
+        segarkanOrder(id); // exact recipe copy from storage
         break;
       }
       case 'OrderClaimed': {
@@ -138,7 +138,7 @@ function terapkan(logs: LogAny[]) {
         const o = state.order[String(a.id)];
         if (!o) segarkanOrder(a.id);
         else ubah((s) => pasangOrder(s, { ...o, status: 'Siap', kerja: Number(a.kerja), siapPada: Number(a.siapPada), langkahSelesai: o.langkah.length }));
-        // payout terkunci saat Siap; toko langsung bebas mengambil order lain
+        // payout is locked at Siap (Ready); the shop can take another order right away
         ubah((s) => ({ ...s, toko: s.toko.map((t) => (t.alamat.toLowerCase() === String(a.toko).toLowerCase() ? { ...t, orderAktif: 0n } : t)) }));
         break;
       }
@@ -249,7 +249,7 @@ async function snapshot(): Promise<bigint> {
   const ids: bigint[] = [];
   for (let id = nextId - 1n; id >= 1n && ids.length < 80; id--) ids.push(id);
   const orders = await Promise.all(ids.map(bacaOrder));
-  // Riwayat sesi ini dari storage, supaya reload layar tidak mengosongkan riwayat (waktu 0 = bukan kejadian live).
+  // This session's history from storage, so reloading the screen keeps the history (waktu 0 = not a live event).
   const lampau: Kejadian[] = orders
     .filter((o) => o.sesi === sesiId && (o.status === 'Finished' || o.status === 'Expired'))
     .map((o) => {
@@ -283,7 +283,7 @@ async function jalankan() {
       onError: (e) => ubah((s) => ({ ...s, galat: e.message.split('\n')[0] })),
       ...(PAKAI_WS ? {} : { poll: true, pollingInterval: 700 }),
     });
-    // Tutup celah antara snapshot dan langganan (dedupe lewat txHash:logIndex).
+    // Close the gap between snapshot and subscription (dedupe by txHash:logIndex).
     try {
       const ketinggalan = await pub.getContractEvents({ ...kontrak, fromBlock: dariBlok + 1n, toBlock: 'latest' });
       terapkan(ketinggalan as unknown as LogAny[]);
@@ -300,7 +300,7 @@ async function jalankan() {
   }
 }
 
-/** State terkini di luar render (mis. di dalam handler async). */
+/** Current state outside render (e.g. inside an async handler). */
 export const bacaLive = () => state;
 if (import.meta.env.DEV) (window as unknown as { __live: () => LiveState }).__live = bacaLive;
 
@@ -320,7 +320,7 @@ export function useLive(): LiveState {
   );
 }
 
-/** Jam chain (detik, pecahan) yang berdetak tiap `ms`; pakai `offset` dari useLive atau offsetChain(). */
+/** Chain clock (seconds, fractional) that ticks every `ms`; use `offset` from useLive or offsetChain(). */
 export function useJamChain(offset: number, ms = 250): number {
   const [t, setT] = useState(() => Date.now() / 1000 + offset);
   useEffect(() => {

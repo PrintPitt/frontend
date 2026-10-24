@@ -1,4 +1,4 @@
-// /karakter — lineup pilihan rupa karakter (untuk dipilih tim), dilihat dari sudut kamera game.
+// /karakter — lineup of character looks (for the team to pick), seen from the game camera angle.
 import '@fontsource/fredoka/700.css';
 import '@fontsource/lilita-one';
 import { Canvas } from '@react-three/fiber';
@@ -7,8 +7,8 @@ import { UNGU } from '../arena3d/Mesin3D';
 import { Pekerja3D, TIPE_PEMBELI, type ModelKarakter } from '../arena3d/Pekerja3D';
 
 const MODEL: { id: ModelKarakter; nama: string }[] = [
-  { id: 'tukang', nama: 'A · Tukang cetak (topi koran)' },
-  { id: 'tukang-visor', nama: 'B · Tukang cetak (visor hijau)' },
+  { id: 'tukang', nama: 'A · Printer worker (newspaper hat)' },
+  { id: 'tukang-visor', nama: 'B · Printer worker (green visor)' },
 ];
 const X = [-1.5, 1.5];
 

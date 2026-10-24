@@ -1,4 +1,4 @@
-// Mini-game Fotokopi (BLZ-11.T1): seret dokumen ke kaca scanner sampai pas, lalu tekan COPY.
+// Photocopy mini-game (BLZ-11.T1): drag the document onto the scanner glass until it fits, then press COPY.
 import { animate, motion, useMotionValue } from 'motion/react';
 import { useRef, useState } from 'react';
 import { sfx } from './sfx';
@@ -12,7 +12,7 @@ export default function Fotokopi({ teks, onLulus }: PropsMiniGame) {
   const y = useMotionValue(0);
   const [pas, setPas] = useState(false);
   const [fase, setFase] = useState<'taruh' | 'scan' | 'selesai'>('taruh');
-  const [pesan, setPesan] = useState('Seret dokumen ke kaca scanner');
+  const [pesan, setPesan] = useState('Drag the document onto the scanner glass');
   const [goyang, setGoyang] = useState(0);
 
   function lepas() {
@@ -24,11 +24,11 @@ export default function Fotokopi({ teks, onLulus }: PropsMiniGame) {
       animate(x, x.get() + dx, { type: 'spring', stiffness: 500, damping: 30 });
       animate(y, y.get() + dy, { type: 'spring', stiffness: 500, damping: 30 });
       setPas(true);
-      setPesan('Pas! Tekan COPY');
+      setPesan('Perfect! Press COPY');
       sfx('klik');
     } else {
       setPas(false);
-      setPesan('Belum pas, tepatkan ke garis putus-putus');
+      setPesan('Not lined up yet, match the dashed line');
     }
   }
 
@@ -37,7 +37,7 @@ export default function Fotokopi({ teks, onLulus }: PropsMiniGame) {
     if (!pas) {
       sfx('gagal');
       setGoyang((g) => g + 1);
-      setPesan('Hasil miring! Rapikan dokumen dulu');
+      setPesan('Crooked copy! Straighten the document first');
       return;
     }
     setFase('scan');
@@ -53,7 +53,7 @@ export default function Fotokopi({ teks, onLulus }: PropsMiniGame) {
     <div className="mg">
       <div className="mg-pesan">{pesan}</div>
       <div className="mg-arena fotokopi" ref={arena}>
-        <div className="baki">Baki</div>
+        <div className="baki">Tray</div>
         <motion.div className="mesin-scan" animate={{ x: goyang ? [0, -10, 10, -6, 6, 0] : 0 }} key={goyang}>
           <div className="kaca" ref={kaca}>
             <div className="target" />
@@ -83,7 +83,7 @@ export default function Fotokopi({ teks, onLulus }: PropsMiniGame) {
           onDragEnd={lepas}
           whileDrag={{ scale: 1.06, rotate: 0 }}
         >
-          <div className="dok-kepala">KARTU / DOKUMEN</div>
+          <div className="dok-kepala">CARD / DOCUMENT</div>
           <div className="dok-teks">{teks}</div>
         </motion.div>
       </div>

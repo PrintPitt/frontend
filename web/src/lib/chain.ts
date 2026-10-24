@@ -1,4 +1,4 @@
-// Konfigurasi chain, client viem, dan contract untuk semua halaman.
+// Chain config, viem clients, and the contract for all pages.
 import { createPublicClient, createWalletClient, http, webSocket, type Account, type Chain, type Hex, type Transport, type WalletClient } from 'viem';
 import { anvil, monad, monadTestnet } from 'viem/chains';
 import { deploymentUntuk, fotokopiKilatAbi } from '../../../shared/src/index.ts';
@@ -7,8 +7,8 @@ const env = import.meta.env;
 const CHAIN_BAWAAN = Number(env.VITE_CHAIN_ID || 31337);
 
 /**
- * Satu build melayani testnet dan mainnet: `?jaringan=mainnet` / `?jaringan=testnet` memilih jaringan dan diingat di
- * perangkat ini (localStorage); tanpa itu dipakai VITE_CHAIN_ID. Ganti jaringan = muat ulang halaman.
+ * One build serves testnet and mainnet: `?jaringan=mainnet` / `?jaringan=testnet` picks the network and is remembered on
+ * this device (localStorage); otherwise VITE_CHAIN_ID is used. Switching network = reload the page.
  */
 export type Jaringan = 'mainnet' | 'testnet';
 const KUNCI_JARINGAN = 'pp.jaringan';
@@ -19,14 +19,14 @@ function pilihChainId(): number {
     if (q === 'mainnet' || q === 'testnet') localStorage.setItem(KUNCI_JARINGAN, q);
     pilih = q ?? localStorage.getItem(KUNCI_JARINGAN);
   } catch {
-    /* tanpa storage: pakai bawaan */
+    /* no storage: use the default */
   }
   return pilih === 'mainnet' ? monad.id : pilih === 'testnet' ? monadTestnet.id : CHAIN_BAWAAN;
 }
 const CHAIN_ID = pilihChainId();
-/** Env per-chain (alamat, RPC, WS) hanya berlaku untuk jaringan bawaan build; jaringan pilihan memakai shared + default. */
+/** Per-chain env (address, RPC, WS) only applies to the build's default network; a chosen network uses shared + defaults. */
 const PAKAI_ENV = CHAIN_ID === CHAIN_BAWAAN;
-// 143 = Monad mainnet (IDRX asli), 10143 = testnet (tIDRX), lainnya = anvil lokal
+// 143 = Monad mainnet (real IDRX), 10143 = testnet (tIDRX), anything else = local anvil
 const dasar = CHAIN_ID === monad.id ? monad : CHAIN_ID === monadTestnet.id ? monadTestnet : anvil;
 
 export const RPC_URL: string =
@@ -36,7 +36,7 @@ export const WS_URL: string | undefined =
 export const IS_ANVIL = dasar.id === anvil.id;
 export const IS_MAINNET = dasar.id === monad.id;
 export const JARINGAN: Jaringan = IS_MAINNET ? 'mainnet' : 'testnet';
-/** IDRX asli (mainnet) tidak punya EIP-2612 `permit`: pesan tanpa gas butuh `approve` sekali dari wallet pengguna. */
+/** Real IDRX (mainnet) has no EIP-2612 `permit`: gasless orders need a one-time `approve` from the user's wallet. */
 export const TOKEN_PUNYA_PERMIT = !IS_MAINNET;
 
 export const chain: Chain = {
@@ -54,20 +54,20 @@ function cariDeployment(): Deployment | undefined {
 }
 const dep = cariDeployment();
 const alamat = ((PAKAI_ENV && env.VITE_CONTRACT_ADDRESS) || dep?.address) as Hex | undefined;
-if (!alamat) throw new Error(`Belum ada alamat contract untuk chain ${chain.id}. Isi VITE_CONTRACT_ADDRESS atau ekspor deployment.`);
+if (!alamat) throw new Error(`No contract address for chain ${chain.id}. Set VITE_CONTRACT_ADDRESS or export the deployment.`);
 
 export const kontrak = { address: alamat, abi: fotokopiKilatAbi } as const;
-/** Token Rupiah untuk escrow: tIDRX di testnet, IDRX asli di mainnet (nama variabel lama dipertahankan). */
+/** Rupiah token for escrow: tIDRX on testnet, real IDRX on mainnet (old variable name kept). */
 export const TIDRX = ((PAKAI_ENV && env.VITE_TIDRX_ADDRESS) || dep?.tidrx) as Hex;
 export const DEPLOY_BLOCK = BigInt(dep?.deployBlock ?? 0);
-/** Detik setelah Siap sebelum order bisa ditutup tanpa serah terima (immutable di contract v2). */
+/** Seconds after Siap before an order can be closed without hand-over (immutable in contract v2). */
 export const BATAS_JEMPUT = dep?.batasJemput ?? 600;
-/** v2.2: sengketa yang tidak diputuskan operator dalam waktu ini (setelah batas jemput) dibagi 50/50 oleh keeper (`tutupSengketa`). */
+/** v2.2: a dispute the operator does not decide within this time (after the pickup deadline) is split 50/50 by the keeper (`tutupSengketa`). */
 export const BATAS_SENGKETA = dep?.batasSengketa ?? 86_400;
 
 /**
- * RPC publik Monad membatasi 15 call/dtk per IP (error -32011, juga per call di dalam batch) dan viem tidak mengulangnya.
- * Ulangi dengan jeda bertambah supaya muat awal halaman (katalog + toko ±15 read) tidak gagal total.
+ * Monad's public RPC limits 15 calls/s per IP (error -32011, also per call inside a batch) and viem does not retry.
+ * Retry with growing backoff so the initial page load (catalog + shops, ~15 reads) does not fail outright.
  */
 function ulangSaatDibatasi(dasar: Transport): Transport {
   return (opts) => {
@@ -87,10 +87,10 @@ function ulangSaatDibatasi(dasar: Transport): Transport {
   };
 }
 
-/** HTTP dengan JSON-RPC batch: banyak read digabung jadi satu request (hemat rate limit). */
+/** HTTP with JSON-RPC batching: many reads merged into one request (saves rate limit). */
 export const pub = createPublicClient({ chain, transport: ulangSaatDibatasi(http(RPC_URL, { batch: { wait: 16 } })), pollingInterval: 300 });
 
-/** Satu koneksi WebSocket untuk event live (/layar, /toko). Tanpa WS_URL jatuh ke polling HTTP. */
+/** One WebSocket connection for live events (/layar, /toko). Without WS_URL it falls back to HTTP polling. */
 export const pubLive = WS_URL
   ? createPublicClient({ chain, transport: webSocket(WS_URL, { reconnect: true }), pollingInterval: 300 })
   : pub;
@@ -100,7 +100,7 @@ export function dompet(akun: { account: Account; klien?: WalletClient }): Wallet
   return akun.klien ?? createWalletClient({ chain, account: akun.account, transport: http(RPC_URL), pollingInterval: 300 });
 }
 
-/** Selisih detik antara jam chain (block.timestamp) dan jam lokal. */
+/** Difference in seconds between the chain clock (block.timestamp) and the local clock. */
 export async function offsetChain(): Promise<number> {
   const b = await pub.getBlock();
   return Number(b.timestamp) - Date.now() / 1000;

@@ -1,15 +1,15 @@
-// Mini-game Print (BLZ-11.T2): pilih file yang benar dari flashdisk penuh virus, lalu atasi kertas macet.
+// Print mini-game (BLZ-11.T2): pick the right file from a virus-filled flash drive, then clear the paper jam.
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { sfx } from './sfx';
 import type { PropsMiniGame } from './tipe';
 
-const UMPAN = ['New Folder.exe', 'FINAL_fix_revisi3.docx.lnk', 'autorun.inf', 'tugas (1) (1).pdf.scr', 'foto_ktp.jpg.exe', 'Copy of Copy of skripsi.vbs'];
+const UMPAN = ['New Folder.exe', 'FINAL_fix_revisi3.docx.lnk', 'autorun.inf', 'homework (1) (1).pdf.scr', 'id_card_photo.jpg.exe', 'Copy of Copy of thesis.vbs'];
 const acak = <T,>(xs: T[]) => [...xs].sort(() => Math.random() - 0.5);
 const TAP_MACET = 5;
 
 export default function Print({ teks, onLulus }: PropsMiniGame) {
-  const nama = useMemo(() => teks.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 24) || 'dokumen', [teks]);
+  const nama = useMemo(() => teks.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 24) || 'document', [teks]);
   const benar = `${nama}.pdf`;
   const [file, setFile] = useState(() => acak([benar, `${nama}.pdf.exe`, ...acak(UMPAN).slice(0, 4)]));
   const [fase, setFase] = useState<'pilih' | 'cetak' | 'macet' | 'selesai'>('pilih');
@@ -78,12 +78,12 @@ export default function Print({ teks, onLulus }: PropsMiniGame) {
   return (
     <div className="mg">
       <div className="mg-pesan">
-        {fase === 'pilih' ? `Cari file "${benar}"` : fase === 'macet' ? 'KERTAS MACET! Tarik kertasnya' : fase === 'selesai' ? 'Tercetak!' : 'Mencetak…'}
+        {fase === 'pilih' ? `Find the file "${benar}"` : fase === 'macet' ? 'PAPER JAM! Pull the paper out' : fase === 'selesai' ? 'Printed!' : 'Printing…'}
       </div>
       <div className="mg-arena print">
         {fase === 'pilih' ? (
           <div className="jendela">
-            <div className="jendela-judul">FLASHDISK (E:) · {file.length} item</div>
+            <div className="jendela-judul">FLASH DRIVE (E:) · {file.length} items</div>
             <div className="daftar-file">
               {file.map((f) => (
                 <motion.button key={f} layout className="file" onClick={() => pilih(f)} whileTap={{ scale: 0.95 }}>
@@ -95,8 +95,8 @@ export default function Print({ teks, onLulus }: PropsMiniGame) {
             <AnimatePresence>
               {virus && (
                 <motion.div className="virus" initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1, rotate: [0, -3, 3, 0] }} exit={{ opacity: 0 }}>
-                  VIRUS TERDETEKSI 🦠
-                  <span>Flashdisk pelanggan memang begitu…</span>
+                  VIRUS DETECTED 🦠
+                  <span>Customer flash drives, as usual…</span>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -114,7 +114,7 @@ export default function Print({ teks, onLulus }: PropsMiniGame) {
             </motion.div>
             {fase === 'macet' && (
               <motion.button className="tombol utama besar tombol-tarik" onClick={tarik} whileTap={{ scale: 0.92 }}>
-                TARIK KERTAS ({tap})
+                PULL PAPER ({tap})
               </motion.button>
             )}
             <div className="bar tebal">

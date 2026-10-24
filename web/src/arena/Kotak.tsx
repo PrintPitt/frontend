@@ -1,4 +1,4 @@
-// Balok 3D sederhana (meja, dinding, rak) dalam kamera arena: tampak sisi atas + sisi depan.
+// Simple 3D block (table, wall, shelf) in the arena camera: top face + front face.
 import type { ReactNode } from 'react';
 import { CP, px, py, SP, TINTA, UNIT, zIndex } from './kamera';
 
@@ -11,7 +11,7 @@ export type PropsKotak = {
   z?: number;
   atas: string;
   depan: string;
-  /** Lapisan tambahan (dekorasi) di permukaan atas, koordinat px relatif ke sisi atas. */
+  /** Extra layer (decoration) on the top face, px coordinates relative to the top face. */
   children?: ReactNode;
   lapis?: number;
   className?: string;
