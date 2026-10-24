@@ -1,5 +1,5 @@
 {
-  "name": "fotokopi-kilat-web",
+  "name": "printpitt-web",
   "private": true,
   "type": "module",
   "description": "Frontend: /pesan (penonton), /toko (pemain), /layar (proyektor) + faucet function",

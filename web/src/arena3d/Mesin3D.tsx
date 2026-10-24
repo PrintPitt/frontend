@@ -64,7 +64,7 @@ export function Fotokopi3D({ posisi, putar, skala = 1.3, jalan = false }: { posi
           ))}
         </group>
       ))}
-      {/* badan mesin ungu + pintu depan + lencana KILAT */}
+      {/* badan mesin ungu + pintu depan + lencana PITT */}
       <B x={[0, 62]} y={[0, 58]} z={[40, 92]} warna={UNGU.m} />
       <B x={[62, 63]} y={[4, 54]} z={[44, 86]} warna={UNGU.l} />
       <B x={[63, 63.4]} y={[40, 54]} z={[76, 83]} warna="#d8d0ff" />

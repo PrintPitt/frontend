@@ -2,6 +2,7 @@ import { lazy, StrictMode, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles.css';
 import { NAMA } from './lib/merek';
+import { useJalur } from './lib/navigasi';
 
 // Kode tiap halaman dipisah: HP penonton (/pesan) tidak ikut mengunduh /layar dan /toko.
 const HALAMAN: Record<string, React.LazyExoticComponent<() => React.JSX.Element>> = {
@@ -28,15 +29,18 @@ function Beranda() {
   );
 }
 
-const path = location.pathname.replace(/\/+$/, '') || '/';
-const Halaman = path === '/dev' ? Beranda : (HALAMAN[path] ?? Beranda);
-document.body.dataset.halaman = path.slice(1) || 'beranda';
+function Router() {
+  const path = useJalur();
+  const Halaman = path === '/dev' ? Beranda : (HALAMAN[path] ?? Beranda);
+  document.body.dataset.halaman = path.slice(1) || 'beranda';
+  return <Halaman key={path} />;
+}
 document.title = NAMA;
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Suspense fallback={<p className="muted" style={{ padding: 24 }}>Memuat…</p>}>
-      <Halaman />
+      <Router />
     </Suspense>
   </StrictMode>,
 );

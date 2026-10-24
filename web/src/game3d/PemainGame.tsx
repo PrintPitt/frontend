@@ -1,8 +1,9 @@
 // Pemain yang dikendalikan keyboard: WASD/panah gerak, Shift lari. Posisi disimpan di ref (tanpa render ulang per frame).
 import { useFrame } from '@react-three/fiber';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import type * as THREE from 'three';
-import { Pekerja3D } from '../arena3d/Pekerja3D';
+import { Billboard } from '@react-three/drei';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import * as THREE from 'three';
+import { Pekerja3D, type ModelKarakter } from '../arena3d/Pekerja3D';
 import { selesaikanTabrakan, stasiunTerdekat, type IdStasiun } from './peta';
 
 export type PosPemain = { x: number; z: number; arah: number };
@@ -41,7 +42,16 @@ export function PemainGame({
   kunciPegang,
   bekerja,
   onFokus,
+  model = 'tukang',
+  kulit,
+  rambut,
+  nama,
 }: {
+  model?: ModelKarakter;
+  kulit?: string;
+  rambut?: string;
+  /** Nama tampilan di atas kepala. */
+  nama?: string;
   warna: string;
   tombol: React.RefObject<Set<string>>;
   pos: React.RefObject<PosPemain>;
@@ -119,12 +129,15 @@ export function PemainGame({
           warna={warna}
           posisi={[0, 0, 0]}
           skala={SKALA}
-          model="tukang"
+          model={model}
+          kulit={kulit}
+          rambut={rambut}
           penanda
           gaya={jalan ? 'jalan' : bekerja ? 'kerja' : 'diam'}
           pegang={pegang}
           kunciPegang={kunciPegang}
         />
+        {nama && <LabelNama teks={nama} warna={warna} />}
       </group>
       {Array.from({ length: JUMLAH_DEBU }, (_, i) => (
         <mesh key={i} ref={(m) => void (debu.current[i] = m)} visible={false}>
@@ -133,5 +146,52 @@ export function PemainGame({
         </mesh>
       ))}
     </>
+  );
+}
+
+/** Papan nama kecil di atas kepala pemain (kanvas, selalu menghadap kamera). */
+function LabelNama({ teks, warna }: { teks: string; warna: string }) {
+  const [tekstur, lebar] = useMemo(() => {
+    const c = document.createElement('canvas');
+    const g = c.getContext('2d')!;
+    const font = '56px "Lilita One", system-ui';
+    g.font = font;
+    const w = Math.ceil(g.measureText(teks).width) + 64;
+    c.width = w;
+    c.height = 92;
+    const gambar = () => {
+      g.clearRect(0, 0, w, 92);
+      g.fillStyle = '#231e16';
+      g.beginPath();
+      g.roundRect(2, 2, w - 4, 84, 30);
+      g.fill();
+      g.fillStyle = warna;
+      g.beginPath();
+      g.roundRect(8, 8, w - 16, 68, 24);
+      g.fill();
+      g.font = font;
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.lineWidth = 8;
+      g.strokeStyle = '#231e16';
+      g.strokeText(teks, w / 2, 44);
+      g.fillStyle = '#fbfaf3';
+      g.fillText(teks, w / 2, 44);
+      t.needsUpdate = true;
+    };
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    gambar();
+    document.fonts?.ready.then(gambar);
+    return [t, w / 92] as const;
+  }, [teks, warna]);
+  const tinggi = 0.3;
+  return (
+    <Billboard position={[0, 2.35, 0]}>
+      <mesh renderOrder={8}>
+        <planeGeometry args={[tinggi * lebar, tinggi]} />
+        <meshBasicMaterial map={tekstur} transparent toneMapped={false} depthTest={false} />
+      </mesh>
+    </Billboard>
   );
 }

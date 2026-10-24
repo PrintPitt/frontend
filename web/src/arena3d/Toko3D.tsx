@@ -75,7 +75,7 @@ export function Label({ posisi, children, warna = UNGU.m }: { posisi: [number, n
 }
 
 /** Papan bergambar kanvas di dinding (ikut perspektif kamera, tidak bergantung pada elemen HTML). */
-function PapanKanvas({ posisi, lebar, tinggi, px = 640, gambar, putar = 0, miring = 0 }: {
+export function PapanKanvas({ posisi, lebar, tinggi, px = 640, gambar, putar = 0, miring = 0 }: {
   posisi: [number, number, number]; lebar: number; tinggi: number; px?: number; putar?: number; miring?: number;
   gambar: (g: CanvasRenderingContext2D, w: number, h: number) => void;
 }) {
@@ -107,7 +107,7 @@ const gambarHarga = (g: CanvasRenderingContext2D, w: number, h: number) => {
     g.fillText(a, 40, 160 + i * 58); g.fillText(`Rp${b}`, 420, 160 + i * 58);
   });
 };
-const gambarPapan = (teks: string, latar: string) => (g: CanvasRenderingContext2D, w: number, h: number) => {
+export const gambarPapan = (teks: string, latar: string) => (g: CanvasRenderingContext2D, w: number, h: number) => {
   g.fillStyle = '#231e16'; g.beginPath(); g.roundRect(0, 0, w, h, 26); g.fill();
   g.fillStyle = latar; g.beginPath(); g.roundRect(10, 10, w - 20, h - 26, 20); g.fill();
   g.fillStyle = '#fbfaf3'; g.strokeStyle = '#231e16'; g.lineWidth = 8; g.textAlign = 'center'; g.textBaseline = 'middle';
@@ -237,7 +237,7 @@ export function Toko3D({
   const zBelakang = Z_BELAKANG;
   const zDepan = Z_DEPAN;
 
-  const papanNama = useMemo(() => gambarPapan(`FOTOKOPI · ${nama}`, warna), [nama, warna]);
+  const papanNama = useMemo(() => gambarPapan(`PRINTPITT · ${nama}`, warna), [nama, warna]);
 
   return (
     <group>

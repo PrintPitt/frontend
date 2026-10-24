@@ -3,7 +3,7 @@
 <title>Mesin Fotokopi</title></head><body>
 <script src="core.js"></script>
 <script>
-/* Mesin fotokopi kantor (floor-standing), untuk game Fotokopi Kilat on Monad.
+/* Mesin fotokopi kantor (floor-standing), untuk game PrintPitt on Monad.
    x = depth 62 (front x = W), y = width 58 (+y = viewer-left; the RIGHT side y = 0 carries the exit slot and tray),
    z = up 104 to the scanner glass. 1 unit ~ 1 cm.
 
@@ -160,7 +160,7 @@ function caseSvg(st, m){
     s += shape(on(PX(fx), ellUV(44, 62, 6, 6, 20)), mix(m.d, '#000000', .25), .9);
     for (const r of [2, 4]) s += ink(pd(on(PX(fx - .02), ellUV(44, 62, r, r, 16))), .6);
     s += shape(on(PX(fx), rrUV(10, 70, 30, 80, 1.5)), '#f3f0e6', .8);
-    s += fkBack(fx - .05, 20, 76.6, 'KILAT C-300', 2.2) + fkBack(fx - .05, 20, 72.8, '230V 1.2kW', 2);
+    s += fkBack(fx - .05, 20, 76.6, 'PITT C-300', 2.2) + fkBack(fx - .05, 20, 72.8, '230V 1.2kW', 2);
     s += shape(on(PX(fx), rectUV(8, 46, 14, 51)), RECESS, .7);
   }
   // scanner unit, the platen glass, the original on it and the scan light
@@ -192,7 +192,7 @@ function doorSvg(st, m){
   let s = fkHexa(c, m, tone, 1.1);
   if (st.door < .01){                                     // badge on the closed door
     s += shape(on(PX(W + 1.05), rrUV(40, HB - 16, 54, HB - 9, 2)), mix(m.l, '#ffffff', .35), .7);
-    s += tx(W + 1.1, 47, HB - 13.6, 'KILAT', 3.2, INK, 800);
+    s += tx(W + 1.1, 47, HB - 13.6, 'PITT', 3.2, INK, 800);
     s += tx(W + 1.1, 18, HB - 13.2, 'C-300', 2.6, mix(m.d, '#000000', .2), 800);
     s += shape(on(PX(W + 1.05), rrUV(6, HC + 18, 8, HC + 30, 1)), RECESS, .6);           // finger pull
   }

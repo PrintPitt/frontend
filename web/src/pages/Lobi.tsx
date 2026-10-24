@@ -1,158 +1,243 @@
-// /lobi — lobi (desain): dua slot pemain ala pilih-chef Overcooked + peta lokasi + tombol mulai sesi.
+// /lobi — profil pemain sebelum matchmaking: atur nama, rupa (topi koran / visor), warna baju, kulit, rambut.
+// Karakter tampil besar di balik konter toko (ala barisan chef di lobi Overcooked) dan melompat tiap kali diubah.
+// Akun masuk di sini dan dibawa ke match tanpa minta passkey lagi.
 import '@fontsource/fredoka/500.css';
 import '@fontsource/fredoka/700.css';
 import '@fontsource/lilita-one';
-import { motion } from 'motion/react';
-import { useState } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { AnimatePresence, motion } from 'motion/react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import type * as THREE from 'three';
 import '../arena/arena.css';
-import { IkonOrder } from '../arena/Ikon';
-import { PALET, type NamaPalet } from '../arena/kamera';
-import { Canvas } from '@react-three/fiber';
-import { Suspense } from 'react';
-import { Cahaya, PanggungLobi } from '../arena3d/Adegan';
+import { Cahaya } from '../arena3d/Adegan';
 import '../arena3d/arena3d.css';
+import { Fotokopi3D, Printer3D, UNGU } from '../arena3d/Mesin3D';
+import { Pekerja3D } from '../arena3d/Pekerja3D';
+import { Konter, RakBinder } from '../arena3d/Perabot3D';
+import { gambarPapan, PapanKanvas } from '../arena3d/Toko3D';
+import { akunAktif, akunBurner, masuk, pakaiAkun, passkeyMungkin, type Akun } from '../lib/akun';
+import { IS_ANVIL } from '../lib/chain';
+import { pendek } from '../lib/format';
+import { useLive } from '../lib/live';
+import { NAMA } from '../lib/merek';
+import { pindah } from '../lib/navigasi';
+import { bacaProfil, MAKS_NAMA, rapikanNama, simpanProfil, WARNA_BAJU, WARNA_KULIT, WARNA_RAMBUT, type Profil } from '../lib/profil';
 
-const WARNA: NamaPalet[] = ['ungu', 'tomato', 'mustard', 'mint', 'cobalt', 'blush'];
+const sama = (a?: string, b?: string) => !!a && !!b && a.toLowerCase() === b.toLowerCase();
 
-type Slot = { nama: string; warna: NamaPalet; siap: boolean; alamat: string; akun: string; tombol: string };
-
-const LOKASI = [
-  { kode: '1-1', nama: 'Depan Kampus', bintang: 2, x: 120, y: 230, buka: true },
-  { kode: '1-2', nama: 'Malioboro', bintang: 0, x: 300, y: 150, buka: true },
-  { kode: '1-3', nama: 'Selokan Mataram', bintang: 0, x: 470, y: 250, buka: false },
-];
-
-function Bintang({ n }: { n: number }) {
+/** Karakter di panggung: menoleh pelan ke kiri-kanan, melompat setiap `versi` berubah. */
+function KarakterPanggung({ p, versi }: { p: Profil; versi: number }) {
+  const grup = useRef<THREE.Group>(null);
+  const mulai = useRef(-10);
+  const sebelum = useRef(versi);
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime;
+    if (versi !== sebelum.current) {
+      sebelum.current = versi;
+      mulai.current = t;
+    }
+    const u = (t - mulai.current) / 0.45;
+    if (!grup.current) return;
+    grup.current.position.y = u >= 0 && u < 1 ? Math.sin(u * Math.PI) * 0.45 : 0;
+    grup.current.rotation.y = Math.sin(t * 0.7) * 0.35 + (u >= 0 && u < 1 ? u * Math.PI * 2 : 0);
+  });
   return (
-    <span className="bintang">
-      {[0, 1, 2].map((i) => (
-        <span key={i} className={i < n ? 'isi' : ''}>
-          ★
-        </span>
-      ))}
-    </span>
+    <group ref={grup}>
+      <Pekerja3D model={p.model} warna={p.warna} kulit={p.kulit} rambut={p.rambut} posisi={[0, 0, 0]} skala={1.6} cincin={false} gaya="diam" />
+    </group>
   );
 }
 
-function KartuSlot({ s, onWarna, onSiap }: { s: Slot; onWarna: (w: NamaPalet) => void; onSiap: () => void }) {
+function PanggungProfil({ p, versi, nama }: { p: Profil; versi: number; nama: string }) {
+  const papan = useMemo(() => gambarPapan(NAMA.toUpperCase(), UNGU.m), []);
+  const papanToko = useMemo(() => gambarPapan(nama.toUpperCase(), UNGU.d), [nama]);
   return (
-    <motion.div className={`slot ${s.siap ? 'siap' : ''}`} layout style={{ ['--warna' as string]: PALET[s.warna].m }}>
-      <div className="slot-kepala">
-        <span className="slot-nama">{s.nama}</span>
-        <span className="slot-akun">{s.akun}</span>
-      </div>
-      <div className="ruang-karakter" />
-      <div className="slot-alamat">{s.alamat}</div>
-      <div className="pilih-warna">
-        {WARNA.map((w) => (
-          <button key={w} className={w === s.warna ? 'aktif' : ''} style={{ background: PALET[w].m }} onClick={() => onWarna(w)} aria-label={w} />
-        ))}
-      </div>
-      <button className={`tombol-game ${s.siap ? 'hijau' : 'putih'}`} onClick={onSiap}>
-        {s.siap ? 'SIAP!' : 'BELUM SIAP'}
-      </button>
-      <div className="slot-tombol">{s.tombol}</div>
-    </motion.div>
+    <group>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[20, 12]} />
+        <meshStandardMaterial color="#efe3c8" />
+      </mesh>
+      <mesh position={[0, 1.6, -2.3]} receiveShadow>
+        <planeGeometry args={[16, 3.2]} />
+        <meshStandardMaterial color="#f6efe0" />
+      </mesh>
+      <mesh position={[0, 0.12, -2.28]}>
+        <boxGeometry args={[16, 0.24, 0.06]} />
+        <meshStandardMaterial color={UNGU.m} />
+      </mesh>
+      <PapanKanvas posisi={[-2.6, 2.45, -2.25]} lebar={2.2} tinggi={0.42} px={800} gambar={papan} />
+      <RakBinder posisi={[2.7, 1.75, -2.15]} lebar={1.6} />
+      <Fotokopi3D posisi={[-2.9, 0, -1.5]} putar={0.35} skala={1.45} />
+      <Konter posisi={[2.75, 0, -1.55]} lebar={1.55} dalam={1.1} muka="laci" les={UNGU.m} />
+      <Printer3D posisi={[2.75, 0.78, -1.62]} skala={2.3} />
+      {/* konter depan: karakter berdiri di belakangnya */}
+      {[-1, 0, 1].map((x) => (
+        <Konter key={x} posisi={[x, 0, 1.05]} muka={x === 0 ? 'polos' : 'pintu'} badan={x === 0 ? UNGU.l : '#fbf4e4'} les={UNGU.m} />
+      ))}
+      <PapanKanvas posisi={[0, 0.42, 1.43]} lebar={0.92} tinggi={0.26} px={420} gambar={papanToko} />
+      <KarakterPanggung p={p} versi={versi} />
+    </group>
+  );
+}
+
+function Swatch({ warna, aktif, onPilih, label }: { warna: string[]; aktif: string; onPilih: (w: string) => void; label: string }) {
+  return (
+    <div className="baris-swatch" role="radiogroup" aria-label={label}>
+      {warna.map((w) => (
+        <button key={w} className={w === aktif ? 'aktif' : ''} style={{ background: w }} onClick={() => onPilih(w)} aria-label={`${label} ${w}`} />
+      ))}
+    </div>
   );
 }
 
 export default function Lobi() {
-  const [slot, setSlot] = useState<Slot[]>([
-    { nama: 'TOKO A', warna: 'ungu', siap: true, alamat: '0x7099…79C8', akun: 'Passkey', tombol: 'P1 · WASD + SPASI' },
-    { nama: 'TOKO B', warna: 'tomato', siap: false, alamat: '0x3C44…93BC', akun: 'Passkey', tombol: 'P2 · PANAH + ENTER' },
-  ]);
-  const [pilih, setPilih] = useState('1-1');
-  const ubah = (i: number, f: (s: Slot) => Slot) => setSlot((xs) => xs.map((s, j) => (j === i ? f(s) : s)));
-  const lokasi = LOKASI.find((l) => l.kode === pilih)!;
+  const s = useLive();
+  const [profil, setProfil] = useState<Profil>(bacaProfil);
+  const [versi, setVersi] = useState(0);
+  const [akun, setAkun] = useState<Akun | null>(akunAktif);
+  const [masukJalan, setMasukJalan] = useState(false);
+  const [disalin, setDisalin] = useState(false);
+
+  useEffect(() => {
+    if (!akun && new URLSearchParams(location.search).has('dev')) masuk().then(setAkun);
+  }, [akun]);
+  useEffect(() => simpanProfil(profil), [profil]);
+
+  const ubah = (f: Partial<Profil>) => {
+    setProfil((p) => ({ ...p, ...f }));
+    setVersi((v) => v + 1);
+  };
+
+  const saya = akun ? s.toko.find((t) => sama(t.alamat, akun.address)) : undefined;
+  const namaToko = saya?.nama ?? 'TOKO';
+  const namaTampil = profil.nama.trim() || namaToko;
+
+  async function mulaiMasuk(burner: boolean) {
+    setMasukJalan(true);
+    try {
+      setAkun(burner ? pakaiAkun(akunBurner()) : await masuk());
+    } catch {
+      /* passkey dibatalkan: tetap di lobi */
+    } finally {
+      setMasukJalan(false);
+    }
+  }
+
+  function salinAlamat() {
+    if (!akun) return;
+    navigator.clipboard?.writeText(akun.address).then(() => {
+      setDisalin(true);
+      setTimeout(() => setDisalin(false), 1500);
+    });
+  }
+
+  const alasan = !akun ? 'Masuk dulu untuk main' : !saya ? 'Alamatmu belum terdaftar sebagai toko' : !s.sesiAktif ? 'Sesi belum dibuka operator' : null;
 
   return (
-    <main className="halaman-game lobi">
+    <main className="halaman-game lobi lobi-profil">
       <header className="kepala-lobi">
-        <a className="tombol-game putih kecil" href="/">
+        <button className="tombol-game putih kecil" onClick={() => pindah('/')}>
           ‹ KEMBALI
-        </a>
+        </button>
         <h1 className="judul-game">LOBI</h1>
         <div className="pil-live">
-          <span className="titik" /> MONAD TESTNET · SESI #3
+          <span className={`titik ${s.sesiAktif ? '' : 'mati'}`} /> {IS_ANVIL ? 'ANVIL LOKAL' : 'MONAD TESTNET'} · {s.sesiAktif ? `SESI #${s.sesiId}` : 'SESI BELUM DIBUKA'}
         </div>
       </header>
 
       <div className="isi-lobi">
-        <section className="panggung-lobi">
-          <Canvas shadows flat dpr={[1, 2]} camera={{ fov: 30, position: [0, 2.2, 7.4] }} onCreated={({ camera }) => camera.lookAt(0, 1.0, 0)}>
+        <section className="panggung-lobi panggung-profil">
+          <Canvas shadows flat dpr={[1, 2]} camera={{ fov: 30, position: [0, 3.0, 8.3] }} onCreated={({ camera }) => camera.lookAt(0, 1.05, 0)}>
             <color attach="background" args={['#2c2170']} />
             <Cahaya />
             <Suspense fallback={null}>
-              <PanggungLobi warna={slot.map((s) => PALET[s.warna].m)} />
+              <PanggungProfil p={profil} versi={versi} nama={namaToko} />
             </Suspense>
           </Canvas>
-          <div className="slot-grid">
-          {slot.map((s, i) => (
-            <KartuSlot key={i} s={s} onWarna={(w) => ubah(i, (x) => ({ ...x, warna: w }))} onSiap={() => ubah(i, (x) => ({ ...x, siap: !x.siap }))} />
-          ))}
-          </div>
+          <AnimatePresence mode="popLayout">
+            <motion.div key={namaTampil} className="papan-nama-pemain" initial={{ y: -20, opacity: 0, rotate: -4 }} animate={{ y: 0, opacity: 1, rotate: -2 }} exit={{ opacity: 0 }}>
+              {namaTampil}
+            </motion.div>
+          </AnimatePresence>
         </section>
 
-        <aside className="peta-lobi">
-          <h2 className="judul-kecil">PILIH LOKASI</h2>
-          <svg className="peta" viewBox="0 0 600 340">
-            <rect width={600} height={340} rx={22} fill="#93d3b0" stroke="#231e16" strokeWidth={4} />
-            <path d="M0 300 C120 260 160 330 260 300 S420 220 600 260 V340 H0 Z" fill="#76a0e2" stroke="#231e16" strokeWidth={3} />
-            <path d="M120 230 C180 180 240 160 300 150 S420 200 470 250" fill="none" stroke="#f2efe7" strokeWidth={16} strokeLinecap="round" />
-            <path d="M120 230 C180 180 240 160 300 150 S420 200 470 250" fill="none" stroke="#231e16" strokeWidth={3} strokeDasharray="10 10" />
-            {[
-              [60, 90],
-              [200, 70],
-              [520, 100],
-              [400, 60],
-              [80, 170],
-            ].map(([x, y], i) => (
-              <g key={i}>
-                <circle cx={x} cy={y} r={22} fill="#71b693" stroke="#231e16" strokeWidth={3} />
-                <rect x={x - 4} y={y + 18} width={8} height={12} fill="#7a5a3a" stroke="#231e16" strokeWidth={2} />
-              </g>
+        <aside className="panel-profil">
+          <label className="judul-kecil" htmlFor="nama-pemain">
+            NAMA PEMAIN
+          </label>
+          <div className="isian-nama">
+            <input
+              id="nama-pemain"
+              value={profil.nama}
+              maxLength={MAKS_NAMA}
+              placeholder={saya ? saya.nama : 'Tulis namamu'}
+              onChange={(e) => setProfil((p) => ({ ...p, nama: rapikanNama(e.target.value) }))}
+              onBlur={() => setVersi((v) => v + 1)}
+              autoComplete="off"
+            />
+            <span>
+              {profil.nama.length}/{MAKS_NAMA}
+            </span>
+          </div>
+
+          <div className="judul-kecil">RUPA</div>
+          <div className="pilih-rupa">
+            {(
+              [
+                ['tukang', 'Topi koran'],
+                ['tukang-visor', 'Visor hijau'],
+              ] as const
+            ).map(([m, label]) => (
+              <button key={m} className={profil.model === m ? 'aktif' : ''} onClick={() => ubah({ model: m })}>
+                {label}
+              </button>
             ))}
-            {LOKASI.map((l) => (
-              <g key={l.kode} onClick={() => l.buka && setPilih(l.kode)} style={{ cursor: l.buka ? 'pointer' : 'not-allowed' }}>
-                <circle cx={l.x} cy={l.y} r={pilih === l.kode ? 30 : 24} fill={l.buka ? (pilih === l.kode ? '#f4b829' : '#f2efe7') : '#8f989b'} stroke="#231e16" strokeWidth={4} />
-                <text x={l.x} y={l.y + 7} textAnchor="middle" className="teks-peta">
-                  {l.buka ? l.kode : '🔒'}
-                </text>
-                <text x={l.x} y={l.y - 38} textAnchor="middle" className="label-peta">
-                  {l.nama}
-                </text>
-              </g>
-            ))}
-          </svg>
-          <div className="detail-lokasi">
-            <div>
-              <b>
-                {lokasi.kode} · {lokasi.nama}
-              </b>
-              <Bintang n={lokasi.bintang} />
-            </div>
-            <div className="baris-info">
-              <span>⏱ 3:00</span>
-              <span>👥 2 toko</span>
-              <span>📄 4 jenis order</span>
-            </div>
-            <div className="ikon-order-baris">
-              {(['ktp', 'boarding', 'ijazah', 'menu'] as const).map((j) => (
-                <IkonOrder key={j} jenis={j} ukuran={38} />
-              ))}
-            </div>
-            <div className="target-bintang">
-              ★ 0,01 MON · ★★ 0,03 MON · ★★★ 0,05 MON
-            </div>
+          </div>
+
+          <div className="judul-kecil">WARNA BAJU</div>
+          <Swatch warna={WARNA_BAJU} aktif={profil.warna} onPilih={(w) => ubah({ warna: w })} label="Warna baju" />
+          <div className="judul-kecil">WARNA KULIT</div>
+          <Swatch warna={WARNA_KULIT} aktif={profil.kulit} onPilih={(w) => ubah({ kulit: w })} label="Warna kulit" />
+          {profil.model === 'tukang-visor' && (
+            <>
+              <div className="judul-kecil">RAMBUT</div>
+              <Swatch warna={WARNA_RAMBUT} aktif={profil.rambut} onPilih={(w) => ubah({ rambut: w })} label="Warna rambut" />
+            </>
+          )}
+
+          <div className="kartu-akun">
+            {!akun ? (
+              <>
+                <b>Akun</b>
+                <span>Belum masuk</span>
+                <div className="tombol-akun">
+                  <button className="tombol-game kuning kecil" disabled={masukJalan} onClick={() => mulaiMasuk(false)}>
+                    {passkeyMungkin() ? 'MASUK PASSKEY' : 'MASUK'}
+                  </button>
+                  <button className="tombol-game putih kecil" disabled={masukJalan} onClick={() => mulaiMasuk(true)}>
+                    AKUN SEMENTARA
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <b>{saya ? `✓ ${saya.nama.toUpperCase()}` : 'Belum terdaftar sebagai toko'}</b>
+                <button className="alamat-akun" onClick={salinAlamat} title="Salin alamat">
+                  {pendek(akun.address)} · {disalin ? 'tersalin!' : 'salin'}
+                </button>
+                <span className="kecil-akun">{akun.jenis === 'mera' ? 'Passkey' : akun.jenis === 'dev' ? 'Akun dev anvil' : 'Akun sementara'}</span>
+                {!saya && <span className="kecil-akun">Kirim alamat ini ke operator supaya didaftarkan sebagai toko.</span>}
+              </>
+            )}
           </div>
         </aside>
       </div>
 
       <footer className="kaki-lobi">
-        <span className="muted-game">Setelah sesi dibuka, penonton scan QR di layar proyektor untuk memesan.</span>
-        <a className={`tombol-game kuning besar ${slot.every((s) => s.siap) ? '' : 'redup'}`} href="/main">
-          MULAI SESI ▸
-        </a>
+        <span className="muted-game">{alasan ?? 'Profil tersimpan di perangkat ini. Siap merebut order?'}</span>
+        <button className={`tombol-game kuning besar ${akun ? '' : 'redup'}`} disabled={!akun} onClick={() => pindah('/main')}>
+          CARI LAWAN ▸
+        </button>
       </footer>
     </main>
   );

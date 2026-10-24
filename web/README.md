@@ -1,4 +1,4 @@
-# web/ — frontend Fotokopi Kilat
+# web/ — frontend PrintPitt
 
 React + Vite + viem + Mera + Motion (sesuai FE-00 dan Arsitektur di vault). Satu app, tiga halaman:
 

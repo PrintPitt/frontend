@@ -12,7 +12,8 @@ import '../arena3d/arena3d.css';
 import { NAMA } from '../lib/merek';
 
 export default function Landing() {
-  const [kata1, ...sisa] = NAMA.toUpperCase().split(' ');
+  // "PrintPitt" → PRINT / PITT (dipecah di spasi atau huruf besar di tengah kata)
+  const [kata1, ...sisa] = NAMA.split(/\s+|(?<=[a-z])(?=[A-Z])/).map((k) => k.toUpperCase());
   return (
     <main className="halaman-game landing-3d">
       <section className="hero-3d">

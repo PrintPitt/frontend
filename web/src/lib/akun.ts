@@ -97,7 +97,16 @@ export function akunDev(i: number): Akun {
  * Masuk: `?dev=<i>` (anvil), `?burner=1`, atau Mera. Mera gagal karena perangkat (PRF_UNAVAILABLE, WebAuthn tidak ada)
  * → burner otomatis. PASSKEY_CANCELLED dilempar supaya pengguna bisa coba lagi atau memilih burner.
  */
+/** Akun yang sudah masuk di sesi halaman ini (dibawa dari lobi ke match tanpa minta passkey lagi). */
+let akunSesi: Akun | null = null;
+export const akunAktif = () => akunSesi;
+export const pakaiAkun = (a: Akun) => (akunSesi = a);
+
 export async function masuk(opsi: { paksaBurner?: boolean } = {}): Promise<Akun> {
+  return pakaiAkun(await masukLangsung(opsi));
+}
+
+async function masukLangsung(opsi: { paksaBurner?: boolean }): Promise<Akun> {
   const q = new URLSearchParams(location.search);
   if (IS_ANVIL && q.has('dev')) return akunDev(Number(q.get('dev')) || 1);
   if (opsi.paksaBurner || q.get('burner') === '1') return akunBurner();

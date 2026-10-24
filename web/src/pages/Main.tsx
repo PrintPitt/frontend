@@ -33,7 +33,8 @@ import {
 import { PemainGame, useTombol, type PosPemain } from '../game3d/PemainGame';
 import { adalahMesin, ID_MESIN, MESIN, type IdMesin, type IdStasiun } from '../game3d/peta';
 import { Antrean, BarangDunia, BarMesin, Sorotan, TandaMesin } from '../game3d/Stasiun3D';
-import { akunBurner, masuk, passkeyMungkin, type Akun } from '../lib/akun';
+import { akunAktif, akunBurner, masuk, pakaiAkun, passkeyMungkin, type Akun } from '../lib/akun';
+import { bacaProfil, namaTampil } from '../lib/profil';
 import { NAMA_LANGKAH, ZERO } from '../lib/format';
 import type { Order } from '../lib/katalog';
 import { bacaLive, useJamChain, useLive } from '../lib/live';
@@ -88,7 +89,8 @@ function Detak({
 export default function Main() {
   const s = useLive();
   const now = useJamChain(s.offset);
-  const [akun, setAkun] = useState<Akun | null>(null);
+  const [akun, setAkun] = useState<Akun | null>(akunAktif);
+  const [profil] = useState(bacaProfil);
   const [masukJalan, setMasukJalan] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
   const [fokus, setFokus] = useState<IdStasiun | null>(null);
@@ -113,7 +115,7 @@ export default function Main() {
   }, []);
 
   useEffect(() => {
-    if (new URLSearchParams(location.search).has('dev')) masuk().then(setAkun);
+    if (!akunAktif() && new URLSearchParams(location.search).has('dev')) masuk().then(setAkun);
   }, []);
 
   const saya = akun ? s.toko.find((t) => sama(t.alamat, akun.address)) : undefined;
@@ -361,7 +363,7 @@ export default function Main() {
   async function mulai(burner: boolean) {
     setMasukJalan(true);
     try {
-      setAkun(burner ? akunBurner() : await masuk());
+      setAkun(burner ? pakaiAkun(akunBurner()) : await masuk());
     } catch {
       tampil('Passkey dibatalkan', 'info');
     } finally {
@@ -443,7 +445,11 @@ export default function Main() {
             aktif={aktif ? { id: aktif.id, jenis: aktif.jenis, sisa: batas01(1 - (now - aktif.diclaimPada) / aktif.batasKerja) } : undefined}
           />
           <PemainGame
-            warna={UNGU.m}
+            warna={profil.warna}
+            model={profil.model}
+            kulit={profil.kulit}
+            rambut={profil.rambut}
+            nama={namaTampil(profil, saya?.nama ?? 'Kamu')}
             tombol={tombol}
             pos={pos}
             pegang={d.pegang ? <Item3D item={d.pegang} /> : undefined}
@@ -473,7 +479,9 @@ export default function Main() {
           <motion.div key={String(saya?.omzet ?? 0n)} className="skor-angka" initial={{ scale: 1.25 }} animate={{ scale: 1 }}>
             {rp(saya?.omzet ?? 0n)}
           </motion.div>
-          <div className="skor-label">{saya ? `${saya.nama.toUpperCase()} · omzet sesi` : akun ? 'Belum terdaftar sebagai toko' : 'Belum masuk'}</div>
+          <div className="skor-label">
+            {saya ? `${namaTampil(profil, saya.nama)} · ${saya.nama.toUpperCase()}` : akun ? 'Belum terdaftar sebagai toko' : 'Belum masuk'}
+          </div>
         </div>
       </div>
       <div className="timer-3d">

@@ -725,8 +725,8 @@ function koran() {
   g.fillStyle = '#f2eee2';
   g.fillRect(0, 0, 256, 256);
   g.fillStyle = '#2d2440';
-  g.font = '900 44px "Lilita One", system-ui';
-  g.fillText('KILAT!', 14, 50);
+  g.font = '900 38px "Lilita One", system-ui';
+  g.fillText('PRINTPITT', 14, 48);
   g.fillRect(14, 60, 228, 4);
   g.fillStyle = '#8f8a80';
   for (let kol = 0; kol < 3; kol++)
