@@ -1,5 +1,5 @@
-// Pemindai QR serah terima untuk toko: kamera belakang → BarcodeDetector (bawaan Chrome/Android) atau jsQR (iOS Safari).
-// Ada juga isian manual (tempel isi QR) bila kamera tidak bisa dibuka.
+// Hand-over QR scanner for shops: back camera → BarcodeDetector (built into Chrome/Android) or jsQR (iOS Safari).
+// There is also a manual field (paste the QR content) if the camera can't open.
 import { useEffect, useRef, useState } from 'react';
 
 type Detector = { detect: (src: CanvasImageSource) => Promise<{ rawValue: string }[]> };
@@ -20,11 +20,11 @@ export default function PindaiQr({ onHasil, onTutup }: { onHasil: (teks: string)
     const ctx = kanvas.getContext('2d', { willReadFrequently: true });
     const Ctor = (window as unknown as { BarcodeDetector?: DetectorCtor }).BarcodeDetector;
     const detektor = Ctor ? new Ctor({ formats: ['qr_code'] }) : null;
-    // jsQR (±130 kB) hanya diunduh di browser tanpa BarcodeDetector
+    // jsQR (±130 kB) is only downloaded in browsers without BarcodeDetector
     let jsQR: typeof import('jsqr').default | null = null;
-    if (!detektor) import('jsqr').then((m) => (jsQR = m.default)).catch(() => setGalat('Pemindai gagal dimuat. Tempel isi QR di bawah.'));
+    if (!detektor) import('jsqr').then((m) => (jsQR = m.default)).catch(() => setGalat("Scanner failed to load. Paste the QR content below."));
 
-    // ±6 kali per detik cukup untuk QR di layar HP, dan hemat baterai/CPU.
+    // ~6 times per second is enough for a QR on a phone screen, and saves battery/CPU.
     const putar = async () => {
       if (berhenti) return;
       const v = video.current;
@@ -38,7 +38,7 @@ export default function PindaiQr({ onHasil, onTutup }: { onHasil: (teks: string)
           if (detektor) teks = (await detektor.detect(kanvas))[0]?.rawValue;
           else if (jsQR) teks = jsQR(ctx.getImageData(0, 0, kanvas.width, kanvas.height).data, kanvas.width, kanvas.height)?.data;
         } catch {
-          /* frame rusak: coba frame berikutnya */
+          /* bad frame: try the next one */
         }
         if (teks && !berhenti) return kirimRef.current(teks);
       }
@@ -56,8 +56,8 @@ export default function PindaiQr({ onHasil, onTutup }: { onHasil: (teks: string)
         }
         putar();
       })
-      .catch(() => setGalat('Kamera tidak bisa dibuka. Tempel isi QR di bawah.'));
-    if (!navigator.mediaDevices) setGalat('Kamera butuh HTTPS. Tempel isi QR di bawah.');
+      .catch(() => setGalat("Can't open the camera. Paste the QR content below."));
+    if (!navigator.mediaDevices) setGalat('Camera needs HTTPS. Paste the QR content below.');
 
     return () => {
       berhenti = true;
@@ -69,9 +69,9 @@ export default function PindaiQr({ onHasil, onTutup }: { onHasil: (teks: string)
   return (
     <div className="kartu pindai-qr">
       <div className="isi-saldo-kepala">
-        <b>Pindai QR pelanggan</b>
+        <b>Scan customer QR</b>
         <button className="tautan inline" onClick={onTutup}>
-          tutup
+          close
         </button>
       </div>
       <video ref={video} playsInline muted style={{ width: '100%', borderRadius: 12, background: '#000' }} />
@@ -79,7 +79,7 @@ export default function PindaiQr({ onHasil, onTutup }: { onHasil: (teks: string)
       <div className="baris-manual">
         <input value={manual} placeholder="printpitt:<order>:<kode>" onChange={(e) => setManual(e.target.value)} autoComplete="off" />
         <button className="tombol" disabled={!manual} onClick={() => onHasil(manual)}>
-          Pakai
+          Use
         </button>
       </div>
     </div>

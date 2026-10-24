@@ -1,6 +1,6 @@
-// /cari — matchmaking: kartu KAMU vs LAWAN (toko lain yang terdaftar di contract), tunggu sesi dibuka, hitung mundur 3-2-1,
-// lalu masuk /main. Lawan dibaca live dari daftar toko on-chain; profil lawan (rupa/warna) tidak tersimpan on-chain,
-// jadi dipakai rupa pembeda (visor, warna oranye) dengan nama tokonya.
+// /cari — matchmaking: YOU vs RIVAL cards (another shop registered on the contract), wait for the session to open, countdown 3-2-1,
+// then go to /main. The rival is read live from the on-chain shop list; the rival's look (model/color) isn't stored on-chain,
+// so a contrasting look (visor, orange) is used with their shop name.
 import '@fontsource/fredoka/700.css';
 import '@fontsource/lilita-one';
 import { Canvas, useFrame } from '@react-three/fiber';
@@ -75,7 +75,7 @@ export default function Cari() {
   const lawan = s.toko.find((t) => !akun || !sama(t.alamat, akun.address));
   const siap = s.siap && !!saya && !!lawan && s.sesiAktif;
 
-  // Semua siap → hitung mundur 3-2-1 lalu masuk match (sekali saja).
+  // All ready → countdown 3-2-1, then enter the match (once only).
   useEffect(() => {
     if (!siap) return;
     setHitung(3);
@@ -85,31 +85,31 @@ export default function Cari() {
   }, [siap]);
 
   const status = !s.siap
-    ? 'Menyambung ke Monad…'
+    ? 'Connecting to Monad…'
     : !saya
-      ? 'Kamu belum punya toko. Daftarkan toko dulu di lobi (gratis, langsung di contract).'
+      ? "You don't have a shop yet. Register one in the lobby first (free, right on the contract)."
       : !lawan
-        ? 'Mencari lawan… menunggu toko lain terdaftar'
+        ? 'Finding a rival… waiting for another shop to register'
         : !s.sesiAktif
-          ? `Lawan ketemu: ${lawan.nama}. Menunggu operator membuka sesi…`
-          : 'Semua siap!';
+          ? `Rival found: ${lawan.nama}. Waiting for the operator to open the session…`
+          : 'All set!';
 
   return (
     <main className="halaman-game lobi cari">
       <header className="kepala-lobi">
         <button className="tombol-game putih kecil" onClick={() => pindah('/lobi')}>
-          ‹ LOBI
+          ‹ LOBBY
         </button>
-        <h1 className="judul-game">CARI LAWAN</h1>
+        <h1 className="judul-game">FIND MATCH</h1>
         <div className="pil-live">
-          <span className={`titik ${s.sesiAktif ? '' : 'mati'}`} /> {s.sesiAktif ? `SESI #${s.sesiId} BUKA` : 'SESI BELUM DIBUKA'}
+          <span className={`titik ${s.sesiAktif ? '' : 'mati'}`} /> {s.sesiAktif ? `SESSION #${s.sesiId} OPEN` : 'SESSION NOT OPEN'}
         </div>
       </header>
 
       <div className="cari-isi">
         <KartuPetarung
-          nama={namaTampil(profil, saya?.nama ?? 'Kamu')}
-          toko={saya ? saya.nama.toUpperCase() : 'BELUM TERDAFTAR'}
+          nama={namaTampil(profil, saya?.nama ?? 'You')}
+          toko={saya ? saya.nama.toUpperCase() : 'NOT REGISTERED'}
           warna={profil.warna}
           model={profil.model}
           kulit={profil.kulit}
@@ -133,7 +133,7 @@ export default function Cari() {
           <motion.div className="kartu-petarung kosong" animate={{ opacity: [0.6, 1, 0.6] }} transition={{ repeat: Infinity, duration: 1.4 }}>
             <div>
               <div className="tanya">?</div>
-              Mencari lawan…
+              Finding a rival…
             </div>
           </motion.div>
         )}
@@ -143,7 +143,7 @@ export default function Cari() {
         <span className="status-cari">{status}</span>
         {import.meta.env.DEV && (
           <button className="tombol-game putih kecil" onClick={() => pindah('/main')}>
-            LEWATI (DEV)
+            SKIP (DEV)
           </button>
         )}
       </footer>
@@ -152,7 +152,7 @@ export default function Cari() {
         {hitung !== null && (
           <div className="hitung-mundur">
             <motion.span key={hitung} initial={{ scale: 2.2, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.5, opacity: 0 }} transition={{ type: 'spring', bounce: 0.5 }}>
-              {hitung === 0 ? 'GAS!' : hitung}
+              {hitung === 0 ? 'GO!' : hitung}
             </motion.span>
           </div>
         )}
