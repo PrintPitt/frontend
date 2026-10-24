@@ -16,6 +16,7 @@ import {
   tidrxAbi,
 } from '../../../shared/src/index.ts';
 import type { Akun } from './akun';
+import { kirimTahanLag } from './tx';
 import { chain, dompet, IS_ANVIL, IS_MAINNET, kontrak, offsetChain, pub, TIDRX } from './chain';
 
 const env = import.meta.env;
@@ -274,7 +275,7 @@ async function izinkanSekali(akun: Akun, perlu: bigint) {
   const { maxFeePerGas } = await pub.estimateFeesPerGas();
   await pastikanMon(akun, GAS_LIMIT.approve * (maxFeePerGas ?? 0n));
   const w = dompet(akun);
-  const hash = await w.writeContract({
+  const hash = await kirimTahanLag(() => w.writeContract({
     address: TIDRX,
     abi: tidrxAbi,
     account: akun.account,
@@ -282,7 +283,7 @@ async function izinkanSekali(akun: Akun, perlu: bigint) {
     functionName: 'approve',
     args: [kontrak.address, maxUint256],
     gas: GAS_LIMIT.approve,
-  });
+  }));
   const r = await pub.waitForTransactionReceipt({ hash, pollingInterval: 200 });
   if (r.status !== 'success') throw new Error('IDRX payment approval failed');
 }
