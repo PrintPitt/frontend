@@ -2,11 +2,12 @@
 // Diisi Hans/Dex saat deploy. Jangan taruh kunci privat di sini.
 export const NAMA = 'PrintPitt';
 export const DESKRIPSI = 'toko fotokopi kilat onchain';
-export const ORG_GITHUB = 'https://github.com/PrintPitt'; // repo belum dibuat
+export const ORG_GITHUB = 'https://github.com/PrintPitt';
 export const TAGLINE = 'Makin kilat, makin cuan.';
 
 export const URL_APP = import.meta.env.VITE_APP_URL || ''; // app tim (React): /pesan, /toko, /layar
-export const URL_PESAN = URL_APP ? `${URL_APP.replace(/\/$/, '')}/pesan?jenis=2&teks=Juri` : '/pesan?jenis=2&teks=Juri';
+// prefill: jenis 3 = LAMINATING IJAZAH (katalog kontrak), teks order "Juri" (dibaca /pesan)
+export const URL_PESAN = URL_APP ? `${URL_APP.replace(/\/$/, '')}/pesan?jenis=3&teks=Juri` : '/pesan?jenis=3&teks=Juri';
 export const URL_LAYAR = URL_APP ? `${URL_APP.replace(/\/$/, '')}/layar` : '/layar';
 
 export const BUKTI = {
@@ -24,13 +25,18 @@ export const EXPLORER = {
   mainnet: 'https://monadvision.com',
 };
 
-// Angka produk (sama dengan kontrak): harga 0,02 MON, batas kerja 45 dtk.
-export const HARGA_MON = 0.02;
+// Angka produk (sama dengan katalog kontrak v2.2, jenis 3 LAMINATING IJAZAH): harga Rp10.000 (tIDRX), batas kerja 45 dtk.
+export const HARGA = 10_000;
 export const BATAS_KERJA = 45;
+/** Rupiah bulat gaya Indonesia tanpa "Rp" ("6.666"). Upah dibulatkan ke bawah seperti kontrak. */
+export const rpAngka = (x: number) => Math.floor(x).toLocaleString('id-ID');
 
-// Model bisnis: angka yang belum disepakati trio ditandai [ISI] — jangan dikarang.
+// Model bisnis (keputusan D-19, contract v2.1+).
 export const BISNIS = {
-  feeRuangan: import.meta.env.VITE_FEE_RUANGAN || '[ISI]', // mis. "3%"
+  feePlatform: '3%', // dari upah toko, hanya order yang selesai
+  feeRelay: 'Rp200', // per pesanan tanpa gas
+  pro: 'Rp50.000', // Toko Pro per 30 hari
+  radius: '1,5 km', // feed kios (Toko Pro 3 km)
 };
 
 export const MODE: 'MOCK' | 'LIVE' = (import.meta.env.VITE_MODE as 'MOCK' | 'LIVE') || 'MOCK';

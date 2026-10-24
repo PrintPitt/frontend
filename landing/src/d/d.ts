@@ -35,7 +35,7 @@ const PETA: ReadonlyArray<readonly [number, number, number]> = [
   [.135, .135, 22],   // BAB 1 · pesan dari HP
   [.135, .25, 34],    // bayar, koin terbang ke brankas
   [.25, .275, 8],
-  [.275, .275, 22],   // brankas terkunci 0,02 MON
+  [.275, .275, 22],   // brankas terkunci Rp10.000
   [.275, .40, 40],    // tiket terbang ke arena
   [.40, .495, 36],    // dua toko berlari, KLAIM!
   [.495, .495, 22],   // BAB 2 · rebutan (adegan KLAIM — jangan diubah)
@@ -210,7 +210,7 @@ function prosesHTML(k: 'fk' | 'pr' | 'lm'): string {
 
 function templat(c: Ctx): string {
   const N = esc(c.NAMA);
-  const H2 = dec(c.HARGA_MON, 2);
+  const H2 = c.rpAngka(c.HARGA);
   const SA = t('d.shop.a'), SB = t('d.shop.b'), NM = t('d.customer'), KIND = t('d.order.kind'), TTL = t('d.order.title');
   const at = (k: string) => esc(t(k)); // teks untuk atribut
   const hl = t('d.hero.hl'), head = t('shell.headline');
@@ -232,7 +232,7 @@ function templat(c: Ctx): string {
       <div class="d-ph-scr">
         <div class="d-ph-head"><span>${N}</span><i class="d-av">${NM.charAt(0)}</i></div>
         <div class="d-ph-slot"><span id="D-phSent">&nbsp;</span></div>
-        <div class="d-ph-row"><span>${t('d.phone.total')}</span><b class="d-num">${H2} MON</b></div>
+        <div class="d-ph-row"><span>${t('d.phone.total')}</span><b class="d-num">Rp${H2}</b></div>
         <div class="d-ph-pay" id="D-phPay"><span class="d-t1">${t('d.phone.pay')}</span><span class="d-t2">${t('d.phone.paid')}</span></div>
         <div class="d-ph-note" id="D-phNote">${tf('d.phone.customer', { name: NM })}</div>
       </div>
@@ -253,7 +253,7 @@ function templat(c: Ctx): string {
         <rect x="68" y="-4" width="204" height="48" rx="14" fill="var(--d-a2)" stroke="var(--d-stroke)" stroke-width="6"/>
         <text x="170" y="31" text-anchor="middle" font-family="Lilita One,Arial Rounded MT Bold,sans-serif" font-size="28" fill="var(--d-onA2)">${t('d.vault.label')}</text>
       </svg>
-      <div class="d-vlcd d-num" id="D-vLcd">${dec(0, 2)} MON</div>
+      <div class="d-vlcd d-num" id="D-vLcd">Rp${c.rpAngka(0)}</div>
     </div>
 
     <div class="d-obj d-coin" id="D-coin" aria-hidden="true"><svg viewBox="0 0 80 80"><use href="#D-coinSym"/></svg></div>
@@ -292,8 +292,8 @@ function templat(c: Ctx): string {
       <div class="d-bl">
         <div class="d-stars" id="D-stars"></div>
         <div class="d-btime">${tf('d.board.time', { t: dec(KERJA, 1), max: c.BATAS_KERJA })}</div>
-        <div class="d-pay d-r1"><svg class="d-cn" viewBox="0 0 80 80"><use href="#D-coinSym"/></svg><b class="d-num" id="D-pv1">+${dec(0, 4)} MON</b><span>${tf('d.board.toShop', { shop: SA })}</span></div>
-        <div class="d-pay d-r2"><svg class="d-cn" viewBox="0 0 80 80"><use href="#D-coinSym"/></svg><b class="d-num" id="D-pv2">+${dec(0, 4)} MON</b><span>${tf('d.board.refund', { name: NM })}</span></div>
+        <div class="d-pay d-r1"><svg class="d-cn" viewBox="0 0 80 80"><use href="#D-coinSym"/></svg><b class="d-num" id="D-pv1">+Rp${c.rpAngka(0)}</b><span>${tf('d.board.toShop', { shop: SA })}</span></div>
+        <div class="d-pay d-r2"><svg class="d-cn" viewBox="0 0 80 80"><use href="#D-coinSym"/></svg><b class="d-num" id="D-pv2">+Rp${c.rpAngka(0)}</b><span>${tf('d.board.refund', { name: NM })}</span></div>
         <p class="d-cap"><span class="d-n">4</span><span><b>${t('d.step.4')}</b>${t('d.cap.4')}</span></p>
       </div>
       <div class="d-br">
@@ -345,13 +345,13 @@ function templat(c: Ctx): string {
   <div class="d-round" id="D-round" aria-hidden="true">
     <div class="d-rd-top"><span id="D-rdLbl">${t('d.round.pay')}</span><span class="d-rd-t d-num"><svg viewBox="0 0 20 20"><circle cx="10" cy="11" r="7.5" fill="none" stroke="currentColor" stroke-width="2.6"/><path d="M10 7v4.5l2.6 1.6M8 1.8h4" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" fill="none"/></svg><span id="D-rdT">${dec(c.BATAS_KERJA, 1)} ${t('d.unit.s')}</span></span></div>
     <div class="d-rd-bar"><i id="D-rdFill"></i></div>
-    <div class="d-rd-num d-num" id="D-rdNum">${dec(c.HARGA_MON, 4)}<small>MON</small></div>
-    <div class="d-rd-ref">${tf('d.round.ref', { name: NM })} <b class="d-num" id="D-rdRef">${dec(0, 4)}</b> MON</div>
+    <div class="d-rd-num d-num" id="D-rdNum">${c.rpAngka(c.HARGA)}<small>IDR</small></div>
+    <div class="d-rd-ref">${tf('d.round.ref', { name: NM })} Rp<b class="d-num" id="D-rdRef">${c.rpAngka(0)}</b></div>
   </div>
 
   <div class="d-ticket" id="D-ticket" aria-hidden="true"><div class="d-tkin" id="D-tkIn">
     <div class="d-tk-pat"><i id="D-tkPat"></i></div>
-    <div class="d-tk-head"><span class="d-num">#0042</span><span class="d-num">${H2} MON</span></div>
+    <div class="d-tk-head"><span class="d-num">#0042</span><span class="d-num">Rp${H2}</span></div>
     <div class="d-tk-item"><svg viewBox="0 0 66 62"><rect x="10" y="6" width="46" height="52" rx="6" fill="var(--d-a1)" stroke="var(--d-stroke)" stroke-width="4"/><rect x="10" y="6" width="11" height="52" rx="4" fill="var(--d-stroke)"/><rect x="27" y="16" width="22" height="6" rx="3" fill="var(--d-paper)"/><rect x="27" y="27" width="16" height="4" rx="2" fill="var(--d-paper)" opacity=".8"/></svg></div>
     <div class="d-tk-name">${KIND}</div>
     <div class="d-tk-txt">“${TTL}”</div>
@@ -377,7 +377,7 @@ function templat(c: Ctx): string {
     <circle cx="40" cy="44" r="33" fill="var(--d-stroke)"/>
     <circle cx="40" cy="38" r="33" fill="var(--d-a2)" stroke="var(--d-stroke)" stroke-width="5"/>
     <circle cx="40" cy="38" r="22" fill="none" stroke="var(--d-stroke)" stroke-width="3.5" opacity=".55"/>
-    <text x="40" y="46" text-anchor="middle" font-family="Nunito,sans-serif" font-weight="900" font-size="20" fill="var(--d-onA2)">MON</text>
+    <text x="40" y="46" text-anchor="middle" font-family="Nunito,sans-serif" font-weight="900" font-size="20" fill="var(--d-onA2)">Rp</text>
   </symbol>
   <symbol id="D-starSym" viewBox="0 0 100 100"><path d="M50 5l13.6 27.6 30.4 4.4-22 21.5 5.2 30.3L50 74.5 22.8 88.8 28 58.5 6 37l30.4-4.4z" stroke-linejoin="round"/></symbol>
 </defs></svg>`;
@@ -449,14 +449,14 @@ function pasang(root: HTMLElement, c: Ctx): void {
 
   const R = c.reduced;
   const small = c.isMobile(); // diputuskan sekali: di HP maksimal 2 figur aktif
-  const HARGA = c.HARGA_MON, BATAS = c.BATAS_KERJA;
-  const upah = (dt: number) => Math.max(0, HARGA * (BATAS - dt) / BATAS);
+  const HARGA = c.HARGA, BATAS = c.BATAS_KERJA;
+  const upah = (dt: number) => Math.max(0, Math.floor(HARGA * (BATAS - dt) / BATAS)); // dibulatkan ke bawah seperti kontrak
   /* teks runtime, diambil sekali dari kamus */
   const NM = t('d.customer'), unitS = ' ' + t('d.unit.s');
   const TX = {
     held: t('d.phone.held'), cust: tf('d.phone.customer', { name: NM }), sent: t('d.phone.sent'),
     pay: t('d.round.pay'), late: t('d.round.late'), payShop: tf('d.round.payShop', { shop: t('d.shop.a') }),
-    done: tf('d.round.done', { t: dec(KERJA, 1) }), tick: '−' + dec(.0001, 4),
+    done: tf('d.round.done', { t: dec(KERJA, 1) }), tick: '−Rp1',
     copied: t('d.tk.copied'), bound: t('d.tk.bound'), lam: t('d.tk.lam'),
   };
 
@@ -537,7 +537,7 @@ function pasang(root: HTMLElement, c: Ctx): void {
         F.pr = api; figPal();
         act('pr', 'Nyalakan');
         nanti(2600, () => act('pr', 'Colok flashdisk'));
-        nanti(4200, () => act('pr', 'skripsi_FINAL'));
+        nanti(4200, () => act('pr', 'ijazah_FINAL'));
       });
     });
     if (!small) {
@@ -775,15 +775,15 @@ function pasang(root: HTMLElement, c: Ctx): void {
       const dts = Math.min(.05, Math.max(.001, dtNow));
       langkahPegas(SU, u, dts, 12, .85); langkahPegas(SRf, rf, dts, 12, .85); langkahPegas(STt, BATAS - t, dts, 12, .85);
     }
-    const txt = dec(SU.x, 4);
+    const txt = c.rpAngka(SU.x);
     if (txt !== upahLalu) {
       rdNumText.nodeValue = txt;
-      els.rdRef.textContent = dec(SRf.x, 4);
+      els.rdRef.textContent = c.rpAngka(SRf.x);
       if (!R && now - popLalu > 110) {
         els.rdNum.animate([{ transform: 'scale(1.14)' }, { transform: 'scale(1)' }], { duration: 230, easing: 'cubic-bezier(.2,1.7,.4,1)' });
         popLalu = now;
       }
-      if (!live && !R && now - jatuhLalu > 380 && upahLalu && parseFloat(txt.replace(',', '.')) < parseFloat(upahLalu.replace(',', '.'))) {
+      if (!live && !R && now - jatuhLalu > 380 && upahLalu && Number(txt.replace(/\D/g, '')) < Number(upahLalu.replace(/\D/g, ''))) {
         jatuh(TX.tick); jatuhLalu = now;
       }
       upahLalu = txt;
@@ -798,7 +798,7 @@ function pasang(root: HTMLElement, c: Ctx): void {
   }
 
   const LANGKAH: V2[] = [[.06, .27], [.27, .52], [.52, .80], [.80, .91], [.91, .99]];
-  const TURUN = '−' + dec(HARGA / BATAS, 4);
+  const TURUN = '−Rp' + c.rpAngka(HARGA / BATAS);
 
   function gambar(now: number): void {
     const h = 1 - halus(0, .1, s);
@@ -876,7 +876,7 @@ function pasang(root: HTMLElement, c: Ctx): void {
     const gem = 1 + .35 * Math.sin(cu * Math.PI);
     els.coin.style.transform = 'translate(' + (cp[0] - 37).toFixed(1) + 'px,' + (cp[1] - 37).toFixed(1) + 'px) scale(' + (flip * gem).toFixed(3) + ',' + gem.toFixed(3) + ')';
     els.coin.style.opacity = s > .252 ? '0' : '1';
-    els.vLcd.textContent = dec(s > .248 ? HARGA : 0, 2) + ' MON';
+    els.vLcd.textContent = 'Rp' + c.rpAngka(s > .248 ? HARGA : 0);
     els.vDial.style.transform = 'rotate(' + (halus(.2, .27, s) * 540).toFixed(1) + 'deg)';
     const vb = Math.sin(clamp((s - .245) / .03) * Math.PI);
     els.vault.style.transform = 'scale(' + (1 + .06 * vb).toFixed(3) + ',' + (1 - .04 * vb).toFixed(3) + ')';
@@ -1024,8 +1024,8 @@ function pasang(root: HTMLElement, c: Ctx): void {
       starF[i].style.transform = 'scale(' + (k > 0 ? lontar(k) : 0).toFixed(3) + ') rotate(' + ((1 - k) * -40).toFixed(1) + 'deg)';
     });
     const pk = halus(.86, .91, s);
-    els.pv1.textContent = '+' + dec(upah(KERJA) * pk, 4) + ' MON';
-    els.pv2.textContent = '+' + dec((HARGA - upah(KERJA)) * pk, 4) + ' MON';
+    els.pv1.textContent = '+Rp' + c.rpAngka(upah(KERJA) * pk);
+    els.pv2.textContent = '+Rp' + c.rpAngka((HARGA - upah(KERJA)) * pk);
     const fl = halus(.92, .98, s);
     els.cardIn.style.transform = 'rotateY(' + (fl * 180).toFixed(1) + 'deg) rotateZ(' + (Math.sin(fl * Math.PI) * -6).toFixed(2) + 'deg) scale(' + (1 + Math.sin(fl * Math.PI) * .08).toFixed(3) + ')';
 

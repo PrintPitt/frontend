@@ -1,5 +1,5 @@
 // Kontrak bersama antara kerangka halaman (main.ts) dan dua bagian besar: D (src/d/) dan E (src/e/).
-import { NAMA, DESKRIPSI, TAGLINE, URL_PESAN, URL_LAYAR, URL_APP, BUKTI, EXPLORER, HARGA_MON, BATAS_KERJA, BISNIS, MODE, ORG_GITHUB } from './config';
+import { NAMA, DESKRIPSI, TAGLINE, URL_PESAN, URL_LAYAR, URL_APP, BUKTI, EXPLORER, HARGA, BATAS_KERJA, rpAngka, BISNIS, MODE, ORG_GITHUB } from './config';
 
 export type FigApi = {
   act: (label: string) => boolean; palette: (p: string) => boolean; reset: () => void; spin: (on: boolean) => void;
@@ -26,7 +26,7 @@ export async function mountFig(el: HTMLElement, name: FigName, opts: { palette?:
 export const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 export const isMobile = () => innerWidth < 700;
 
-export const ctx = { NAMA, DESKRIPSI, TAGLINE, URL_PESAN, URL_LAYAR, URL_APP, BUKTI, EXPLORER, HARGA_MON, BATAS_KERJA, BISNIS, MODE, ORG_GITHUB, mountFig, loadFig, reduced, isMobile };
+export const ctx = { NAMA, DESKRIPSI, TAGLINE, URL_PESAN, URL_LAYAR, URL_APP, BUKTI, EXPLORER, HARGA, BATAS_KERJA, rpAngka, BISNIS, MODE, ORG_GITHUB, mountFig, loadFig, reduced, isMobile };
 export type Ctx = typeof ctx;
 
 /** Setiap bagian mengekspor: mount(root, ctx) untuk membangun isinya, dan stops() = posisi scrollY (px, absolut) untuk mode panggung. */
