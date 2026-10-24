@@ -94,31 +94,31 @@ Revenue model (live since contract v2.1): 3% platform fee on the shop's payout f
 
 ---
 
-## Untuk developer (internal)
+## For developers
 
-FE (Vercel) dikerjakan tim FE. Repo ini berisi aset dan kontrak integrasi yang sudah siap.
+The frontend is deployed on Vercel. This repo also holds the machine figures and the integration contract.
 
-### Aset
+### Assets
 
-`assets/figures/{fotokopi,printer,laminator}`: figur interaktif mesin (HTML mandiri, colorfigures). Buka file `.html`-nya langsung.
+`assets/figures/{fotokopi,printer,laminator}`: interactive machine figures (standalone HTML, colorfigures). Open the `.html` file directly.
 
-### Integrasi
+### Integration
 
-| Kebutuhan | Sumber |
+| Need | Source |
 |---|---|
-| ABI, alamat, helper (`teksValid`, `hitungPayout`, `formatRupiah`, `PESANAN_TYPES`, `PERMIT_TYPES`, `domainPesanan`, `domainTidrx`) | package `@printpitt/shared` dari repo `PrintPitt/contracts` (folder `shared/`). Selama private: pasang tarball `npm i ./vendor/printpitt-shared-0.1.0.tgz` (salin dari repo backend `vendor/`) |
-| API backend: `/faucet`, `/topup`, `/topup/:id`, `/bayar/:id`, `/relay/order`, `/config`, `/status` | repo `PrintPitt/backend`, spesifikasi di vault `04-Architecture/Desain Backend.md` |
-| Snapshot, riwayat, leaderboard (GraphQL) | repo `PrintPitt/indexer`, contoh query di README-nya |
-| Event live game | WebSocket langsung ke RPC Monad (D-16) |
+| ABI, addresses, helpers (`teksValid`, `hitungPayout`, `formatRupiah`, `PESANAN_TYPES`, `PERMIT_TYPES`, `domainPesanan`, `domainTidrx`) | package `@printpitt/shared` from repo `PrintPitt/contracts` (folder `shared/`). While private: install the tarball `npm i ./vendor/printpitt-shared-0.1.0.tgz` (copy it from the backend repo's `vendor/`) |
+| Backend API: `/faucet`, `/topup`, `/topup/:id`, `/bayar/:id`, `/relay/order`, `/config`, `/status` | repo `PrintPitt/backend`; spec in the vault, `04-Architecture/Desain Backend.md` |
+| Snapshots, history, leaderboard (GraphQL) | repo `PrintPitt/indexer`; example queries in its README |
+| Live game events | WebSocket straight to the Monad RPC (decision D-16) |
 
-Alur, aturan, dan backlog FE: repo `PrintPitt/vault` → `06-FE-vault/`.
+Frontend flows, rules and backlog: repo `PrintPitt/vault` → `06-FE-vault/`.
 
-### App `web/` (FE + game)
+### App `web/` (frontend + game)
 
-React + Vite + three.js (React Three Fiber). Halaman: `/` landing, `/lobi`, `/main` (tanding 3D ala Overcooked), `/pesan` (HP penonton), `/toko`, `/layar` (proyektor). Detail di `web/README.md`.
+React + Vite + three.js (React Three Fiber). Pages: `/` landing, `/lobi` (lobby), `/main` (Overcooked-style 3D match), `/pesan` (customer phone), `/toko` (shop), `/layar` (projector board). Route names are Indonesian and stay as they are. Details in `web/README.md`.
 
 ```bash
 cd web && npm install && npm run dev
 ```
 
-Catatan: `shared/src/` di repo ini adalah salinan `@printpitt/shared` dari repo `PrintPitt/contracts` (folder `shared/src/`, contract v2.2 `0x08b7…c959`). Setelah contract di-deploy ulang, salin lagi `index.ts` dan `fotokopiKilat.generated.ts` ke sini.
+Note: `shared/src/` in this repo is a copy of `@printpitt/shared` from repo `PrintPitt/contracts` (folder `shared/src/`, contract v2.2 `0x08b7…c959`). After a contract redeploy, copy `index.ts` and `fotokopiKilat.generated.ts` here again.
