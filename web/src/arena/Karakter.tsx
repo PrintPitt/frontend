@@ -1,4 +1,4 @@
-// Tukang fotokopi: kepala besar, topi warna toko, celemek kertas. Digambar menghadap kamera arena.
+// Copy-shop worker: big head, shop-colored cap, paper apron. Drawn facing the arena camera.
 import { PALET, TINTA, type NamaPalet } from './kamera';
 
 export type Bawaan = 'kertas' | 'ktp' | 'ijazah' | 'menu' | null;
@@ -31,28 +31,28 @@ export default function Karakter({
       {cincin && <ellipse cx={0} cy={0} rx={24} ry={9} fill="none" stroke={p.m} strokeWidth={4} opacity={0.9} />}
       <ellipse cx={0} cy={0} rx={17} ry={6} fill="#00000033" />
       <g className="badan">
-        {/* kaki */}
+        {/* legs */}
         <rect x={-10} y={-12} width={8} height={11} rx={3} fill="#3d3935" stroke={TINTA} strokeWidth={2} />
         <rect x={2} y={-12} width={8} height={11} rx={3} fill="#3d3935" stroke={TINTA} strokeWidth={2} />
-        {/* badan + celemek */}
+        {/* body + apron */}
         <rect x={-15} y={-38} width={30} height={30} rx={11} fill={p.m} stroke={TINTA} strokeWidth={2.2} />
         <path d="M-9 -34 h18 v20 a5 5 0 0 1 -5 5 h-8 a5 5 0 0 1 -5 -5 z" fill="#fbfaf3" stroke={TINTA} strokeWidth={1.8} />
         <rect x={-4} y={-26} width={8} height={6} rx={1.5} fill="none" stroke={TINTA} strokeWidth={1.4} />
-        {/* tangan */}
+        {/* hands */}
         <circle cx={-17} cy={-22} r={5} fill={kulit} stroke={TINTA} strokeWidth={2} />
         <circle cx={17} cy={-22} r={5} fill={kulit} stroke={TINTA} strokeWidth={2} />
-        {/* kepala */}
+        {/* head */}
         <circle cx={0} cy={-52} r={17} fill={kulit} stroke={TINTA} strokeWidth={2.2} />
         <circle cx={-6} cy={-50} r={2.2} fill={TINTA} />
         <circle cx={6} cy={-50} r={2.2} fill={TINTA} />
         <ellipse cx={-10} cy={-45} rx={3.5} ry={2.2} fill="#ef6a4c55" />
         <ellipse cx={10} cy={-45} rx={3.5} ry={2.2} fill="#ef6a4c55" />
         <path d="M-4 -43 q4 3 8 0" fill="none" stroke={TINTA} strokeWidth={1.8} strokeLinecap="round" />
-        {/* topi toko */}
+        {/* shop cap */}
         <path d="M-17 -56 a17 15 0 0 1 34 0 z" fill={p.l} stroke={TINTA} strokeWidth={2.2} />
         <path d="M-2 -57 h24 a4 4 0 0 1 0 6 h-22 z" fill={p.d} stroke={TINTA} strokeWidth={2} />
         <circle cx={-3} cy={-69} r={3} fill={p.d} stroke={TINTA} strokeWidth={1.6} />
-        {/* bawaan di tangan */}
+        {/* item held in hand */}
         {bawa && (
           <g transform="translate(0 -20)">
             {bawa === 'kertas' && <rect x={-13} y={-6} width={26} height={14} rx={1.5} fill="#fbfaf3" stroke={TINTA} strokeWidth={1.8} />}

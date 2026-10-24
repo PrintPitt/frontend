@@ -1,4 +1,4 @@
-// Ikon order dan langkah bergaya tinta (untuk tiket order dan HUD).
+// Ink-style order and step icons (for order tickets and the HUD).
 import { TINTA } from './kamera';
 
 export type JenisOrder = 'ktp' | 'boarding' | 'ijazah' | 'menu';
@@ -70,7 +70,7 @@ export function IkonLangkah({ kode, ukuran = 22 }: { kode: number; ukuran?: numb
   );
 }
 
-/** Koin MON bergaya HUD Overcooked. */
+/** MON coin, Overcooked HUD style. */
 export function KoinMon({ ukuran = 44 }: { ukuran?: number }) {
   return (
     <svg width={ukuran} height={ukuran} viewBox="0 0 48 48">

@@ -1,4 +1,4 @@
-// Pemuat model GLB (aset Delixia, Apache-2.0): klon, skala ke ukuran target, alas di y = 0, pusat tapak di (0, 0).
+// GLB model loader (Delixia assets, Apache-2.0): clone, scale to target size, base at y = 0, footprint centered at (0, 0).
 import { useGLTF } from '@react-three/drei';
 import { useMemo } from 'react';
 import * as THREE from 'three';
@@ -14,11 +14,11 @@ export function Model({
   url: string;
   posisi?: [number, number, number];
   putar?: number;
-  /** Lebar target (m) sumbu x model sebelum diputar. */
+  /** Target width (m) along the model's x axis before rotation. */
   lebar?: number;
-  /** Tinggi target (m). */
+  /** Target height (m). */
   tinggi?: number;
-  /** Warna pengganti (tint) semua material. */
+  /** Tint color applied to all materials. */
   warna?: string;
 }) {
   const { scene } = useGLTF(url);
@@ -28,7 +28,7 @@ export function Model({
     const ukuran = new THREE.Box3().setFromObject(c).getSize(new THREE.Vector3());
     const s = lebar ? lebar / ukuran.x : tinggi ? tinggi / ukuran.y : 1;
     c.scale.multiplyScalar(s);
-    // lebar + tinggi sekaligus: tinggi diskalakan terpisah (mis. konter dibuat setinggi pinggang)
+    // width + height together: height is scaled separately (e.g. counter made waist-high)
     if (lebar && tinggi) c.scale.y *= tinggi / (ukuran.y * s);
     c.updateMatrixWorld(true);
     const kotak = new THREE.Box3().setFromObject(c);

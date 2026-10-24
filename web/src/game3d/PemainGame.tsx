@@ -1,4 +1,4 @@
-// Pemain yang dikendalikan keyboard: WASD/panah gerak, Shift lari. Posisi disimpan di ref (tanpa render ulang per frame).
+// Keyboard-controlled player: WASD/arrows to move, Shift to run. Position lives in a ref (no re-render per frame).
 import { useFrame } from '@react-three/fiber';
 import { Billboard } from '@react-three/drei';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -50,7 +50,7 @@ export function PemainGame({
   model?: ModelKarakter;
   kulit?: string;
   rambut?: string;
-  /** Nama tampilan di atas kepala. */
+  /** Display name above the head. */
   nama?: string;
   warna: string;
   tombol: React.RefObject<Set<string>>;
@@ -89,7 +89,7 @@ export function PemainGame({
       beda = Math.atan2(Math.sin(beda), Math.cos(beda));
       p.arah += beda * Math.min(1, dt * 14);
     }
-    // kepulan debu di kaki saat berjalan (lebih rapat saat lari)
+    // dust puffs at the feet while walking (denser when running)
     jedaDebu.current -= dt;
     if (bergerak && jedaDebu.current <= 0) {
       jedaDebu.current = t.has('shift') ? 0.06 : 0.14;
@@ -149,7 +149,7 @@ export function PemainGame({
   );
 }
 
-/** Papan nama kecil di atas kepala pemain (kanvas, selalu menghadap kamera). */
+/** Small name tag above the player's head (canvas, always faces the camera). */
 function LabelNama({ teks, warna }: { teks: string; warna: string }) {
   const [tekstur, lebar] = useMemo(() => {
     const c = document.createElement('canvas');

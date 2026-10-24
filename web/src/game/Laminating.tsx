@@ -1,5 +1,5 @@
-// Mini-game Laminating (BLZ-11.T3): tahan untuk mendorong kertas dengan kecepatan stabil di zona hijau.
-// Terlalu cepat → kusut (mundur). Terlalu pelan saat kertas di dalam → kepanasan → gosong (mundur).
+// Laminating mini-game (BLZ-11.T3): hold to push the paper at a steady speed in the green zone.
+// Too fast → crumpled (setback). Too slow while the paper is inside → overheats → burnt (setback).
 import { motion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import { sfx } from './sfx';
@@ -12,7 +12,7 @@ export default function Laminating({ teks, onLulus }: PropsMiniGame) {
   const tahan = useRef(false);
   const st = useRef({ speed: 0, progres: 0, panas: 0, jeda: 0, selesai: false });
   const [, render] = useState(0);
-  const [pesan, setPesan] = useState('TAHAN untuk mendorong. Jaga jarum di zona hijau');
+  const [pesan, setPesan] = useState('HOLD to push. Keep the needle in the green zone');
   const lulus = useRef(onLulus);
   lulus.current = onLulus;
 
@@ -33,19 +33,19 @@ export default function Laminating({ teks, onLulus }: PropsMiniGame) {
           s.speed = 0.2;
           s.jeda = 0.6;
           sfx('gagal');
-          setPesan('Kusut! Terlalu cepat, pelan-pelan');
+          setPesan('Crumpled! Too fast, slow down');
         }
         s.panas = Math.max(0, Math.min(1, s.panas + (s.progres > 0.02 && s.speed < 0.2 ? 0.45 : -0.5) * dt));
         if (s.panas >= 1) {
           s.progres = Math.max(0, s.progres - 0.25);
           s.panas = 0;
           sfx('gagal');
-          setPesan('Gosong! Kertas kelamaan di dalam');
-        } else if (diHijau && s.jeda === 0) setPesan('Pas, pertahankan!');
+          setPesan('Burnt! Paper stayed in too long');
+        } else if (diHijau && s.jeda === 0) setPesan('Nice, keep it steady!');
         if (s.progres >= 1) {
           s.selesai = true;
           sfx('lulus');
-          setPesan('Terlaminating rapi!');
+          setPesan('Laminated perfectly!');
           setTimeout(() => lulus.current(), 450);
         }
       }
@@ -82,9 +82,9 @@ export default function Laminating({ teks, onLulus }: PropsMiniGame) {
           <div className="jarum" style={{ left: `${s.speed * 100}%` }} />
         </div>
         <div className="meter-bawah kecil muted">
-          <span>pelan</span>
-          <span>panas {Math.round(s.panas * 100)}%</span>
-          <span>terlalu cepat</span>
+          <span>slow</span>
+          <span>heat {Math.round(s.panas * 100)}%</span>
+          <span>too fast</span>
         </div>
         <button
           className="tombol utama besar tombol-tahan"
@@ -94,7 +94,7 @@ export default function Laminating({ teks, onLulus }: PropsMiniGame) {
           onPointerCancel={set(false)}
           onContextMenu={(e) => e.preventDefault()}
         >
-          TAHAN (atau Spasi)
+          HOLD (or Space)
         </button>
         <div className="bar tebal">
           <div style={{ width: `${s.progres * 100}%` }} />

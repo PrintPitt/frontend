@@ -1,12 +1,12 @@
-// Mesin toko fotokopi dalam 3D, dimodelkan dari geometri figur Colorfigures di figures/ (satuan cm di kode figur).
-// Sumbu figur: x = kedalaman (depan di x = W), y = lebar (+y ke kiri penonton), z = atas.
-// Sumbu three: depan menghadap +z (ke kamera), x ke kanan, y ke atas. 1 unit three = 1 m.
+// Copy-shop machines in 3D, modeled from the Colorfigures figure geometry in figures/ (units are cm in the figure code).
+// Figure axes: x = depth (front at x = W), y = width (+y to the viewer's left), z = up.
+// three axes: front faces +z (toward the camera), x to the right, y up. 1 three unit = 1 m.
 import { RoundedBox } from '@react-three/drei';
 import type { ReactNode } from 'react';
 
 export const UNGU = { l: '#a99bfa', m: '#836ef9', d: '#2a2163' };
-const KRM = '#e8e4d8'; // GREY figur
-const TERANG = '#f4f2ea'; // LIGHT figur
+const KRM = '#e8e4d8'; // figure GREY
+const TERANG = '#f4f2ea'; // figure LIGHT
 const GELAP = '#3d3935';
 const CEKUNG = '#2b2523';
 const KERTAS = '#fbfaf3';
@@ -14,7 +14,7 @@ const GABUS = '#c9975a';
 
 type Kotak = { x: [number, number]; y: [number, number]; z: [number, number]; warna: string; r?: number; kilap?: number };
 
-/** Balok dari rentang cm figur → mesh three (relatif ke pusat alas mesin). */
+/** Block from figure cm ranges → three mesh (relative to the machine base center). */
 function buatKotak(W: number, D: number) {
   return function B({ x, y, z, warna, r = 0, kilap = 0.75 }: Kotak) {
     const sx = (y[1] - y[0]) / 100;
@@ -43,7 +43,7 @@ function Wadah({ skala, children, posisi, putar = 0 }: { skala: number; children
   );
 }
 
-/** Mesin fotokopi berdiri (figures/fotokopi): W 62, D 58, kabinet 40, mesin 92, scanner 104 cm. */
+/** Standing photocopier (figures/fotokopi): W 62, D 58, cabinet 40, machine 92, scanner 104 cm. */
 export function Fotokopi3D({ posisi, putar, skala = 1.3, jalan = false }: { posisi?: [number, number, number]; putar?: number; skala?: number; jalan?: boolean }) {
   const W = 62, D = 58;
   const B = buatKotak(W, D);
@@ -51,7 +51,7 @@ export function Fotokopi3D({ posisi, putar, skala = 1.3, jalan = false }: { posi
     <Wadah skala={skala} posisi={posisi} putar={putar}>
       <B x={[1, 61]} y={[1, 57]} z={[0, 2]} warna={GELAP} />
       <B x={[0, 62]} y={[0, 58]} z={[2, 40]} warna={KRM} />
-      {/* dua laci A4 + gagang + indikator kertas */}
+      {/* two A4 drawers + handles + paper indicators */}
       {[
         [5, 20],
         [23, 38],
@@ -64,20 +64,20 @@ export function Fotokopi3D({ posisi, putar, skala = 1.3, jalan = false }: { posi
           ))}
         </group>
       ))}
-      {/* badan mesin ungu + pintu depan + lencana PITT */}
+      {/* purple machine body + front door + PITT badge */}
       <B x={[0, 62]} y={[0, 58]} z={[40, 92]} warna={UNGU.m} />
       <B x={[62, 63]} y={[4, 54]} z={[44, 86]} warna={UNGU.l} />
       <B x={[63, 63.4]} y={[40, 54]} z={[76, 83]} warna="#d8d0ff" />
       <B x={[63, 63.4]} y={[6, 8]} z={[58, 70]} warna={CEKUNG} />
-      {/* unit scanner + kaca + tutup dokumen */}
+      {/* scanner unit + glass + document lid */}
       <B x={[0, 62]} y={[0, 58]} z={[92, 104]} warna={KRM} />
       <B x={[5, 57]} y={[19, 55]} z={[104, 104.3]} warna="#cfe9f0" kilap={0.15} />
       <B x={[2, 60]} y={[18, 56]} z={[104.3, 107.3]} warna={TERANG} />
-      {/* panel kontrol: layar + tombol COPY */}
+      {/* control panel: screen + COPY button */}
       <B x={[38, 67]} y={[2, 16]} z={[104, 109]} warna={KRM} />
       <B x={[46, 60]} y={[4, 14]} z={[109, 109.4]} warna="#1d2a26" kilap={0.3} />
       <B x={[61, 65]} y={[6, 12]} z={[109, 110.6]} warna="#43c25c" />
-      {/* celah keluar + baki hasil di sisi kanan, dengan tumpukan salinan */}
+      {/* output slot + output tray on the right side, with a stack of copies */}
       <B x={[10, 52]} y={[-0.4, 0]} z={[57, 62]} warna={CEKUNG} />
       <group position={[(D / 2 + 12) / 100, 0.6, 0]} rotation={[0, 0, 0.24]}>
         <mesh castShadow>
@@ -99,7 +99,7 @@ export function Fotokopi3D({ posisi, putar, skala = 1.3, jalan = false }: { posi
   );
 }
 
-/** Printer inkjet di atas alas gabus (figures/printer): badan W 34, D 46, tinggi 14 cm. */
+/** Inkjet printer on a cork base (figures/printer): body W 34, D 46, height 14 cm. */
 export function Printer3D({ posisi, putar, skala = 2.4 }: { posisi?: [number, number, number]; putar?: number; skala?: number }) {
   const W = 34, D = 46;
   const B = buatKotak(W, D);
@@ -108,7 +108,7 @@ export function Printer3D({ posisi, putar, skala = 2.4 }: { posisi?: [number, nu
       <B x={[-14, 52]} y={[-6, 52]} z={[0, 3]} warna={GABUS} r={1} kilap={0.95} />
       <B x={[0, 34]} y={[0, 46]} z={[3, 17]} warna={UNGU.m} r={3} />
       <B x={[3, 33]} y={[1, 45]} z={[16.5, 19.5]} warna="#c8bffd" r={1.5} />
-      {/* penyangga kertas belakang + kertas, miring ke belakang */}
+      {/* rear paper support + paper, tilted back */}
       <group position={[0, (17 + 6) / 100, (-W / 2 - 4) / 100]} rotation={[-0.55, 0, 0]}>
         <mesh castShadow>
           <boxGeometry args={[0.34, 0.2, 0.01]} />
@@ -119,21 +119,21 @@ export function Printer3D({ posisi, putar, skala = 2.4 }: { posisi?: [number, nu
           <meshStandardMaterial color={KERTAS} />
         </mesh>
       </group>
-      {/* baki keluar depan + lembar hasil */}
+      {/* front output tray + printed sheet */}
       <B x={[32, 50]} y={[9, 37]} z={[8, 8.8]} warna="#ddd8cc" />
       <B x={[34, 47]} y={[12.5, 33.5]} z={[8.8, 9.3]} warna={KERTAS} />
-      {/* panel depan: celah, layar hijau, tombol POWER (hijau) dan PRINT (gelap) */}
+      {/* front panel: slot, green screen, POWER (green) and PRINT (dark) buttons */}
       <B x={[34, 34.4]} y={[8, 38]} z={[8.6, 11.4]} warna={CEKUNG} />
       <B x={[34, 34.4]} y={[27, 41]} z={[12.2, 15.9]} warna="#1d2a26" />
       <B x={[34, 35]} y={[3.7, 6.3]} z={[12.7, 15.3]} warna="#43c25c" r={1} />
       <B x={[34, 35]} y={[9.2, 11.8]} z={[12.7, 15.3]} warna={GELAP} r={1} />
-      {/* flashdisk kuning di sisi kanan */}
+      {/* yellow USB stick on the right side */}
       <B x={[24, 29]} y={[-6, 0]} z={[12, 15]} warna="#f4b829" r={0.8} />
     </Wadah>
   );
 }
 
-/** Laminator di atas alas gabus (figures/laminator): badan W 26, D 44, tinggi 9 cm. */
+/** Laminator on a cork base (figures/laminator): body W 26, D 44, height 9 cm. */
 export function Laminator3D({ posisi, putar, skala = 2.6 }: { posisi?: [number, number, number]; putar?: number; skala?: number }) {
   const W = 26, D = 44;
   const B = buatKotak(W, D);
@@ -141,9 +141,9 @@ export function Laminator3D({ posisi, putar, skala = 2.6 }: { posisi?: [number, 
     <Wadah skala={skala} posisi={posisi} putar={putar}>
       <B x={[-14, 40]} y={[-6, 50]} z={[0, 3]} warna={GABUS} r={1} kilap={0.95} />
       <B x={[0, 26]} y={[0, 44]} z={[3, 12]} warna={UNGU.m} r={4} />
-      {/* label LAMINATOR A4 di atas */}
+      {/* LAMINATOR A4 label on top */}
       <B x={[6, 16]} y={[8, 34]} z={[11.9, 12.4]} warna="#d8d0ff" />
-      {/* lampu POWER (merah) + READY (hijau), dial ketebalan, tombol ABS */}
+      {/* POWER (red) + READY (green) lights, thickness dial, ABS button */}
       <B x={[21.5, 23.5]} y={[8, 10]} z={[11.9, 12.8]} warna="#ef4b3d" r={0.8} />
       <B x={[21.5, 23.5]} y={[12, 14]} z={[11.9, 12.8]} warna="#43c25c" r={0.8} />
       <mesh position={[(D / 2 - 22) / 100, 0.13, (19 - W / 2) / 100]} castShadow>
@@ -154,7 +154,7 @@ export function Laminator3D({ posisi, putar, skala = 2.6 }: { posisi?: [number, 
         <cylinderGeometry args={[0.015, 0.015, 0.01, 16]} />
         <meshStandardMaterial color={GELAP} />
       </mesh>
-      {/* celah depan, pemandu belakang, baki depan + kantong laminating berisi dokumen */}
+      {/* front slot, rear guide, front tray + laminating pouch with a document */}
       <B x={[26, 26.4]} y={[10, 34]} z={[6.8, 8.2]} warna={CEKUNG} />
       <B x={[-7, 0]} y={[9, 35]} z={[6, 7.4]} warna="#ddd8cc" />
       <B x={[26, 37]} y={[9, 35]} z={[4, 5]} warna="#ddd8cc" />
