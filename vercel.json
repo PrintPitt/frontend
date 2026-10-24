@@ -1,1 +1,5 @@
-{ "framework": "vite", "buildCommand": "npm run build", "outputDirectory": "dist", "rewrites": [{ "source": "/((?!assets|fig|og|fig\.js|favicon\.svg).*)", "destination": "/index.html" }] }
+{
+  "framework": "vite",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist"
+}
