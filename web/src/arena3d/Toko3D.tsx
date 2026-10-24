@@ -4,8 +4,9 @@ import { useMemo, type ReactNode } from 'react';
 import * as THREE from 'three';
 import { Fotokopi3D, Laminator3D, Printer3D, UNGU } from './Mesin3D';
 import { Model, MODEL } from './Model';
+import { Dispenser, JamDinding, Kasir, Konter, KursiTunggu, PermukaanSerah, RakBinder, Tanaman } from './Perabot3D';
 import { Pekerja3D, type Bawa, type Gaya } from './Pekerja3D';
-import { D, L, POS_MESIN, TINGGI_MEJA, Z_BELAKANG, Z_DEPAN } from '../game3d/peta';
+import { D, DALAM_MEJA, ID_MESIN, L, MEJA_MESIN, MESIN, TINGGI_MEJA, Z_BELAKANG, Z_DEPAN } from '../game3d/peta';
 
 export const LEBAR_TOKO = L;
 export const DALAM_TOKO = D;
@@ -166,8 +167,8 @@ function Dinding({ warna }: { warna: string }) {
           <meshStandardMaterial color={warna} />
         </mesh>
       ))}
-      <PapanKanvas posisi={[-2.1, 1.7, -D / 2 + 0.01]} lebar={1.9} tinggi={1.19} gambar={gambarHarga} />
-      <PapanKanvas posisi={[4.3, 1.75, -D / 2 + 0.01]} lebar={1.6} tinggi={0.68} gambar={gambarPoster} putar={0.05} />
+      <PapanKanvas posisi={[0.45, 1.85, -D / 2 + 0.01]} lebar={1.7} tinggi={1.06} gambar={gambarHarga} />
+      <PapanKanvas posisi={[2.45, 1.8, -D / 2 + 0.01]} lebar={1.3} tinggi={0.55} gambar={gambarPoster} putar={0.05} />
     </group>
   );
 }
@@ -221,7 +222,8 @@ export function Toko3D({
   children,
   mesinJalan,
 }: {
-  mesinJalan?: boolean;
+  /** Id mesin fotokopi yang sedang jalan, dipisah koma (primitif supaya memo stabil). */
+  mesinJalan?: string;
   /** Isi dinamis game (barang, sorotan stasiun, bar progres). */
   children?: ReactNode;
   warna?: string;
@@ -231,99 +233,109 @@ export function Toko3D({
   /** Progres mesin yang sedang dipakai: kode 1 fotokopi, 2 printer, 3 laminator. */
   progres?: { kode: 1 | 2 | 3; nilai: number };
 }) {
-  const konter = useUkuran(MODEL('Counter_Straight'), 1);
   const tMeja = TINGGI_MEJA;
-  const dMeja = konter.z;
   const zBelakang = Z_BELAKANG;
   const zDepan = Z_DEPAN;
 
   const papanNama = useMemo(() => gambarPapan(`FOTOKOPI · ${nama}`, warna), [nama, warna]);
-  const papanSerah = useMemo(() => gambarPapan('SERAH ▼', UNGU.d), []);
-  const posMesin = POS_MESIN;
 
   return (
     <group>
-      {/* lantai dalam + jalan dan trotoar di luar */}
+      {/* tanah: rumput di belakang/samping, trotoar + jalan di depan */}
       <Lantai />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 2]} receiveShadow>
-        <planeGeometry args={[60, 40]} />
-        <meshStandardMaterial color="#3a3550" />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.06, 0]} receiveShadow>
+        <planeGeometry args={[70, 50]} />
+        <meshStandardMaterial color="#8cc07a" />
       </mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.03, DALAM_TOKO / 2 + 1.6]} receiveShadow>
-        <planeGeometry args={[LEBAR_TOKO + 6, 2.6]} />
-        <meshStandardMaterial color="#d9cfb8" />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, DALAM_TOKO / 2 + 5.2]} receiveShadow>
+        <planeGeometry args={[70, 4.2]} />
+        <meshStandardMaterial color="#4a4560" />
       </mesh>
-      {[-7.8, 7.8].map((x) => (
-        <Pohon key={x} posisi={[x, 0, DALAM_TOKO / 2 + 1.4]} s={1.1} />
+      {[-9, -5, -1, 3, 7, 11].map((x) => (
+        <mesh key={x} rotation={[-Math.PI / 2, 0, 0]} position={[x, -0.03, DALAM_TOKO / 2 + 5.2]}>
+          <planeGeometry args={[1.6, 0.16]} />
+          <meshBasicMaterial color="#e9e2cf" />
+        </mesh>
       ))}
-      <Pohon posisi={[-8.3, 0, -1]} s={1.3} />
-      <Pohon posisi={[8.4, 0, 0.5]} s={1.25} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.03, DALAM_TOKO / 2 + 1.55]} receiveShadow>
+        <planeGeometry args={[LEBAR_TOKO + 9, 3.1]} />
+        <meshStandardMaterial color="#e6dcc4" />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-0.5, -0.02, DALAM_TOKO / 2 + 0.95]} receiveShadow>
+        <planeGeometry args={[2.4, 1.1]} />
+        <meshStandardMaterial color={UNGU.d} />
+      </mesh>
+      {[-8, 8].map((x) => (
+        <Pohon key={x} posisi={[x, 0, DALAM_TOKO / 2 + 1.5]} s={1.05} />
+      ))}
+      <Pohon posisi={[-8.6, 0, -2]} s={1.35} />
+      <Pohon posisi={[8.7, 0, -1.2]} s={1.3} />
+      <Pohon posisi={[-3, 0, -6.2]} s={1.2} />
+      <Pohon posisi={[4.5, 0, -6.4]} s={1.3} />
 
       <Dinding warna={warna} />
+      <RakBinder posisi={[4.05, 1.45, -DALAM_TOKO / 2 + 0.16]} lebar={1.8} />
+      <JamDinding posisi={[-1.3, 2.0, -DALAM_TOKO / 2 + 0.04]} />
 
-      {/* konter belakang: printer + laminator di atasnya */}
-      {[-2.5, -1.5, -0.5, 0.5, 1.5, 2.5, 3.5, 4.5].map((x, i) => (
-        <Model key={x} url={MODEL(i % 3 === 1 ? 'Counter_Drawers' : 'Counter_Doors')} lebar={1} tinggi={TINGGI_MEJA} posisi={[x, 0, zBelakang]} />
+      {/* mesin: 3 fotokopi berjajar, 2 printer + 3 laminator di meja mesin yang pas ukurannya */}
+      {ID_MESIN.map((id) => {
+        const m = MESIN[id];
+        if (m.kode === 1)
+          return (
+            <Fotokopi3D key={id} posisi={[m.x, 0, m.z]} putar={m.putar} skala={1.5} jalan={progres?.kode === 1 || !!mesinJalan?.split(',').includes(id)} />
+          );
+        return (
+          <group key={id} position={[m.x, 0, m.z]} rotation={[0, m.putar, 0]}>
+            <Konter posisi={[0, 0, 0]} lebar={MEJA_MESIN.lebar} dalam={MEJA_MESIN.dalam} muka="laci" les={warna} atas="#e9d2a6" />
+            {m.kode === 2 ? <Printer3D posisi={[0, tMeja, -0.08]} skala={2.4} /> : <Laminator3D posisi={[0, tMeja, -0.04]} skala={2.6} />}
+          </group>
+        );
+      })}
+      {/* konter belakang kanan: stok rim kertas */}
+      {[2.6, 3.6, 4.6].map((x, i) => (
+        <Konter key={x} posisi={[x, 0, zBelakang]} muka={i === 1 ? 'laci' : 'pintu'} les={warna} />
       ))}
-      <Fotokopi3D posisi={posMesin[1]} skala={1.5} jalan={progres?.kode === 1 || mesinJalan} />
-      <Printer3D posisi={posMesin[2]} skala={3} />
-      <Laminator3D posisi={posMesin[3]} skala={3.3} />
-      <Rim posisi={[4.6, tMeja, zBelakang]} tumpuk={3} />
+      <Rim posisi={[2.6, tMeja, zBelakang]} tumpuk={3} />
+      <Rim posisi={[4.6, tMeja, zBelakang]} tumpuk={4} warna="#fdf3c4" />
+      <Dispenser posisi={[5.45, 0, -3.45]} />
 
-      {/* rak kertas (gudang) di kiri */}
-      {[-1.5, -0.5, 0.5].map((z) => (
-        <Model key={z} url={MODEL('Counter_Straight')} lebar={1} tinggi={TINGGI_MEJA} posisi={[-LEBAR_TOKO / 2 + dMeja / 2 + 0.15, 0, z]} putar={Math.PI / 2} />
+      {/* rak kertas (gudang) di pojok kiri belakang */}
+      {[-4.5, -3.5, -2.5].map((x, i) => (
+        <Konter key={x} posisi={[x, 0, zBelakang]} muka={i === 1 ? 'laci' : 'pintu'} les={warna} />
       ))}
-      <Rim posisi={[-LEBAR_TOKO / 2 + 0.55, tMeja, -1.5]} tumpuk={5} />
-      <Rim posisi={[-LEBAR_TOKO / 2 + 0.55, tMeja, -0.5]} tumpuk={4} />
-      <Rim posisi={[-LEBAR_TOKO / 2 + 0.55, tMeja, 0.5]} tumpuk={5} warna="#fdf3c4" />
+      <Rim posisi={[-4.5, tMeja, zBelakang]} tumpuk={5} />
+      <Rim posisi={[-3.5, tMeja, zBelakang]} tumpuk={4} warna="#fdf3c4" />
+      <Rim posisi={[-2.5, tMeja, zBelakang]} tumpuk={3} />
+      <Tanaman posisi={[-5.45, 0, 2.75]} s={0.95} />
 
-      {/* meja kerja di tengah: dokumen pelanggan */}
-      {[-0.5, 0.5].map((x) => (
-        <Model key={x} url={MODEL('Counter_Straight')} lebar={1} tinggi={TINGGI_MEJA} posisi={[x, 0, 0.6]} />
+      {/* meja kerja di tengah: 4 ubin, semua bisa ditaruhi barang */}
+      {[-1.5, -0.5, 0.5, 1.5].map((x) => (
+        <Konter key={x} posisi={[x, 0, 0.6]} muka="polos" badan="#e9e1f9" atas="#f7ead0" les={warna} />
       ))}
 
-      {/* meja kanan: kardus + rak */}
-      {[-1.5, -0.5].map((z) => (
-        <Model key={z} url={MODEL('Counter_Drawers')} lebar={1} tinggi={TINGGI_MEJA} posisi={[LEBAR_TOKO / 2 - dMeja / 2 - 0.15, 0, z]} putar={-Math.PI / 2} />
-      ))}
-      <Model url={MODEL('Crate')} lebar={0.7} posisi={[LEBAR_TOKO / 2 - 0.6, tMeja, -1.5]} />
-      <Model url={MODEL('Crate')} lebar={0.7} posisi={[LEBAR_TOKO / 2 - 0.6, 0, 1.3]} />
-      <Model url={MODEL('Crate')} lebar={0.6} posisi={[LEBAR_TOKO / 2 - 0.65, 0, 2.1]} putar={0.3} />
+      {/* sisi kanan depan: kardus */}
+      <Model url={MODEL('Crate')} lebar={0.7} posisi={[LEBAR_TOKO / 2 - 0.6, 0, 1.45]} />
+      <Model url={MODEL('Crate')} lebar={0.6} posisi={[LEBAR_TOKO / 2 - 0.65, 0, 2.2]} putar={0.3} />
 
       {/* konter depan + loket SERAH */}
-      {[-5.5, -4.5, -3.5, -2.5, 1.5, 2.5, 3.5, 4.5, 5.5].map((x) => (
-        <Model key={x} url={MODEL('Counter_Doors')} lebar={1} tinggi={TINGGI_MEJA} posisi={[x, 0, zDepan]} putar={Math.PI} />
+      {[-5.5, -4.5, -3.5, -2.5, 1.5, 2.5, 3.5, 4.5, 5.5].map((x, i) => (
+        <Konter key={x} posisi={[x, 0, zDepan]} muka={i % 4 === 2 ? 'laci' : 'pintu'} les={warna} />
       ))}
       {[-1.5, -0.5, 0.5].map((x) => (
-        <Model key={x} url={MODEL('Counter_Straight')} lebar={1} tinggi={TINGGI_MEJA} posisi={[x, 0, zDepan]} putar={Math.PI} warna={warna} />
+        <Konter key={x} posisi={[x, 0, zDepan]} muka="polos" badan={UNGU.l} atas="#f7ead0" les={UNGU.d} />
       ))}
-      <mesh position={[-0.5, tMeja + 0.012, zDepan]} receiveShadow>
-        <boxGeometry args={[2.9, 0.02, dMeja * 0.8]} />
-        <meshStandardMaterial color={UNGU.l} />
-      </mesh>
-      <mesh position={[0.65, tMeja + 0.06, zDepan + 0.1]} castShadow>
+      <PermukaanSerah posisi={[-0.5, tMeja + 0.006, zDepan]} warna={warna} />
+      <mesh position={[0.65, tMeja + 0.02, zDepan + 0.1]} castShadow>
         <sphereGeometry args={[0.1, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
         <meshStandardMaterial color="#f4b829" metalness={0.4} roughness={0.3} />
       </mesh>
-      <PapanKanvas posisi={[-0.5, 1.95, zDepan]} lebar={1.5} tinggi={0.42} px={512} miring={-0.55} gambar={papanSerah} />
+      <Kasir posisi={[1.6, tMeja, zDepan]} putar={Math.PI} />
+      {[-5.5, -4.95, 4.4, 4.95].map((x, i) => (
+        <KursiTunggu key={x} posisi={[x, 0, DALAM_TOKO / 2 + 0.75]} putar={Math.PI} warna={i % 2 ? '#f4b829' : '#76a0e2'} />
+      ))}
 
       {/* papan nama toko di dinding belakang */}
-      <PapanKanvas posisi={[1.2, 2.85, -DALAM_TOKO / 2 + 0.05]} lebar={3.2} tinggi={0.62} px={900} miring={-0.5} gambar={papanNama} />
-
-      {/* bar progres mesin yang dipakai (billboard 3D, selalu menghadap kamera) */}
-      {progres && (
-        <Billboard position={[posMesin[progres.kode][0], posMesin[progres.kode][1] + (progres.kode === 1 ? 1.85 : 0.95), posMesin[progres.kode][2]]}>
-          <mesh>
-            <planeGeometry args={[1.0, 0.2]} />
-            <meshBasicMaterial color="#231e16" toneMapped={false} />
-          </mesh>
-          <mesh position={[(-0.92 * (1 - progres.nilai)) / 2, 0, 0.001]} scale={[progres.nilai, 1, 1]}>
-            <planeGeometry args={[0.92, 0.12]} />
-            <meshBasicMaterial color="#5fd39a" toneMapped={false} />
-          </mesh>
-        </Billboard>
-      )}
+      <PapanKanvas posisi={[-0.4, 2.85, -DALAM_TOKO / 2 + 0.05]} lebar={3.2} tinggi={0.62} px={900} miring={-0.5} gambar={papanNama} />
 
       {children}
 
@@ -349,4 +361,4 @@ export function Toko3D({
   );
 }
 
-['Counter_Straight', 'Counter_Doors', 'Counter_Drawers', 'Kitchen_Flooring', 'Normal_Wall', 'Crate'].forEach((n) => useGLTF.preload(MODEL(n)));
+['Crate'].forEach((n) => useGLTF.preload(MODEL(n)));

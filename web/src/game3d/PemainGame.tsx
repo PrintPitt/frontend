@@ -8,6 +8,8 @@ import { selesaikanTabrakan, stasiunTerdekat, type IdStasiun } from './peta';
 export type PosPemain = { x: number; z: number; arah: number };
 
 const KECEPATAN = 4.2;
+const SKALA = 1.22;
+const JUMLAH_DEBU = 12;
 
 export function useTombol() {
   const tombol = useRef(new Set<string>());
@@ -36,6 +38,7 @@ export function PemainGame({
   tombol,
   pos,
   pegang,
+  kunciPegang,
   bekerja,
   onFokus,
 }: {
@@ -43,9 +46,14 @@ export function PemainGame({
   tombol: React.RefObject<Set<string>>;
   pos: React.RefObject<PosPemain>;
   pegang?: ReactNode;
+  kunciPegang?: string;
   bekerja?: boolean;
   onFokus: (id: IdStasiun | null) => void;
 }) {
+  const debu = useRef<(THREE.Mesh | null)[]>([]);
+  const umurDebu = useRef<number[]>(Array(JUMLAH_DEBU).fill(1));
+  const jedaDebu = useRef(0);
+  const urutDebu = useRef(0);
   const grup = useRef<THREE.Group>(null);
   const [jalan, setJalan] = useState(false);
   const jalanRef = useRef(false);
@@ -71,6 +79,24 @@ export function PemainGame({
       beda = Math.atan2(Math.sin(beda), Math.cos(beda));
       p.arah += beda * Math.min(1, dt * 14);
     }
+    // kepulan debu di kaki saat berjalan (lebih rapat saat lari)
+    jedaDebu.current -= dt;
+    if (bergerak && jedaDebu.current <= 0) {
+      jedaDebu.current = t.has('shift') ? 0.06 : 0.14;
+      const i = urutDebu.current++ % JUMLAH_DEBU;
+      const m = debu.current[i];
+      if (m) m.position.set(p.x - Math.sin(p.arah) * 0.25 + (Math.random() - 0.5) * 0.2, 0.08, p.z - Math.cos(p.arah) * 0.25 + (Math.random() - 0.5) * 0.2);
+      umurDebu.current[i] = 0;
+    }
+    for (let i = 0; i < JUMLAH_DEBU; i++) {
+      const m = debu.current[i];
+      if (!m) continue;
+      const u = (umurDebu.current[i] = Math.min(1, umurDebu.current[i] + dt / 0.45));
+      m.visible = u < 1;
+      m.scale.setScalar(0.5 + u * 1.3);
+      m.position.y += dt * 0.35;
+      (m.material as THREE.MeshBasicMaterial).opacity = 0.55 * (1 - u);
+    }
     if (bergerak !== jalanRef.current) {
       jalanRef.current = bergerak;
       setJalan(bergerak);
@@ -87,8 +113,25 @@ export function PemainGame({
   });
 
   return (
-    <group ref={grup}>
-      <Pekerja3D warna={warna} posisi={[0, 0, 0]} gaya={jalan ? 'jalan' : bekerja ? 'kerja' : 'diam'} pegang={pegang} />
-    </group>
+    <>
+      <group ref={grup}>
+        <Pekerja3D
+          warna={warna}
+          posisi={[0, 0, 0]}
+          skala={SKALA}
+          model="tukang"
+          penanda
+          gaya={jalan ? 'jalan' : bekerja ? 'kerja' : 'diam'}
+          pegang={pegang}
+          kunciPegang={kunciPegang}
+        />
+      </group>
+      {Array.from({ length: JUMLAH_DEBU }, (_, i) => (
+        <mesh key={i} ref={(m) => void (debu.current[i] = m)} visible={false}>
+          <sphereGeometry args={[0.1, 8, 6]} />
+          <meshBasicMaterial color="#fbfaf3" transparent opacity={0} depthWrite={false} />
+        </mesh>
+      ))}
+    </>
   );
 }

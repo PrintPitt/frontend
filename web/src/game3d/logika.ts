@@ -1,14 +1,15 @@
 // Aturan game toko (tanpa React): isi meja, status mesin, file jebakan printer.
 import { wujudAwal, type Item, type Wujud } from './Item3D';
+import { ID_MESIN, type IdMesin, type KodeMesin } from './peta';
 
-export type KodeMesin = 1 | 2 | 3;
+export type { IdMesin, KodeMesin };
 /** kosong → (pilih file, khusus printer) → jalan/tahan → selesai. Salah pilih file = macet sebentar. */
 export type StatusMesin = 'kosong' | 'pilih' | 'jalan' | 'tahan' | 'macet' | 'selesai';
 export type Mesin = { item: Item | null; progres: number; status: StatusMesin; macetSampai: number; file: string[] };
 export type Dunia = {
   pegang: Item | null;
   meja: (Item | null)[];
-  mesin: Record<KodeMesin, Mesin>;
+  mesin: Record<IdMesin, Mesin>;
   /** Barang yang sedang diserahkan di loket (menunggu tx terakhir). */
   diSerah: Item | null;
   merebut: bigint | null;
@@ -21,8 +22,8 @@ export const MACET_MS = 2200;
 export const mesinKosong = (): Mesin => ({ item: null, progres: 0, status: 'kosong', macetSampai: 0, file: [] });
 export const duniaBaru = (): Dunia => ({
   pegang: null,
-  meja: [null, null],
-  mesin: { 1: mesinKosong(), 2: mesinKosong(), 3: mesinKosong() },
+  meja: [null, null, null, null],
+  mesin: Object.fromEntries(ID_MESIN.map((id) => [id, mesinKosong()])) as Record<IdMesin, Mesin>,
   diSerah: null,
   merebut: null,
 });
@@ -49,7 +50,7 @@ export function acakFile(teks: string): string[] {
 }
 
 export function semuaItem(d: Dunia): Item[] {
-  return [d.pegang, d.diSerah, ...d.meja, d.mesin[1].item, d.mesin[2].item, d.mesin[3].item].filter((x): x is Item => !!x);
+  return [d.pegang, d.diSerah, ...d.meja, ...ID_MESIN.map((id) => d.mesin[id].item)].filter((x): x is Item => !!x);
 }
 
 export function buangItem(d: Dunia, id: bigint) {
@@ -57,5 +58,5 @@ export function buangItem(d: Dunia, id: bigint) {
   d.pegang = lain(d.pegang);
   d.diSerah = lain(d.diSerah);
   d.meja = d.meja.map(lain);
-  for (const k of [1, 2, 3] as KodeMesin[]) if (d.mesin[k].item?.id === id) d.mesin[k] = mesinKosong();
+  for (const m of ID_MESIN) if (d.mesin[m].item?.id === id) d.mesin[m] = mesinKosong();
 }

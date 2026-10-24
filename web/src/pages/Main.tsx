@@ -31,7 +31,7 @@ import {
   type KodeMesin,
 } from '../game3d/logika';
 import { PemainGame, useTombol, type PosPemain } from '../game3d/PemainGame';
-import type { IdStasiun } from '../game3d/peta';
+import { adalahMesin, ID_MESIN, MESIN, type IdMesin, type IdStasiun } from '../game3d/peta';
 import { Antrean, BarangDunia, BarMesin, Sorotan, TandaMesin } from '../game3d/Stasiun3D';
 import { akunBurner, masuk, passkeyMungkin, type Akun } from '../lib/akun';
 import { NAMA_LANGKAH, ZERO } from '../lib/format';
@@ -41,7 +41,6 @@ import { kirim, pesanError } from '../lib/tx';
 
 const TokoStatis = memo(Toko3D);
 const sama = (a?: string, b?: string) => !!a && !!b && a.toLowerCase() === b.toLowerCase();
-const MESIN_DARI: Partial<Record<IdStasiun, KodeMesin>> = { m1: 1, m2: 2, m3: 3 };
 const NAMA_MESIN: Record<KodeMesin, string> = { 1: 'Mesin fotokopi', 2: 'Printer', 3: 'Laminator' };
 const LABEL_JENIS: Record<number, string> = { 1: 'Fotokopi KTP', 2: 'Boarding pass', 3: 'Laminating ijazah', 4: 'Menu warung' };
 /** Rupiah bulat untuk HUD (tIDRX punya 2 desimal; payout yang meluruh menghasilkan sen). */
@@ -63,17 +62,18 @@ function Detak({
   dunia: React.RefObject<Dunia>;
   tombol: React.RefObject<Set<string>>;
   fokus: React.RefObject<IdStasiun | null>;
-  onSelesai: (k: KodeMesin) => void;
+  onSelesai: (id: IdMesin) => void;
   onUbah: () => void;
 }) {
   useFrame((_, dtMentah) => {
     const dt = Math.min(dtMentah, 0.05);
-    for (const k of [1, 2, 3] as KodeMesin[]) {
-      const m = dunia.current.mesin[k];
-      const maju = m.status === 'jalan' || (m.status === 'tahan' && fokus.current === 'm3' && tombol.current.has('e'));
+    for (const id of ID_MESIN) {
+      const m = dunia.current.mesin[id];
+      const k = MESIN[id].kode;
+      const maju = m.status === 'jalan' || (m.status === 'tahan' && fokus.current === id && tombol.current.has('e'));
       if (maju) {
         m.progres = Math.min(1, m.progres + dt / DURASI[k]);
-        if (m.progres >= 1) onSelesai(k);
+        if (m.progres >= 1) onSelesai(id);
       }
       if (m.status === 'macet' && performance.now() > m.macetSampai) {
         m.status = 'pilih';
@@ -191,9 +191,9 @@ export default function Main() {
     if (dd.merebut === null && !semuaItem(dd).some((x) => x.id === aktif.id)) {
       const tahap = aktif.langkahSelesai;
       const it: Item = { id: aktif.id, jenis: aktif.jenis, langkah: aktif.langkah, tahap, wujud: wujudSetelah(aktif.langkah, tahap), teks: aktif.teks };
+      const kosong = dd.meja.findIndex((x) => !x);
       if (!dd.pegang) dd.pegang = it;
-      else if (!dd.meja[0]) dd.meja[0] = it;
-      else if (!dd.meja[1]) dd.meja[1] = it;
+      else if (kosong >= 0) dd.meja[kosong] = it;
       ubah();
     }
   }, [s.order, aktif, now, hangus]);
@@ -250,8 +250,9 @@ export default function Main() {
   }
 
   const onSelesai = useCallback(
-    (k: KodeMesin) => {
-      const m = dunia.current.mesin[k];
+    (id: IdMesin) => {
+      const m = dunia.current.mesin[id];
+      const k = MESIN[id].kode;
       if (!m.item) return;
       m.status = 'selesai';
       m.progres = 1;
@@ -277,8 +278,8 @@ export default function Main() {
       else rebut(antre[0]);
       return;
     }
-    if (f === 'meja0' || f === 'meja1') {
-      const i = f === 'meja0' ? 0 : 1;
+    if (f.startsWith('meja')) {
+      const i = Number(f.slice(4));
       if (d.pegang && !d.meja[i]) {
         d.meja[i] = d.pegang;
         d.pegang = null;
@@ -290,12 +291,13 @@ export default function Main() {
       }
       return ubah();
     }
-    const k = MESIN_DARI[f]!;
-    const m = d.mesin[k];
+    if (!adalahMesin(f)) return;
+    const k = MESIN[f].kode;
+    const m = d.mesin[f];
     if (!d.pegang) {
       if (m.status === 'selesai' || m.status === 'pilih') {
         d.pegang = m.item;
-        d.mesin[k] = mesinKosong();
+        d.mesin[f] = mesinKosong();
         sfx('ambil');
       } else if (m.status === 'jalan') tampil('Sabar, mesin masih jalan…');
       else if (m.status === 'tahan') tampil('Tahan E buat laminating');
@@ -318,8 +320,10 @@ export default function Main() {
   }
 
   function pilihFile(i: number) {
-    const m = d.mesin[2];
-    if (fokusRef.current !== 'm2' || m.status !== 'pilih' || !m.item || !m.file[i]) return;
+    const f = fokusRef.current;
+    if (!adalahMesin(f) || MESIN[f].kode !== 2) return;
+    const m = d.mesin[f];
+    if (m.status !== 'pilih' || !m.item || !m.file[i]) return;
     if (m.file[i] === namaFile(m.item.teks)) {
       m.status = 'jalan';
       m.progres = 0;
@@ -392,10 +396,10 @@ export default function Main() {
   const sisaDetik = aktif ? Math.max(0, Math.ceil(aktif.batasKerja - kerja)) : 0;
   const payoutKini = aktif ? hitungPayout(aktif.harga, aktif.batasKerja, Math.floor(kerja)) : 0n;
 
-  const m2 = d.mesin[2];
-  const pilihTerbuka = fokus === 'm2' && m2.status === 'pilih' && !!m2.item;
+  const m2 = adalahMesin(fokus) && MESIN[fokus].kode === 2 ? d.mesin[fokus] : null;
+  const pilihTerbuka = !!m2 && m2.status === 'pilih' && !!m2.item;
   const prompt = teksPrompt(fokus, d, !!aktif || semuaItem(d).length > 0, antre[0], menyerahkan.current);
-  const bekerja = fokus === 'm3' && d.mesin[3].status === 'tahan';
+  const bekerja = adalahMesin(fokus) && d.mesin[fokus].status === 'tahan';
 
   return (
     <main className="halaman-game main-3d">
@@ -403,39 +407,47 @@ export default function Main() {
         shadows
         flat
         dpr={[1, 2]}
-        camera={{ fov: 32, position: [0, 16.5, 13.2], near: 0.5, far: 80 }}
-        onCreated={({ camera }) => camera.lookAt(0, 0, 0.35)}
+        camera={{ fov: 30, position: [0, 14.8, 11.3], near: 0.5, far: 80 }}
+        onCreated={({ camera }) => {
+          camera.lookAt(0, 0, 0.55);
+          if (import.meta.env.DEV) Object.assign(window, { __kamera: camera });
+        }}
       >
-        <color attach="background" args={['#241a52']} />
-        <fog attach="fog" args={['#241a52', 24, 46]} />
-        <hemisphereLight args={['#fff6e5', '#5a4a8a', 1.15]} />
+        <color attach="background" args={['#8cc07a']} />
+        <fog attach="fog" args={['#8cc07a', 22, 40]} />
+        <hemisphereLight args={['#fff4dc', '#6a5a9a', 1.2]} />
         <directionalLight
           position={[6, 14, 8]}
-          intensity={2.1}
+          intensity={2.2}
+          color="#fff1d6"
           castShadow
           shadow-mapSize={[2048, 2048]}
-          shadow-camera-left={-12}
-          shadow-camera-right={12}
-          shadow-camera-top={12}
-          shadow-camera-bottom={-12}
+          shadow-camera-left={-10}
+          shadow-camera-right={10}
+          shadow-camera-top={9}
+          shadow-camera-bottom={-9}
           shadow-bias={-0.0004}
         />
         <Suspense fallback={null}>
-          <TokoStatis nama={(saya?.nama ?? 'Toko A').toUpperCase()} warna={UNGU.m} mesinJalan={d.mesin[1].status === 'jalan'} />
+          <TokoStatis nama={(saya?.nama ?? 'Toko A').toUpperCase()} warna={UNGU.m} mesinJalan={ID_MESIN.filter((id) => MESIN[id].kode === 1 && d.mesin[id].status === 'jalan').join(',')} />
           <BarangDunia dunia={d} />
-          {([1, 2, 3] as KodeMesin[]).map((k) => (
-            <BarMesin key={k} k={k} dunia={dunia} />
+          {ID_MESIN.map((id) => (
+            <BarMesin key={id} id={id} dunia={dunia} />
           ))}
-          {([1, 2, 3] as KodeMesin[]).map((k) => (
-            <TandaMesin key={k} k={k} status={d.mesin[k].status} />
+          {ID_MESIN.map((id) => (
+            <TandaMesin key={id} id={id} status={d.mesin[id].status} />
           ))}
           <Sorotan id={fokus} />
-          <Antrean antre={antre.map((o) => ({ id: o.id, jenis: o.jenis }))} aktif={aktif?.id} />
+          <Antrean
+            antre={antre.map((o) => ({ id: o.id, jenis: o.jenis, sisa: batas01(1 - (now - o.dibuatPada) / s.batasAntre) }))}
+            aktif={aktif ? { id: aktif.id, jenis: aktif.jenis, sisa: batas01(1 - (now - aktif.diclaimPada) / aktif.batasKerja) } : undefined}
+          />
           <PemainGame
             warna={UNGU.m}
             tombol={tombol}
             pos={pos}
             pegang={d.pegang ? <Item3D item={d.pegang} /> : undefined}
+            kunciPegang={d.pegang ? `${d.pegang.id}-${d.pegang.tahap}-${d.pegang.wujud}` : undefined}
             bekerja={bekerja}
             onFokus={onFokus}
           />
@@ -477,8 +489,8 @@ export default function Main() {
 
       {pilihTerbuka && (
         <div className="pilih-file">
-          <h4>FLASHDISK (E:) — {LABEL_JENIS[m2.item!.jenis]}</h4>
-          {m2.file.map((f, i) => (
+          <h4>FLASHDISK (E:) — {LABEL_JENIS[m2!.item!.jenis]}</h4>
+          {m2!.file.map((f, i) => (
             <button key={f} onClick={() => pilihFile(i)}>
               <b>{i + 1}</b> {f}
             </button>
@@ -542,14 +554,15 @@ function teksPrompt(f: IdStasiun | null, d: Dunia, adaOrder: boolean, depan: Ord
     if (adaOrder) return { teks: 'Satu order dulu sampai beres' };
     return depan ? { tombol: 'Spasi', teks: `Rebut order #${depan.id} · ${LABEL_JENIS[depan.jenis] ?? ''}` } : { teks: 'Menunggu pelanggan…' };
   }
-  if (f === 'meja0' || f === 'meja1') {
-    const isi = d.meja[f === 'meja0' ? 0 : 1];
+  if (f.startsWith('meja')) {
+    const isi = d.meja[Number(f.slice(4))];
     if (d.pegang && !isi) return { tombol: 'Spasi', teks: 'Taruh di meja' };
     if (!d.pegang && isi) return { tombol: 'Spasi', teks: 'Ambil dari meja' };
     return { teks: 'Meja kerja' };
   }
-  const k = MESIN_DARI[f]!;
-  const m = d.mesin[k];
+  if (!adalahMesin(f)) return null;
+  const k = MESIN[f].kode;
+  const m = d.mesin[f];
   const nama = NAMA_MESIN[k];
   switch (m.status) {
     case 'kosong': {

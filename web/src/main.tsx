@@ -11,6 +11,7 @@ const HALAMAN: Record<string, React.LazyExoticComponent<() => React.JSX.Element>
   '/pesan': lazy(() => import('./pages/Pesan')),
   '/toko': lazy(() => import('./pages/Toko')),
   '/layar': lazy(() => import('./pages/Layar')),
+  '/karakter': lazy(() => import('./pages/Karakter')),
 };
 
 function Beranda() {
