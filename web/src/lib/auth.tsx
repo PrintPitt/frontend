@@ -32,7 +32,11 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   const { siap, masuk } = useAuth();
   const ke = location.pathname + location.search;
   useEffect(() => {
-    if (siap && !masuk) pindah(`/masuk?ke=${encodeURIComponent(ke)}`, false);
+    if (!siap || masuk) return;
+    // ditunda satu tick: efek anak jalan sebelum efek Router, jadi saat muat pertama pendengar useJalur belum terpasang.
+    // replaceState supaya tombol Back tidak memantul ke halaman yang ditolak.
+    const t = setTimeout(() => pindah(`/masuk?ke=${encodeURIComponent(ke)}`, false, true), 0);
+    return () => clearTimeout(t);
   }, [siap, masuk, ke]);
   if (!siap) return <p className="muted" style={{ padding: 24 }}>Memuat…</p>;
   return masuk ? <>{children}</> : null;
