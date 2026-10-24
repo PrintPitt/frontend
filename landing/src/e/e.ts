@@ -139,7 +139,7 @@ function template(c: Ctx): string {
   </article>
   <article class="e-row" data-sp=".26" data-step="admin">
     <span class="e-rn" aria-hidden="true">03</span>
-    <h3 class="e-rt"><span>${t('e.m.3.a')}</span></h3>
+    <h3 class="e-rt"><span>${t('e.m.3.a')}</span><span>${t('e.m.3.b')}</span></h3>
     <div class="e-rd"><p>${t('e.m.3.p')}</p>
       <div class="e-tix"><b>${t('e.m.3.log')}</b><span>OrderClaimed #0418 · ${SA}</span><span>OrderFinished #0418 · ${num(EX, 1)} ${U}</span><span>${tf('e.m.3.l3', { u: num(exU), r: num(H - exU), name: NM })}</span></div></div>
   </article>

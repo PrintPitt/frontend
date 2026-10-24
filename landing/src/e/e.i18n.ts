@@ -60,8 +60,9 @@ export const E_DICT = {
   'e.m.2.p': { en: 'Your money sits in escrow, not with the shop. Past {max} s, all of it comes back. Automatically.', id: 'Uangmu ditahan kontrak, bukan toko. Lewat {max} detik, semuanya balik. Otomatis.' },
   'e.m.2.s': { en: 'past {max} s · late', id: 'lewat {max} dtk · telat' },
   'e.m.2.shop': { en: 'shop {v}', id: 'toko {v}' },
-  'e.m.3.a': { en: '0 admins', id: '0 admin' },
-  'e.m.3.p': { en: 'The chain decides who was first. The contract splits pay and refund — no admin in the loop.', id: 'Siapa yang duluan, chain yang memutuskan. Upah dan refund dibagi kontrak, bukan admin.' },
+  'e.m.3.a': { en: '0 access', id: '0 akses' },
+  'e.m.3.b': { en: 'to escrow', id: 'ke escrow' },
+  'e.m.3.p': { en: 'The chain decides who was first. The contract splits pay, refund and the 3% platform fee. The operator runs the catalog, shops and disputes, but has no way to withdraw escrowed money.', id: 'Siapa yang duluan, chain yang memutuskan. Upah, refund, dan fee platform 3% dibagi kontrak. Operator mengurus katalog, toko, dan sengketa, tapi tidak punya fungsi untuk menarik dana escrow.' },
   'e.m.3.log': { en: 'Contract log', id: 'Log kontrak' },
   'e.m.3.l3': { en: 'payout {u} → shop · {r} → {name}', id: 'upah {u} → toko · {r} → {name}' },
 
