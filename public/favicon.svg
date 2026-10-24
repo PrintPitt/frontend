@@ -1,1 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#0E0F12"/><path d="M36 8 16 36h14l-4 20 22-30H34z" fill="#FFD23F"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="PrintPitt">
+  <!-- logo sementara: lembar kertas + petir. Ganti dengan logo final dari Dex (nama berkas sama). -->
+  <rect width="64" height="64" rx="14" fill="#0E0F12"/>
+  <rect x="17" y="10" width="30" height="40" rx="3" fill="#F4F5F6"/>
+  <path d="M35 16 24 33h8l-3 13 12-18h-8z" fill="#FFD23F" stroke="#0E0F12" stroke-width="1.5" stroke-linejoin="round"/>
+  <rect x="12" y="46" width="40" height="8" rx="2" fill="#836EF9"/>
+</svg>

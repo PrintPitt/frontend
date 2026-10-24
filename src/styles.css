@@ -1,4 +1,4 @@
-/* Fotokopi Kilat · landing G "Arena Elegan"
+/* PrintPitt · landing G "Arena Elegan"
    Tata letak: tipografi besar berbingkai garis rambut di ruang kosong; satu panggung sticky untuk tur 6 bab. */
 @font-face { font-family: "Anybody Fallback"; src: local("Arial Black"), local("Arial"); size-adjust: 96%; ascent-override: 92%; descent-override: 24%; }
 @font-face { font-family: "Figtree Fallback"; src: local("Segoe UI"), local("Arial"); size-adjust: 100%; }
@@ -32,7 +32,8 @@ button { font: inherit; color: inherit; }
   padding: calc(env(safe-area-inset-top, 0px) + 14px) var(--gr) 14px var(--g);
   background: color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent); }
-.brand { font: 900 18px/1 var(--f-disp); font-stretch: 125%; letter-spacing: -.01em; text-decoration: none; }
+.brand { display: inline-flex; align-items: center; gap: 10px; font: 900 19px/1 var(--f-disp); font-stretch: 115%; letter-spacing: -.01em; text-decoration: none; }
+.brand-logo { width: 28px; height: 28px; display: block; }
 .topnav { display: flex; gap: 22px; margin-left: auto; font: 500 14px var(--f-body); }
 .topnav a { text-decoration: none; color: var(--muted); }
 .topnav a:hover { color: var(--ink); }
@@ -298,6 +299,9 @@ html.no-js .tur { height: auto; }
 html.no-js .tur-static { display: grid; gap: 18px; padding: 80px var(--gr) 80px var(--g); list-style: none; }
 
 /* kartu bagikan (og:image) — ?og=1 */
+.og-brand { display: none; }
+html.og .og-brand { display: flex; align-items: center; gap: 14px; margin: 0 0 22px; font: 900 40px/1 var(--f-disp); font-stretch: 115%; letter-spacing: -.02em; }
+html.og .og-brand img { width: 56px; height: 56px; }
 html.og .top, html.og .scroll-cue, html.og .sub-en, html.og .counter, html.og .fig-acts, html.og .hint, html.og #modeTag, html.og .mode-sep { display: none !important; }
 html.og .hero { padding-block: 40px; min-height: 630px; }
 html.og .hero h1 { font-size: 100px; }

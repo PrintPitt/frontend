@@ -3,15 +3,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Fotokopi Kilat — Makin kilat, makin cuan.</title>
-  <meta name="description" content="Game toko fotokopi di Monad: kamu pesan, dua toko rebutan, upah toko turun tiap detik, sisanya balik ke kamu. A print-shop game on Monad." />
+  <title>PrintPitt — Makin kilat, makin cuan.</title>
+  <meta name="description" content="PrintPitt, game toko fotokopi kilat di Monad: kamu pesan, dua toko rebutan, upah toko turun tiap detik, sisanya balik ke kamu. A print-shop game on Monad." />
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="Fotokopi Kilat — Makin kilat, makin cuan." />
-  <meta property="og:description" content="Game toko fotokopi di Monad. You order, two shops race, the payout decays per second, the rest refunds." />
+  <meta property="og:title" content="PrintPitt — Makin kilat, makin cuan." />
+  <meta property="og:site_name" content="PrintPitt" />
+  <meta property="og:description" content="Toko fotokopi kilat onchain di Monad. You order, two shops race, the payout decays per second, the rest refunds." />
   <meta property="og:image" content="/og/og.png" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="theme-color" content="#F4F5F6" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/logo.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Anybody:wdth,wght@75..150,700..900&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
@@ -22,7 +24,7 @@
 <a class="skip" href="#masalah">Lewati ke isi</a>
 
 <header class="top">
-  <a class="brand" href="#top" data-nama>Fotokopi Kilat</a>
+  <a class="brand" href="#top" aria-label="PrintPitt, kembali ke atas"><img class="brand-logo" src="/logo.svg" alt="" width="28" height="28" /><span data-nama>PrintPitt</span></a>
   <nav class="topnav" aria-label="Bab">
     <a href="#masalah">Masalah</a><a href="#tur">Cara kerja</a><a href="#rumus">Upah</a><a href="#live">Live</a><a href="#bukti">Bukti</a>
   </nav>
@@ -37,9 +39,10 @@
   <div class="kilat" aria-hidden="true"><span id="kilatWord">KILAT</span></div>
   <div class="hero-grid">
     <div class="hero-copy">
+      <p class="og-brand" aria-hidden="true"><img src="/logo.svg" alt="" width="56" height="56" /><span data-nama>PrintPitt</span></p>
       <p class="eyebrow">Monad Blitz Jogja Vol. 2<span class="mode-sep"> · </span><span id="modeTag" class="tag">SIMULASI</span></p>
       <h1>Makin kilat,<br/>makin cuan.</h1>
-      <p class="sub">Toko fotokopi onchain di Monad. Kamu pesan, dua toko rebutan, upahnya turun tiap detik, sisanya balik ke kamu.</p>
+      <p class="sub"><b data-nama>PrintPitt</b>: toko fotokopi kilat onchain di Monad. Kamu pesan, dua toko rebutan, upahnya turun tiap detik, sisanya balik ke kamu.</p>
       <p class="sub-en">A print-shop game on Monad: you order, two shops race, the payout decays per second, the rest refunds.</p>
       <div class="cta-row">
         <a class="btn btn-lg" id="heroCta" href="#" target="_blank" rel="noopener">Pesan sekarang</a>
@@ -64,7 +67,7 @@
 <!-- 2. MASALAH -->
 <section class="masalah" id="masalah">
   <p class="eyebrow">Masalah</p>
-  <h2 class="statement"><span class="s1">Antre fotokopi depan kampus: bayar dulu, nunggu nggak jelas.</span><span class="s2">Di <span data-nama>Fotokopi Kilat</span>, telat&nbsp;=&nbsp;uangmu balik.</span></h2>
+  <h2 class="statement"><span class="s1">Antre fotokopi depan kampus: bayar dulu, nunggu nggak jelas.</span><span class="s2">Di <span data-nama>PrintPitt</span>, telat&nbsp;=&nbsp;uangmu balik.</span></h2>
   <p class="lead">Uang pelanggan ditahan kontrak, bukan toko. Dua toko berebut order, upahnya turun tiap detik. Yang kilat dibayar lebih, yang telat mengembalikan semuanya. Otomatis.</p>
 </section>
 
@@ -101,7 +104,7 @@
         <div class="r-row"><span>balik ke Ratna</span><i><b id="rBarB"></b></i><b id="rB">+0,0067 MON</b></div>
         <p class="r-stars" id="rStars">★★★</p>
       </div>
-      <div class="nft" id="nft"><div class="nft-in"><div class="nft-front"><p class="n-k">SKRIPSI · HARDCOVER</p><p class="n-t">Analisis Antrean Fotokopi Depan Kampus</p><p class="n-by">Ratna</p><span class="n-id">#0042</span></div><div class="nft-back"><p>NFT hasil cetakan</p><p class="n-small">dicetak <span data-nama>Fotokopi Kilat</span> · 15 dtk</p></div></div></div>
+      <div class="nft" id="nft"><div class="nft-in"><div class="nft-front"><p class="n-k">SKRIPSI · HARDCOVER</p><p class="n-t">Analisis Antrean Fotokopi Depan Kampus</p><p class="n-by">Ratna</p><span class="n-id">#0042</span></div><div class="nft-back"><p>NFT hasil cetakan</p><p class="n-small">dicetak <span data-nama>PrintPitt</span> · 15 dtk</p></div></div></div>
     </div>
 
     <ol class="rail" id="rail" aria-label="Lompat ke bab">
@@ -205,7 +208,7 @@
   <div class="qr-big"><canvas id="qrBig" width="320" height="320" aria-label="QR besar ke halaman pesan"></canvas><span>Scan untuk pesan dari HP</span></div>
 </section>
 <footer class="foot">
-  <p><span data-nama>Fotokopi Kilat</span> — Monad Blitz Jogja Vol. 2, 24 Oktober 2026 · Dex Bennett · Hans Gunawan · Dave</p>
+  <p><span data-nama>PrintPitt</span> — toko fotokopi kilat onchain · Monad Blitz Jogja Vol. 2, 24 Oktober 2026 · Dex Bennett · Hans Gunawan · Dave</p>
   <p id="footLinks"></p>
 </footer>
 

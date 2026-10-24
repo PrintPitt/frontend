@@ -1,6 +1,8 @@
 // Satu tempat untuk semua fakta yang ditampilkan landing. Kosongkan ('') kalau belum ada → halaman menampilkan "—".
 // Diisi Hans/Dex saat deploy. Jangan taruh kunci privat di sini.
-export const NAMA = 'Fotokopi Kilat';
+export const NAMA = 'PrintPitt';
+export const DESKRIPSI = 'toko fotokopi kilat onchain';
+export const ORG_GITHUB = 'https://github.com/PrintPitt'; // repo belum dibuat
 export const TAGLINE = 'Makin kilat, makin cuan.';
 
 export const URL_APP = import.meta.env.VITE_APP_URL || ''; // app tim (React): /pesan, /toko, /layar
