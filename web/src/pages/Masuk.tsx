@@ -1,5 +1,5 @@
-// /masuk?ke=/lobi — halaman masuk/daftar ala aplikasi biasa: Google / email (Privy, embedded wallet), passkey (Mera),
-// atau tamu (burner). Wallet tidak pernah disebut ke pengguna; semua jadi "akun". Setelah masuk → pindah ke `ke`.
+// /masuk?ke=/lobi — regular-app style sign-in/sign-up page: Google / email (Privy, embedded wallet), passkey (Mera),
+// or guest (burner). Wallets are never mentioned to the user; everything is an "account". After sign-in → go to `ke`.
 import '@fontsource/fredoka/500.css';
 import '@fontsource/fredoka/700.css';
 import '@fontsource/lilita-one';
@@ -33,7 +33,7 @@ export default function Masuk() {
     try {
       selesai(await masuk());
     } catch {
-      setGalat('Passkey dibatalkan. Coba lagi, pakai Google/email, atau masuk sebagai tamu.');
+      setGalat('Passkey cancelled. Try again, use Google/email, or sign in as a guest.');
     } finally {
       setSibuk(null);
     }
@@ -47,47 +47,47 @@ export default function Masuk() {
         </div>
         <div className="tab-masuk" role="tablist">
           <button role="tab" aria-selected={tab === 'masuk'} className={tab === 'masuk' ? 'aktif' : ''} onClick={() => setTab('masuk')}>
-            Masuk
+            Sign in
           </button>
           <button role="tab" aria-selected={tab === 'daftar'} className={tab === 'daftar' ? 'aktif' : ''} onClick={() => setTab('daftar')}>
-            Daftar
+            Sign up
           </button>
         </div>
-        <h1>{tab === 'masuk' ? 'Selamat datang kembali' : 'Buat akun PrintPitt'}</h1>
+        <h1>{tab === 'masuk' ? 'Welcome back' : 'Create a PrintPitt account'}</h1>
         <p className="sub-masuk">
-          {tab === 'masuk' ? 'Lanjutkan dengan cara yang kamu pakai sebelumnya.' : 'Tanpa password, tanpa install apa pun. Akun dibuat otomatis saat kamu masuk.'}
+          {tab === 'masuk' ? 'Continue the same way you did before.' : 'No password, nothing to install. Your account is created automatically when you sign in.'}
         </p>
 
         <div className="daftar-tombol-masuk">
           {PRIVY_APP_ID ? (
             <TombolPrivy onAkun={selesai} onGalat={setGalat} sibuk={!!sibuk} />
           ) : (
-            <div className="catatan-masuk">Login Google/email (Privy) belum aktif di build ini: isi <code>VITE_PRIVY_APP_ID</code>.</div>
+            <div className="catatan-masuk">Google/email sign-in (Privy) is not enabled in this build: set <code>VITE_PRIVY_APP_ID</code>.</div>
           )}
           {passkeyMungkin() && (
             <button className="tombol-masuk passkey" disabled={!!sibuk} onClick={passkey}>
-              🔑 {sibuk === 'passkey' ? 'Membuka passkey…' : tab === 'masuk' && punyaPasskey() ? 'Lanjut dengan passkey' : 'Buat passkey (sidik jari / wajah)'}
+              🔑 {sibuk === 'passkey' ? 'Opening passkey…' : tab === 'masuk' && punyaPasskey() ? 'Continue with passkey' : 'Create a passkey (fingerprint / face)'}
             </button>
           )}
           <div className="pemisah-masuk">
-            <span>atau</span>
+            <span>or</span>
           </div>
           <button className="tombol-masuk tamu" disabled={!!sibuk} onClick={() => selesai(akunBurner())}>
-            Masuk sebagai tamu
+            Sign in as guest
           </button>
         </div>
 
         {galat && <p className="galat-masuk">{galat}</p>}
         {galat && punyaPasskey() && (
           <button className="tautan-masuk" onClick={() => (lupakanPasskey(), setGalat(''), setTab('daftar'))}>
-            Buat passkey baru
+            Create a new passkey
           </button>
         )}
         <p className="kecil-masuk">
-          Akun tamu tersimpan di perangkat ini saja. Dengan masuk kamu setuju bermain di Monad testnet (tanpa uang sungguhan).
+          Guest accounts are stored on this device only. By signing in you agree to play on Monad testnet (no real money).
         </p>
         <button className="tautan-masuk" onClick={() => pindah('/', false)}>
-          ‹ Kembali ke beranda
+          ‹ Back to home
         </button>
       </motion.section>
     </main>

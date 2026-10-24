@@ -1,4 +1,4 @@
-// Contract v2.3: toko mendaftar sendiri dari dashboard (`/`). Logika tx ada di lib/toko.ts (daftarkanToko).
+// Contract v2.3: shops self-register from the dashboard (`/`). Tx logic lives in lib/toko.ts (daftarkanToko).
 import { useState } from 'react';
 import { MAX_TEXT, teksValid } from '../../../shared/src/index.ts';
 import type { Akun } from '../lib/akun';
@@ -10,7 +10,7 @@ export default function DaftarToko({ akun, namaAwal = '' }: { akun: Akun; namaAw
   const [nama, setNama] = useState(namaAwal.slice(0, MAX_TEXT));
   const [jalan, setJalan] = useState(false);
   const [galat, setGalat] = useState('');
-  // mainnet: faucet MON untuk gas butuh kode juri (sama dengan pelanggan); minta bila belum tersimpan atau ditolak
+  // mainnet: the MON gas faucet needs a judge code (same as customers); ask for it if not saved or rejected
   const [kode, setKode] = useState(bacaKode);
   const [perluKode, setPerluKode] = useState(() => IS_MAINNET && !bacaKode());
   const namaOk = teksValid(nama.trim());
@@ -22,10 +22,10 @@ export default function DaftarToko({ akun, namaAwal = '' }: { akun: Akun; namaAw
     try {
       if (perluKode) simpanKode(kode.trim());
       await daftarkanToko(akun, nama.trim());
-      // daftar toko di layar diperbarui lewat event ShopRegistered (lib/live)
+      // the on-screen shop list updates via the ShopRegistered event (lib/live)
     } catch (e) {
       const pesan = e instanceof Error ? e.message : String(e);
-      // lib/toko.ts membungkus galat backend jadi Error(pesan); BAD_CODE → kode tersimpan salah, minta ulang
+      // lib/toko.ts wraps backend errors as Error(message); BAD_CODE → saved code is wrong, ask again
       if (pesan === new GalatBackend('BAD_CODE').message) {
         simpanKode('');
         setKode('');
@@ -39,12 +39,12 @@ export default function DaftarToko({ akun, namaAwal = '' }: { akun: Akun; namaAw
 
   return (
     <div className="daftar-toko">
-      <input value={nama} maxLength={MAX_TEXT} placeholder="Nama toko, mis. Fotokopi Berkah" onChange={(e) => setNama(e.target.value)} autoComplete="off" />
-      {perluKode && <input value={kode} placeholder="Kode juri dari panitia" onChange={(e) => setKode(e.target.value)} autoComplete="off" />}
+      <input value={nama} maxLength={MAX_TEXT} placeholder="Shop name, e.g. Fotokopi Berkah" onChange={(e) => setNama(e.target.value)} autoComplete="off" />
+      {perluKode && <input value={kode} placeholder="Judge code from the organizers" onChange={(e) => setKode(e.target.value)} autoComplete="off" />}
       <button className="tombol utama" disabled={jalan || !ok} onClick={daftar}>
-        {jalan ? 'Mendaftar…' : 'Daftarkan toko saya'}
+        {jalan ? 'Registering…' : 'Register my shop'}
       </button>
-      {nama && !namaOk && <span className="galat kecil">Nama 1–40 huruf biasa, tanpa emoji dan tanpa &lt; &gt; &amp; " ' \</span>}
+      {nama && !namaOk && <span className="galat kecil">Name: 1–40 plain characters, no emoji and no &lt; &gt; &amp; " ' \</span>}
       {galat && <span className="galat kecil">{galat}</span>}
     </div>
   );

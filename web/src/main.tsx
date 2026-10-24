@@ -10,9 +10,9 @@ import { RequireAuth, RUTE_PUBLIK } from './lib/auth';
 import { useJalur } from './lib/navigasi';
 import { PenyediaAuth } from './lib/privy';
 
-// Kode tiap halaman dipisah: HP penonton (/pesan) tidak ikut mengunduh /layar dan /toko.
-// Landing marketing ada di app terpisah (`landing/`, printpitt-landing.vercel.app). `/` app = pilih peran:
-// pelanggan (/pesan, cetak dokumen nyata), pemilik fotokopi (/toko, dashboard radius), atau mode panggung (/lobi, game).
+// Each page's code is split: the audience phone (/pesan) does not download /layar and /toko.
+// The marketing landing is a separate app (`landing/`, printpitt-landing.vercel.app). App `/` = pick a role:
+// customer (/pesan, real document printing), print shop owner (/toko, radius dashboard), or stage mode (/lobi, game).
 const Lobi = lazy(() => import('./pages/Lobi'));
 const HALAMAN: Record<string, React.LazyExoticComponent<() => React.JSX.Element | null>> = {
   '/': lazy(() => import('./pages/Beranda')),
@@ -30,11 +30,11 @@ function Beranda() {
   return (
     <main className="beranda">
       <h1>{NAMA}</h1>
-      <p className="muted">Toko fotokopi on-chain di Monad</p>
+      <p className="muted">On-chain print shop on Monad</p>
       <nav>
-        <a href="/pesan">/pesan · penonton</a>
-        <a href="/toko">/toko · pemain</a>
-        <a href="/layar">/layar · proyektor</a>
+        <a href="/pesan">/pesan · audience</a>
+        <a href="/toko">/toko · players</a>
+        <a href="/layar">/layar · projector</a>
       </nav>
     </main>
   );
@@ -44,14 +44,14 @@ function Router() {
   const path = useJalur();
   const Halaman = path === '/dev' ? Beranda : (HALAMAN[path] ?? Beranda);
   document.body.dataset.halaman = document.documentElement.dataset.halaman = path.slice(1) || 'lobi'; // `/` = lobi
-  // semua halaman internal lewat satu gerbang login (lib/auth.tsx); hanya /masuk yang publik
+  // all internal pages go through one sign-in gate (lib/auth.tsx); only /masuk is public
   return RUTE_PUBLIK.has(path) ? <Halaman key={path} /> : <RequireAuth key={path}><Halaman /></RequireAuth>;
 }
 document.title = NAMA;
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <Suspense fallback={<p className="muted" style={{ padding: 24 }}>Memuat…</p>}>
+    <Suspense fallback={<p className="muted" style={{ padding: 24 }}>Loading…</p>}>
       <PenyediaAuth>
         <Router />
         <LencanaJaringan />
