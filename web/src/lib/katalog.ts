@@ -86,13 +86,20 @@ export const payoutBersih = (kotor: bigint, feeBps: number) => kotor - (kotor * 
 
 export type TokoInfo = { alamat: Hex; nama: string; orderAktif: bigint };
 
+/** Nama tampilan toko demo. Di kontrak keduanya terdaftar sebagai "Toko A"/"Toko B" (tidak bisa diganti tanpa deploy ulang);
+ *  landing dan naskah pitch memakai nama ini, jadi layar, game, dan HP pelanggan ikut. Alamat lain tetap memakai nama dari kontrak. */
+const NAMA_TAMPIL: Record<string, string> = {
+  '0xd9b470dd86e9876b59ec4ccd797811d5a8f293e0': 'Fotokopi Jaya',
+  '0x8b0a62ca2523e33a1b51e28069613f6039ea1c7f': 'Sinar Copy',
+};
+
 export async function bacaToko(): Promise<TokoInfo[]> {
   const n = await pub.readContract({ ...kontrak, functionName: 'jumlahToko' });
   const alamat = await Promise.all(
     Array.from({ length: Number(n) }, (_, i) => pub.readContract({ ...kontrak, functionName: 'daftarToko', args: [BigInt(i)] })),
   );
   const info = await Promise.all(alamat.map((a) => pub.readContract({ ...kontrak, functionName: 'toko', args: [a] })));
-  return alamat.map((a, i) => ({ alamat: a, nama: info[i][2], orderAktif: info[i][1] }));
+  return alamat.map((a, i) => ({ alamat: a, nama: NAMA_TAMPIL[a.toLowerCase()] ?? info[i][2], orderAktif: info[i][1] }));
 }
 
 /** NFT hasil cetakan: decode tokenURI (JSON base64) jadi nama + gambar SVG (data URI). */
