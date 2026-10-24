@@ -1,9 +1,9 @@
-// Musik latar chiptune prosedural (WebAudio, tanpa file): bass + melodi + hi-hat, loop 8 bar, 150 BPM.
-// Mulai hanya setelah gesture pengguna (aturan autoplay browser). Toggle dengan `M`; pilihan disimpan di localStorage.
+// Procedural chiptune background music (WebAudio, no files): bass + melody + hi-hat, 8-bar loop, 150 BPM.
+// Starts only after a user gesture (browser autoplay rule). Toggle with `M`; choice is saved in localStorage.
 const KUNCI = 'pp.musik';
 const BPM = 150;
-const KETUK = 60 / BPM / 2; // seperdelapan
-// nada MIDI: melodi ceria di C mayor (0 = istirahat)
+const KETUK = 60 / BPM / 2; // eighth note
+// MIDI notes: cheerful melody in C major (0 = rest)
 const MELODI = [72, 0, 76, 79, 0, 76, 72, 0, 74, 0, 77, 81, 0, 77, 74, 0, 76, 0, 79, 84, 0, 79, 76, 0, 77, 76, 74, 72, 0, 67, 0, 0];
 const BASS = [48, 48, 55, 48, 50, 50, 57, 50, 52, 52, 59, 52, 53, 53, 55, 55];
 const hz = (n: number) => 440 * 2 ** ((n - 69) / 12);
@@ -62,7 +62,7 @@ export function musikNyala() {
   return nyala;
 }
 
-/** Mulai musik (butuh gesture). Tidak apa-apa dipanggil berulang. */
+/** Start music (needs a gesture). Safe to call repeatedly. */
 export function mulaiMusik() {
   if (nyala) return;
   ctx ??= new AudioContext();
@@ -80,7 +80,7 @@ export function mulaiMusik() {
   } catch {}
 }
 
-/** Berhenti tanpa mengubah preferensi (saat keluar halaman). */
+/** Stop without changing the preference (when leaving the page). */
 export function jedaMusik() {
   nyala = false;
   if (timer !== null) clearTimeout(timer);
@@ -102,7 +102,7 @@ export function toggleMusik() {
   return nyala;
 }
 
-/** Preferensi tersimpan: default nyala. */
+/** Saved preference: on by default. */
 export function musikDiinginkan() {
   try {
     return localStorage.getItem(KUNCI) !== '0';

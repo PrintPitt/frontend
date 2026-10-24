@@ -1,10 +1,10 @@
-// Read ringan yang dipakai semua halaman (katalog, toko, order).
+// Light reads used by every page (catalog, shops, orders).
 import type { Hex } from 'viem';
 import { hitungHarga, STATUS } from '../../../shared/src/index.ts';
 import { kontrak, pub } from './chain';
 import { bukaResep } from './format';
 
-/** v2: harga & batas kerja = dasar + per halaman × halaman. `harga`/`batasKerja` = nilai untuk 1 halaman (mode demo). */
+/** v2: price & work deadline = base + per page × pages. `harga`/`batasKerja` = values for 1 page (demo mode). */
 export type Katalog = {
   jenis: number;
   harga: bigint;
@@ -73,22 +73,22 @@ export async function bacaOrder(id: bigint): Promise<Order> {
   };
 }
 
-/** Harga dan batas kerja dari contract (`hargaUntuk`), sumber kebenaran untuk order per halaman. */
+/** Price and work deadline from the contract (`hargaUntuk`), the source of truth for per-page orders. */
 export async function bacaHarga(jenis: number, halaman: number): Promise<{ harga: bigint; batasKerja: number }> {
   const [harga, batasKerja] = await pub.readContract({ ...kontrak, functionName: 'hargaUntuk', args: [jenis, halaman] });
   return { harga, batasKerja: Number(batasKerja) };
 }
 
-/** v2.1: potongan platform (basis poin) dari payout toko. Event OrderFinished/omzet sudah bersih; hitungPayout masih kotor. */
+/** v2.1: platform fee (basis points) taken from shop payout. OrderFinished event/revenue are net; hitungPayout is still gross. */
 export const bacaFeePlatform = () => pub.readContract({ ...kontrak, functionName: 'platformFeeBps' });
 export const payoutBersih = (kotor: bigint, feeBps: number) => kotor - (kotor * BigInt(feeBps)) / 10_000n;
 
 
-/** v2.3: `aktif` false = dinonaktifkan operator (tidak bisa claim). */
+/** v2.3: `aktif` false = disabled by the operator (cannot claim). */
 export type TokoInfo = { alamat: Hex; nama: string; orderAktif: bigint; aktif: boolean };
 
-/** Nama tampilan toko demo (landing + naskah pitch). Hanya dipakai selama nama on-chain masih default "Toko A"/"Toko B";
- *  sejak v2.3 toko bisa `ubahNamaToko`, dan nama hasil ganti itu yang tampil. */
+/** Display names for the demo shops (landing + pitch script). Only used while the on-chain name is still the default "Toko A"/"Toko B";
+ *  since v2.3 shops can `ubahNamaToko`, and the new name is shown instead. */
 const NAMA_TAMPIL: Record<string, string> = {
   '0xd9b470dd86e9876b59ec4ccd797811d5a8f293e0': 'Fotokopi Jaya',
   '0x8b0a62ca2523e33a1b51e28069613f6039ea1c7f': 'Sinar Copy',
@@ -100,7 +100,7 @@ export async function bacaToko(): Promise<TokoInfo[]> {
     Array.from({ length: Number(n) }, (_, i) => pub.readContract({ ...kontrak, functionName: 'daftarToko', args: [BigInt(i)] })),
   );
   const info = await Promise.all(alamat.map((a) => pub.readContract({ ...kontrak, functionName: 'toko', args: [a] })));
-  // v2.3: toko(a) = [terdaftar, aktif, orderAktif, nama]
+  // v2.3: toko(a) = [registered, active, activeOrder, name]
   return alamat.map((a, i) => {
     const [, aktif, orderAktif, namaChain] = info[i];
     const bawaan = /^Toko [AB]$/.test(namaChain);
@@ -108,7 +108,7 @@ export async function bacaToko(): Promise<TokoInfo[]> {
   });
 }
 
-/** NFT hasil cetakan: decode tokenURI (JSON base64) jadi nama + gambar SVG (data URI). */
+/** Print NFT: decode tokenURI (base64 JSON) into name + SVG image (data URI). */
 export async function bacaNft(id: bigint): Promise<{ name: string; image: string }> {
   const uri = await pub.readContract({ ...kontrak, functionName: 'tokenURI', args: [id] });
   const json = JSON.parse(atob(uri.split(',')[1]));

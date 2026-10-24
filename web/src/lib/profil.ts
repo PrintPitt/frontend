@@ -1,4 +1,4 @@
-// Profil pemain (diatur di lobi, dipakai di match): nama tampilan + rupa karakter. Disimpan di localStorage perangkat ini.
+// Player profile (set in the lobby, used in the match): display name + character look. Saved in this device's localStorage.
 import type { ModelKarakter } from '../arena3d/Pekerja3D';
 
 export type Profil = { nama: string; model: Extract<ModelKarakter, 'tukang' | 'tukang-visor'>; warna: string; kulit: string; rambut: string };
@@ -11,7 +11,7 @@ export const MAKS_NAMA = 14;
 const KUNCI = 'pp.profil';
 const BAWAAN: Profil = { nama: '', model: 'tukang', warna: WARNA_BAJU[0], kulit: WARNA_KULIT[1], rambut: WARNA_RAMBUT[0] };
 
-/** Huruf, angka, spasi, titik, strip; maksimal MAKS_NAMA karakter. */
+/** Letters, digits, spaces, dots, dashes; at most MAKS_NAMA characters. */
 export const rapikanNama = (s: string) => s.replace(/[^A-Za-z0-9 ._-]/g, '').replace(/\s+/g, ' ').slice(0, MAKS_NAMA);
 
 export function bacaProfil(): Profil {
@@ -27,9 +27,9 @@ export function simpanProfil(p: Profil) {
   try {
     localStorage.setItem(KUNCI, JSON.stringify(p));
   } catch {
-    /* mode privat: profil hanya bertahan selama halaman terbuka */
+    /* private mode: the profile only lasts while the page is open */
   }
 }
 
-/** Nama yang ditampilkan: nama pilihan pemain, atau nama toko kalau kosong. */
+/** Display name: the player's chosen name, or the shop name if empty. */
 export const namaTampil = (p: Profil, cadangan: string) => p.nama.trim() || cadangan;

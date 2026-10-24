@@ -1,10 +1,10 @@
-// Bantuan pemain: layar pemuatan (progres aset), panah penunjuk ke loket saat ada order dan pemain diam, hati saat pelanggan dilayani.
+// Player helpers: loading screen (asset progress), pointer arrow to the counter when an order waits and the player is idle, hearts when a customer is served.
 import { Billboard, useProgress } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 
-/** Overlay HTML di luar Canvas: tampil sampai aset 3D selesai dimuat (+ jeda kecil). */
+/** HTML overlay outside the Canvas: shown until 3D assets finish loading (+ a short pause). */
 export function LayarMuat() {
   const { progress, active } = useProgress();
   const [tampil, setTampil] = useState(true);
@@ -17,17 +17,17 @@ export function LayarMuat() {
   return (
     <div className="layar-muat">
       <div className="kartu-muat">
-        <div className="judul-muat">MEMBUKA TOKO…</div>
+        <div className="judul-muat">OPENING SHOP…</div>
         <div className="bar-muat">
           <div style={{ width: `${Math.max(8, progress)}%` }} />
         </div>
-        <div className="kecil-muat">menyiapkan mesin fotokopi, printer, laminator</div>
+        <div className="kecil-muat">setting up copier, printer, laminator</div>
       </div>
     </div>
   );
 }
 
-/** Panah kuning memantul di atas titik (x, z); tampil bila `aktif`. */
+/** Yellow arrow bouncing above point (x, z); shown when `aktif`. */
 export function PanahPetunjuk({ x, z, y = 1.6, aktif }: { x: number; z: number; y?: number; aktif: boolean }) {
   const g = useRef<THREE.Group>(null);
   useFrame(({ clock }) => {
@@ -73,7 +73,7 @@ function teksturHati(warna: string) {
   return t;
 }
 
-/** Semburan hati naik dari titik; `kunci` berubah = semburan baru. */
+/** Burst of hearts rising from a point; `kunci` change = new burst. */
 export function SemburanHati({ x, z, y = 1.4, kunci }: { x: number; z: number; y?: number; kunci: number }) {
   const slot = useRef<(THREE.Mesh | null)[]>([]);
   const mulai = useRef(-10);

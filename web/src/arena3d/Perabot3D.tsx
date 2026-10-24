@@ -1,5 +1,5 @@
-// Perabot prosedural toko (gaya Overcooked: badan cerah, daun meja terang dengan tepi gelap, detail pintu/laci di muka).
-// Muka depan = sumbu +z lokal; `putar` memutar seluruh perabot.
+// Procedural shop furniture (Overcooked style: bright body, light tabletop with dark edge, door/drawer details on the front).
+// Front face = local +z axis; `putar` rotates the whole piece.
 import { useMemo } from 'react';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -31,22 +31,22 @@ export function Konter({
   const zMuka = dalam / 2 - 0.02;
   return (
     <group position={posisi} rotation={[0, putar, 0]}>
-      {/* kaki/plint gelap */}
+      {/* dark legs/plinth */}
       <mesh position={[0, 0.05, -0.02]} receiveShadow>
         <boxGeometry args={[lebar - 0.04, 0.1, dalam - 0.1]} />
         <meshStandardMaterial color={TINTA} />
       </mesh>
-      {/* badan */}
+      {/* body */}
       <mesh position={[0, 0.1 + (t - 0.17) / 2, 0]} castShadow receiveShadow>
         <boxGeometry args={[lebar - 0.02, t - 0.17, dalam - 0.04]} />
         <meshStandardMaterial color={badan} roughness={0.8} />
       </mesh>
-      {/* les warna toko di bawah daun meja */}
+      {/* shop-color trim under the tabletop */}
       <mesh position={[0, t - 0.1, 0.005]}>
         <boxGeometry args={[lebar, 0.06, dalam - 0.02]} />
         <meshStandardMaterial color={les} />
       </mesh>
-      {/* daun meja: tepi gelap + permukaan terang */}
+      {/* tabletop: dark edge + light surface */}
       <mesh position={[0, t - 0.04, 0]} receiveShadow>
         <boxGeometry args={[lebar + 0.02, 0.08, dalam + 0.04]} />
         <meshStandardMaterial color={TINTA} />
@@ -55,7 +55,7 @@ export function Konter({
         <boxGeometry args={[lebar - 0.03, 0.012, dalam - 0.01]} />
         <meshStandardMaterial color={atas} roughness={0.65} />
       </mesh>
-      {/* detail muka */}
+      {/* front details */}
       {muka === 'pintu' &&
         [-1, 1].map((s) => (
           <group key={s} position={[(s * lebar) / 4, 0.1 + (t - 0.17) / 2, zMuka]}>
@@ -86,7 +86,7 @@ export function Konter({
   );
 }
 
-/** Rak dinding berisi map/binder warna-warni. */
+/** Wall shelf with colorful folders/binders. */
 export function RakBinder({ posisi, lebar = 1.6 }: { posisi: V3; lebar?: number }) {
   const warna = ['#ef6a4c', '#f4b829', '#76a0e2', '#93d3b0', '#836ef9', '#f08fb0', '#fbfaf3', '#76a0e2', '#ef6a4c'];
   const n = Math.floor((lebar - 0.2) / 0.11);
@@ -106,7 +106,7 @@ export function RakBinder({ posisi, lebar = 1.6 }: { posisi: V3; lebar?: number 
   );
 }
 
-/** Jam dinding bundar. */
+/** Round wall clock. */
 export function JamDinding({ posisi }: { posisi: V3 }) {
   return (
     <group position={posisi}>
@@ -130,7 +130,7 @@ export function JamDinding({ posisi }: { posisi: V3 }) {
   );
 }
 
-/** Mesin kasir kecil di konter depan. */
+/** Small cash register on the front counter. */
 export function Kasir({ posisi, putar = 0 }: { posisi: V3; putar?: number }) {
   return (
     <group position={posisi} rotation={[0, putar, 0]}>
@@ -154,7 +154,7 @@ export function Kasir({ posisi, putar = 0 }: { posisi: V3; putar?: number }) {
   );
 }
 
-/** Pot tanaman bundar (daun low-poly). */
+/** Round plant pot (low-poly leaves). */
 export function Tanaman({ posisi, s = 1 }: { posisi: V3; s?: number }) {
   return (
     <group position={posisi} scale={s}>
@@ -176,7 +176,7 @@ export function Tanaman({ posisi, s = 1 }: { posisi: V3; s?: number }) {
   );
 }
 
-/** Dispenser air galon. */
+/** Water dispenser with gallon jug. */
 export function Dispenser({ posisi }: { posisi: V3 }) {
   return (
     <group position={posisi}>
@@ -196,7 +196,7 @@ export function Dispenser({ posisi }: { posisi: V3 }) {
   );
 }
 
-/** Kursi tunggu pelanggan (plastik). */
+/** Customer waiting chair (plastic). */
 export function KursiTunggu({ posisi, warna = '#ef6a4c', putar = 0 }: { posisi: V3; warna?: string; putar?: number }) {
   return (
     <group position={posisi} rotation={[0, putar, 0]}>
@@ -220,7 +220,7 @@ export function KursiTunggu({ posisi, warna = '#ef6a4c', putar = 0 }: { posisi: 
   );
 }
 
-/** Daun meja loket SERAH: panah ke arah pelanggan + tulisan. */
+/** DELIVER counter top: arrows toward the customer + label. */
 export function PermukaanSerah({ posisi, lebar = 1, dalam = DALAM_MEJA, warna }: { posisi: V3; lebar?: number; dalam?: number; warna: string }) {
   const tekstur = useMemo(() => {
     const c = document.createElement('canvas');
@@ -249,8 +249,8 @@ export function PermukaanSerah({ posisi, lebar = 1, dalam = DALAM_MEJA, warna }:
       g.textAlign = 'center';
       g.textBaseline = 'middle';
       g.font = `${Math.round(h * 0.3)}px "Lilita One", system-ui`;
-      g.strokeText('SERAH', w / 2, h * 0.3);
-      g.fillText('SERAH', w / 2, h * 0.3);
+      g.strokeText('DELIVER', w / 2, h * 0.3);
+      g.fillText('DELIVER', w / 2, h * 0.3);
       for (const x of [w * 0.3, w * 0.5, w * 0.7]) {
         g.beginPath();
         g.moveTo(x - 20, h * 0.58);
@@ -274,7 +274,7 @@ export function PermukaanSerah({ posisi, lebar = 1, dalam = DALAM_MEJA, warna }:
   );
 }
 
-/** Stapler kecil. */
+/** Small stapler. */
 export function Stapler({ posisi, putar = 0 }: { posisi: V3; putar?: number }) {
   return (
     <group position={posisi} rotation={[0, putar, 0]}>
@@ -290,7 +290,7 @@ export function Stapler({ posisi, putar = 0 }: { posisi: V3; putar?: number }) {
   );
 }
 
-/** Gelas pulpen. */
+/** Pen cup. */
 export function GelasPulpen({ posisi }: { posisi: V3 }) {
   return (
     <group position={posisi}>
@@ -308,7 +308,7 @@ export function GelasPulpen({ posisi }: { posisi: V3 }) {
   );
 }
 
-/** Selotip (torus). */
+/** Tape roll (torus). */
 export function Selotip({ posisi }: { posisi: V3 }) {
   return (
     <mesh position={[posisi[0], posisi[1] + 0.03, posisi[2]]} rotation={[Math.PI / 2, 0, 0]}>
@@ -318,7 +318,7 @@ export function Selotip({ posisi }: { posisi: V3 }) {
   );
 }
 
-/** Kanopi bergaris di atas konter depan (teras toko). */
+/** Striped canopy over the front counter (shop porch). */
 export function Kanopi({ posisi, lebar, warna }: { posisi: V3; lebar: number; warna: string }) {
   const tekstur = useMemo(() => {
     const c = document.createElement('canvas');
@@ -359,7 +359,7 @@ export function Kanopi({ posisi, lebar, warna }: { posisi: V3; lebar: number; wa
   );
 }
 
-/** Lampu gantung: kabel + kap + bola menyala. */
+/** Hanging lamp: cord + shade + glowing bulb. */
 export function LampuGantung({ posisi, warna = '#f4b829' }: { posisi: V3; warna?: string }) {
   return (
     <group position={posisi}>
@@ -380,7 +380,7 @@ export function LampuGantung({ posisi, warna = '#f4b829' }: { posisi: V3; warna?
   );
 }
 
-/** Karpet sambutan bertulisan. */
+/** Welcome mat with text. */
 export function Karpet({ posisi, teks, warna, lebar = 2.2, dalam = 1.1 }: { posisi: V3; teks: string; warna: string; lebar?: number; dalam?: number }) {
   const tekstur = useMemo(() => {
     const c = document.createElement('canvas');
@@ -414,7 +414,7 @@ export function Karpet({ posisi, teks, warna, lebar = 2.2, dalam = 1.1 }: { posi
   );
 }
 
-/** Sobekan kertas di lantai. */
+/** Scrap of paper on the floor. */
 export function Sobekan({ posisi, putar = 0, s = 1 }: { posisi: V3; putar?: number; s?: number }) {
   return (
     <mesh position={[posisi[0], 0.005, posisi[2]]} rotation={[-Math.PI / 2, 0, putar]} scale={s}>
@@ -424,12 +424,12 @@ export function Sobekan({ posisi, putar = 0, s = 1 }: { posisi: V3; putar?: numb
   );
 }
 
-/** Spesifikasi satu ubin konter untuk `KonterGabung`. */
+/** Spec for one counter tile for `KonterGabung`. */
 export type SpecKonter = { posisi: V3; putar?: number; badan?: string; atas?: string; les?: string; muka?: 'pintu' | 'laci' | 'polos'; lebar?: number; dalam?: number };
 
 /**
- * Semua konter digabung jadi satu mesh per warna (hemat draw call: 24 konter × 7 mesh → ±6 mesh).
- * Bentuknya sama dengan `Konter`.
+ * All counters merged into one mesh per color (saves draw calls: 24 counters × 7 meshes → ~6 meshes).
+ * Same shape as `Konter`.
  */
 export function KonterGabung({ daftar }: { daftar: SpecKonter[] }) {
   const grup = useMemo(() => {

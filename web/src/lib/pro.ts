@@ -1,5 +1,5 @@
-// Toko Pro (v2.1, BLZ-27): langganan on-chain Rp50.000 / 30 hari dari saldo tIDRX toko ke treasury. Manfaat di backend
-// (radius feed 3 km, badge, statistik); rebutan claim tetap setara. Butuh approve tIDRX ke contract sekali.
+// Shop Pro (v2.1, BLZ-27): on-chain subscription, Rp50.000 / 30 days from the shop's tIDRX balance to the treasury. Perks live in the backend
+// (3 km feed radius, badge, stats); claim races stay fair. Needs a one-time tIDRX approve to the contract.
 import type { Hex } from 'viem';
 import { GAS_LIMIT, tidrxAbi } from '../../../shared/src/index.ts';
 import type { Akun } from './akun';
@@ -18,7 +18,7 @@ export async function bacaPro(alamat: Hex): Promise<InfoPro> {
   return { hargaPro, proSampai: Number(proSampai), saldo, feeBps };
 }
 
-/** Approve tIDRX bila perlu, lalu `langgananPro(periode)`. Toko membayar gas sendiri (punya MON). */
+/** Approve tIDRX if needed, then `langgananPro(periode)`. The shop pays its own gas (has MON). */
 export async function langgananPro(akun: Akun, periode = 1, hargaPro: bigint) {
   const bayar = hargaPro * BigInt(periode);
   const izin = await pub.readContract({ address: TIDRX, abi: tidrxAbi, functionName: 'allowance', args: [akun.address, kontrak.address] });
@@ -26,7 +26,7 @@ export async function langgananPro(akun: Akun, periode = 1, hargaPro: bigint) {
     const w = dompet(akun);
     const hash = await w.writeContract({ address: TIDRX, abi: tidrxAbi, account: akun.account, chain: w.chain, functionName: 'approve', args: [kontrak.address, bayar], gas: GAS_LIMIT.approve });
     const r = await pub.waitForTransactionReceipt({ hash, pollingInterval: 200 });
-    if (r.status !== 'success') throw new Error('Approve tIDRX gagal');
+    if (r.status !== 'success') throw new Error('tIDRX approve failed');
   }
   return kirim(akun, 'langgananPro', [periode]);
 }
