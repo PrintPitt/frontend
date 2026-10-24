@@ -59,12 +59,12 @@ h1, h2, h3 { text-wrap: balance; margin: 0; }
 .kilat span { font: 900 clamp(120px, 27vw, 520px)/.8 var(--f-disp); font-stretch: 125%; letter-spacing: -.035em;
   color: transparent; -webkit-text-stroke: 1.5px var(--line); transform-origin: 50% 60%; will-change: transform; user-select: none; }
 .hero-grid { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 48px; align-items: center; max-width: 1360px; margin: 0 auto; width: 100%; }
-.hero h1 { font: 900 clamp(48px, 7.4vw, 124px)/.9 var(--f-disp); font-stretch: 112%; letter-spacing: -.035em; margin-bottom: 26px; }
+.hero h1 { font: 900 clamp(42px, 5.6vw, 108px)/.92 var(--f-disp); font-stretch: 100%; letter-spacing: -.03em; margin-bottom: 26px; white-space: nowrap; }
 .sub { font-size: clamp(18px, 1.5vw, 22px); max-width: 34ch; margin: 0 0 8px; }
 .sub-en { color: var(--muted); font-size: 15px; max-width: 46ch; margin: 0 0 30px; font-style: italic; }
 .cta-row { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
 .qr-mini { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--muted); max-width: 200px; }
-.qr-mini canvas { width: 88px; height: 88px; background: #fff; border-radius: 8px; border: 1px solid var(--line); }
+.qr-mini canvas { width: 88px !important; height: 88px !important; background: #fff; border-radius: 8px; border: 1px solid var(--line); }
 .counter { margin: 28px 0 0; font: 500 14px var(--f-mono); color: var(--muted); }
 .counter b { color: var(--ink); font-size: 18px; }
 .hero-fig { display: grid; justify-items: center; gap: 10px; }
@@ -115,6 +115,10 @@ h1, h2, h3 { text-wrap: balance; margin: 0; }
 .vault.pulse { animation: pulse .9s var(--ease); }
 @keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--monad) 55%, transparent) } 100% { box-shadow: 0 0 0 26px transparent } }
 .coin { width: 34px; height: 34px; border-radius: 50%; background: var(--monad); border: 1.5px solid var(--ink); box-shadow: inset 0 -4px 0 rgba(0,0,0,.18); }
+.coin-a { background: var(--accent); }
+.sheet { width: 64px; height: 86px; background: var(--panel); border: 1.5px solid var(--ink); border-radius: 4px; box-shadow: inset 0 14px 0 -8px var(--line), inset 0 28px 0 -22px var(--line); }
+.ph-btn.pulse { animation: phb 1.6s var(--ease) infinite; }
+@keyframes phb { 0%,100% { transform: scale(1) } 50% { transform: scale(1.06) } }
 .ticket { width: 190px; padding: 12px 14px; background: var(--panel); border: 1.5px solid var(--ink); border-radius: 10px; display: grid; gap: 4px; transform-origin: 50% 0; }
 .tk-no { font: 700 11px var(--f-mono); color: var(--muted); }
 .tk-l { font: 800 15px var(--f-body); }
@@ -239,7 +243,7 @@ h1, h2, h3 { text-wrap: balance; margin: 0; }
 .cta h2 { font: 900 clamp(44px, 6vw, 104px)/.9 var(--f-disp); font-stretch: 112%; letter-spacing: -.04em; margin-bottom: 34px; }
 .cta-note { color: var(--muted); font-size: 15px; margin: 18px 0 0; }
 .qr-big { display: grid; justify-items: center; gap: 12px; font-size: 14px; color: var(--muted); }
-.qr-big canvas { width: 300px; height: 300px; background: #fff; border-radius: 16px; border: 1px solid var(--line); padding: 10px; }
+.qr-big canvas { width: 300px !important; height: 300px !important; background: #fff; border-radius: 16px; border: 1px solid var(--line); padding: 10px; }
 .foot { padding: 34px var(--gr) calc(34px + env(safe-area-inset-bottom, 0px)) var(--g); border-top: 1px solid var(--line); font-size: 14px; color: var(--muted); display: grid; gap: 6px; }
 .foot p { margin: 0; }
 
@@ -269,7 +273,7 @@ html.panggung .topnav { display: none; }
   .bukti-grid > div:nth-child(odd), .bukti-grid > div:nth-child(even) { padding-left: 0; padding-right: 0; border-left: 0; }
   .ru-bar { grid-template-columns: 1fr 70px; }
   .ru-bar i { grid-column: 1 / -1; grid-row: 2; }
-  .qr-big canvas { width: 240px; height: 240px; }
+  .qr-big canvas { width: 240px !important; height: 240px !important; }
   .tur { height: 520vh; }
 }
 @media (max-width: 420px) {
@@ -288,3 +292,11 @@ html.panggung .topnav { display: none; }
 html.no-js .stage { display: none; }
 html.no-js .tur { height: auto; }
 html.no-js .tur-static { display: grid; gap: 18px; padding: 80px var(--gr) 80px var(--g); list-style: none; }
+
+/* kartu bagikan (og:image) — ?og=1 */
+html.og .top, html.og .scroll-cue, html.og .sub-en, html.og .counter, html.og .fig-acts, html.og .hint, html.og #modeTag, html.og .mode-sep { display: none !important; }
+html.og .hero { padding-block: 40px; min-height: 630px; }
+html.og .hero h1 { font-size: 100px; }
+html.og .hero-grid { grid-template-columns: minmax(0, 1.35fr) minmax(0, .65fr); }
+html.og .qr-mini { display: none; }
+html.og .fig { max-width: 470px; }

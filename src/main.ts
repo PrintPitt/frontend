@@ -61,6 +61,13 @@ document.querySelectorAll<HTMLButtonElement>('.fig-acts button').forEach(b => {
   b.disabled = true;
   b.addEventListener('click', () => { const id = (b.parentElement as HTMLElement).dataset.for!; figs[id]?.act(b.dataset.act!); });
 });
+let heroTouched = false, heroSeen = true;
+$('figHero').addEventListener('pointerdown', () => (heroTouched = true));
+document.querySelectorAll('.fig-acts[data-for="figHero"] button').forEach(b => b.addEventListener('click', () => (heroTouched = true)));
+new IntersectionObserver(es => (heroSeen = es[0].isIntersecting)).observe($('figHero'));
+const HERO_LOOP = ['Taruh dokumen', 'Copy!', 'Ambil hasil'];
+let heroStep = 0;
+if (!reduced) setInterval(() => { const f = figs.figHero; if (!f || heroTouched || !heroSeen || document.hidden) return; f.act(HERO_LOOP[heroStep++ % HERO_LOOP.length]); }, 4200);
 const idle = (fn: () => void) => ('requestIdleCallback' in window ? (window as any).requestIdleCallback(fn, { timeout: 1500 }) : setTimeout(fn, 600));
 addEventListener('load', () => idle(() => mountFig($('figHero'))));
 const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { mountFig(e.target as HTMLElement); io.unobserve(e.target); } }), { rootMargin: '120% 0px' });
@@ -76,7 +83,7 @@ const BAB = [
   ['CETAKANMU.', 'Pelanggan dapat NFT hasil cetakan, lengkap dengan namanya.'],
 ];
 const tur = $('tur'), arena = $('arena'), babTitle = $('babTitle');
-const OBJ = ['phone', 'vault', 'coin', 'ticket', 'shopA', 'shopB', 'klaim', 'blok', 'station', 'meter', 'result', 'nft'] as const;
+const OBJ = ['phone', 'vault', 'coin', 'coinA', 'coinB', 'sheet', 'ticket', 'shopA', 'shopB', 'klaim', 'blok', 'station', 'meter', 'result', 'nft'] as const;
 type Obj = typeof OBJ[number];
 const el = Object.fromEntries(OBJ.map(k => [k, $(k)])) as Record<Obj, HTMLElement>;
 const size: Record<string, [number, number]> = {};
@@ -144,15 +151,18 @@ function renderTur(s: number, g: number, dt: number) {
   ($('tkBar') as HTMLElement).style.transform = `scaleX(${(1 - clamp((s - 1.6) / 1.6) * .7).toFixed(3)})`;
   ($('tkBar') as HTMLElement).style.transformOrigin = '0 50%';
   // dua toko + klaim
-  const shopIn = ease(clamp((s - 1.5) / .5)) * (1 - ease(clamp((s - 2.55) / .4)));
-  place('shopA', lerp(-.1, .2, shopIn), .76, 1, shopIn);
-  place('shopB', lerp(1.1, .8, shopIn), .76, 1, shopIn);
+  // balapan: dua toko berlari ke tiket; Jaya tiba satu blok lebih dulu
+  const shopOut = 1 - ease(clamp((s - 2.55) / .4));
+  const rA = ease(clamp((s - 1.45) / .5)), rB = ease(clamp((s - 1.55) / .55));
+  place('shopA', lerp(-.12, .3, rA), lerp(.8, .7, rA), 1, Math.min(1, rA * 1.4) * shopOut, ` rotate(${((1 - rA) * -6).toFixed(2)}deg)`);
+  place('shopB', lerp(1.12, .72, rB), lerp(.8, .74, rB), 1, Math.min(1, rB * 1.4) * shopOut, ` rotate(${((1 - rB) * 6).toFixed(2)}deg)`);
   const won = s > 1.98;
   el.shopA.classList.toggle('win', won); $('shopATag').textContent = won ? 'klaim duluan ✓' : 'siap';
   $('shopBTag').textContent = won ? 'telat 1 blok' : 'siap';
   const kl = vis(s, 2.05, .3);
   place('klaim', .3, .6, .6 + kl * .45, kl, ` rotate(-6deg)`);
   place('blok', .5, .93, 1, vis(s, 2, .6));
+  $('phone').querySelector('.ph-btn')?.classList.toggle('pulse', s < .35);
   // stasiun kerja + meteran (waktu digulir oleh scroll di plateau bab 4)
   const tt = clamp((g - 3.25) / .55) * 15;
   const upah = upahSekarang(HARGA_MON, BATAS_KERJA, tt);
@@ -176,11 +186,23 @@ function renderTur(s: number, g: number, dt: number) {
   ($('rBarA') as HTMLElement).style.width = (fill * finalUpah / HARGA_MON * 100).toFixed(1) + '%';
   ($('rBarB') as HTMLElement).style.width = (fill * finalRefund / HARGA_MON * 100).toFixed(1) + '%';
   $('rA').textContent = '+' + fmt(finalUpah * fill) + ' MON'; $('rB').textContent = '+' + fmt(finalRefund * fill) + ' MON';
+  // koin terbagi dari brankas: kuning ke toko, ungu balik ke HP pelanggan
+  const sp = ease(clamp((s - 3.55) / .5));
+  const coinVis = clamp((s - 3.5) / .1) * (1 - clamp((s - 4.25) / .2));
+  place('coinA', lerp(va[0], .66, sp), lerp(va[1], .38, sp) - Math.sin(sp * Math.PI) * .12, 1, coinVis, ` rotate(${(sp * 400).toFixed(0)}deg)`);
+  place('coinB', lerp(va[0], ph[0], sp), lerp(va[1], ph[1], sp) - Math.sin(sp * Math.PI) * .16, 1, coinVis, ` rotate(${(-sp * 400).toFixed(0)}deg)`);
+  // lembar cetakan keluar dari stasiun lalu menjadi kartu NFT
+  const sh = ease(clamp((s - 4.15) / .35));
+  place('sheet', lerp(.3, .44, sh), lerp(.5, .46, sh), 1, clamp((s - 4.1) / .1) * (1 - clamp((s - 4.45) / .1)), ` rotate(${(sh * -10).toFixed(1)}deg)`);
   // NFT terbalik
   const nf = ease(clamp((s - 4.35) / .65));
   place('nft', lerp(.4, .66, nf), .5, lerp(.55, 1, nf), clamp((s - 4.3) / .3));
   ($('nft').firstElementChild as HTMLElement).style.transform = `rotateY(${((1 - nf) * -180).toFixed(1)}deg)`;
 }
+
+/* blok Monad berdetak tiap ±0,3 dtk saat bab rebutan tampil */
+let blokN = 12345;
+setInterval(() => { if (Math.abs(sNow - 2) < .7) { blokN++; $('blok').textContent = `blok #${blokN.toLocaleString('id-ID')} · 0,3 dtk`; } }, 300);
 
 /* ---------- KILAT (hero) ---------- */
 const kilat = $('kilatWord');
@@ -210,6 +232,9 @@ if (!reduced) { measure(); renderTur(0, 0, .016); }
 addEventListener('resize', () => { measure(); drawQR(); });
 document.fonts?.ready.then(measure);
 requestAnimationFrame(frame);
+
+// alat uji (hanya mode dev): render tur pada posisi g tertentu tanpa menunggu animasi
+if (import.meta.env.DEV) (window as any).__fk = { at(g: number) { measure(); const y = turTop + (g / 6) * (turH - VH); scrollTo(0, y); sNow = sTarget = chapterS(g); gNow = g; renderTur(sNow, g, .016); } };
 
 /* rel bab: klik untuk lompat */
 function babY(i: number) { return turTop + ((i + .55) / 6) * (turH - VH); }
@@ -295,6 +320,7 @@ addEventListener('keydown', e => {
   scrollTo({ top: target, behavior: reduced ? 'auto' : 'smooth' });
   if (!helpShown) { helpShown = true; const h = $('stageHelp'); h.hidden = false; setTimeout(() => (h.hidden = true), 3200); }
 });
+if (new URLSearchParams(location.search).has('og')) document.documentElement.classList.add('og');
 // ?panggung=1 → huruf lebih besar untuk proyektor
 if (new URLSearchParams(location.search).has('panggung')) document.documentElement.classList.add('panggung');
 document.documentElement.classList.remove('no-js');
