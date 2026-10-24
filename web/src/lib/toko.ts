@@ -2,14 +2,14 @@
 // kalau saldo MON nol, minta faucet backend dulu. GAS_LIMIT shared belum memuat dua fungsi ini, jadi pakai estimasi + 25%.
 import { teksValid } from '../../../shared/src/index.ts';
 import type { Akun } from './akun';
-import { mintaMon } from './backend';
+import { bacaKode, mintaMon } from './backend';
 import { dompet, kontrak, pub } from './chain';
 import { pesanError } from './tx';
 
 async function pastikanMon(akun: Akun) {
   const saldo = await pub.getBalance({ address: akun.address });
   if (saldo > 0n) return;
-  await mintaMon(akun.address);
+  await mintaMon(akun.address, bacaKode()); // mainnet: faucet wajib kode juri (diisi pengguna, disimpan setelah diterima)
   for (let i = 0; i < 30; i++) {
     await new Promise((r) => setTimeout(r, 500));
     if ((await pub.getBalance({ address: akun.address })) > 0n) return;

@@ -150,7 +150,8 @@ export const bacaKode = () => {
 };
 export const simpanKode = (kode: string) => {
   try {
-    localStorage.setItem(KUNCI_KODE, kode);
+    if (kode) localStorage.setItem(KUNCI_KODE, kode);
+    else localStorage.removeItem(KUNCI_KODE);
   } catch {}
 };
 
