@@ -5,10 +5,10 @@ import * as THREE from 'three';
 import { Fotokopi3D, Laminator3D, Printer3D, UNGU } from './Mesin3D';
 import { Model, MODEL } from './Model';
 import { Pekerja3D, type Bawa, type Gaya } from './Pekerja3D';
+import { D, L, POS_MESIN, TINGGI_MEJA, Z_BELAKANG, Z_DEPAN } from '../game3d/peta';
 
-export const LEBAR_TOKO = 12;
-export const DALAM_TOKO = 8;
-const TINGGI_MEJA = 0.78;
+export const LEBAR_TOKO = L;
+export const DALAM_TOKO = D;
 const TINGGI_DINDING = 2.4;
 
 /** Ukuran model setelah diskalakan ke lebar target. */
@@ -39,7 +39,7 @@ function Rim({ posisi, tumpuk = 4, warna = '#fbfaf3' }: { posisi: [number, numbe
   );
 }
 
-function Dokumen({ posisi, warna, putar = 0 }: { posisi: [number, number, number]; warna: string; putar?: number }) {
+export function Dokumen({ posisi, warna, putar = 0 }: { posisi: [number, number, number]; warna: string; putar?: number }) {
   return (
     <mesh position={posisi} rotation={[0, putar, 0]} castShadow>
       <boxGeometry args={[0.36, 0.02, 0.26]} />
@@ -63,7 +63,7 @@ function Pohon({ posisi, s = 1 }: { posisi: [number, number, number]; s?: number
   );
 }
 
-function Label({ posisi, children, warna = UNGU.m }: { posisi: [number, number, number]; children: ReactNode; warna?: string }) {
+export function Label({ posisi, children, warna = UNGU.m }: { posisi: [number, number, number]; children: ReactNode; warna?: string }) {
   return (
     <Html position={posisi} center distanceFactor={9} zIndexRange={[10, 0]}>
       <div className="label-3d" style={{ background: warna }}>
@@ -102,8 +102,8 @@ const gambarHarga = (g: CanvasRenderingContext2D, w: number, h: number) => {
   g.fillStyle = '#2a2163'; g.fillRect(12, 12, w - 24, h - 24);
   g.fillStyle = '#f4b829'; g.font = '58px "Lilita One", system-ui'; g.fillText('DAFTAR HARGA', 40, 86);
   g.font = '700 38px "Fredoka", system-ui'; g.fillStyle = '#fbfaf3';
-  [['Fotokopi KTP', '0,01'], ['Boarding pass', '0,01'], ['Laminating ijazah', '0,02'], ['Menu warung', '0,02']].forEach(([a, b], i) => {
-    g.fillText(a, 40, 160 + i * 58); g.fillText(`${b} MON`, 430, 160 + i * 58);
+  [['Fotokopi KTP', '5.000'], ['Boarding pass', '5.000'], ['Laminating ijazah', '10.000'], ['Menu warung', '10.000']].forEach(([a, b], i) => {
+    g.fillText(a, 40, 160 + i * 58); g.fillText(`Rp${b}`, 420, 160 + i * 58);
   });
 };
 const gambarPapan = (teks: string, latar: string) => (g: CanvasRenderingContext2D, w: number, h: number) => {
@@ -119,7 +119,7 @@ const gambarPoster = (g: CanvasRenderingContext2D, w: number, h: number) => {
   g.fillStyle = '#fbfaf3'; g.fillRect(10, 10, w - 20, h - 20);
   g.fillStyle = '#cf5038'; g.font = '64px "Lilita One", system-ui'; g.textAlign = 'center';
   g.fillText('PRINT · JILID', w / 2, 100); g.fillText('LAMINATING', w / 2, 172);
-  g.fillStyle = '#231e16'; g.font = '700 34px "Fredoka", system-ui'; g.fillText('buka 24 jam · bayar MON', w / 2, 232);
+  g.fillStyle = '#231e16'; g.font = '700 34px "Fredoka", system-ui'; g.fillText('buka 24 jam · bayar Rupiah', w / 2, 232);
 };
 
 /** Dinding krem toko fotokopi: les ungu di bawah, jendela di samping, papan harga + poster di belakang. */
@@ -218,7 +218,12 @@ export function Toko3D({
   pemain = [],
   pelanggan = [],
   progres,
+  children,
+  mesinJalan,
 }: {
+  mesinJalan?: boolean;
+  /** Isi dinamis game (barang, sorotan stasiun, bar progres). */
+  children?: ReactNode;
   warna?: string;
   nama?: string;
   pemain?: PemainToko[];
@@ -229,16 +234,12 @@ export function Toko3D({
   const konter = useUkuran(MODEL('Counter_Straight'), 1);
   const tMeja = TINGGI_MEJA;
   const dMeja = konter.z;
-  const zBelakang = -DALAM_TOKO / 2 + dMeja / 2 + 0.25;
-  const zDepan = DALAM_TOKO / 2 - dMeja / 2;
+  const zBelakang = Z_BELAKANG;
+  const zDepan = Z_DEPAN;
 
   const papanNama = useMemo(() => gambarPapan(`FOTOKOPI · ${nama}`, warna), [nama, warna]);
   const papanSerah = useMemo(() => gambarPapan('SERAH ▼', UNGU.d), []);
-  const posMesin = {
-    1: [-4.55, 0, zBelakang + 0.05] as [number, number, number],
-    2: [-0.6, tMeja, zBelakang] as [number, number, number],
-    3: [2.6, tMeja, zBelakang] as [number, number, number],
-  };
+  const posMesin = POS_MESIN;
 
   return (
     <group>
@@ -264,7 +265,7 @@ export function Toko3D({
       {[-2.5, -1.5, -0.5, 0.5, 1.5, 2.5, 3.5, 4.5].map((x, i) => (
         <Model key={x} url={MODEL(i % 3 === 1 ? 'Counter_Drawers' : 'Counter_Doors')} lebar={1} tinggi={TINGGI_MEJA} posisi={[x, 0, zBelakang]} />
       ))}
-      <Fotokopi3D posisi={posMesin[1]} skala={1.5} jalan={progres?.kode === 1} />
+      <Fotokopi3D posisi={posMesin[1]} skala={1.5} jalan={progres?.kode === 1 || mesinJalan} />
       <Printer3D posisi={posMesin[2]} skala={3} />
       <Laminator3D posisi={posMesin[3]} skala={3.3} />
       <Rim posisi={[4.6, tMeja, zBelakang]} tumpuk={3} />
@@ -281,8 +282,6 @@ export function Toko3D({
       {[-0.5, 0.5].map((x) => (
         <Model key={x} url={MODEL('Counter_Straight')} lebar={1} tinggi={TINGGI_MEJA} posisi={[x, 0, 0.6]} />
       ))}
-      <Dokumen posisi={[-0.55, tMeja + 0.01, 0.6]} warna="#76a0e2" putar={0.2} />
-      <Dokumen posisi={[0.5, tMeja + 0.01, 0.65]} warna="#f4b829" putar={-0.15} />
 
       {/* meja kanan: kardus + rak */}
       {[-1.5, -0.5].map((z) => (
@@ -325,6 +324,8 @@ export function Toko3D({
           </mesh>
         </Billboard>
       )}
+
+      {children}
 
       {/* pemain + pelanggan antre di luar loket */}
       {pemain.map((p, i) => (

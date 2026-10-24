@@ -34,3 +34,27 @@
 .ruang-karakter { flex: 1; }
 .panggung-lobi .slot-alamat { background: #fbfaf3; border-radius: 999px; padding: 2px 10px; opacity: 1; border: 2px solid #231e16; }
 .panggung-lobi .slot-tombol { color: #fff; opacity: 0.85; }
+
+/* ---------- game /main ---------- */
+.timer-3d .timer-label { font: 700 0.85rem 'Fredoka', system-ui; margin-top: 4px; }
+.prompt-wadah, .toast-wadah { position: absolute; left: 0; right: 0; display: flex; justify-content: center; pointer-events: none; z-index: 25; }
+.prompt-wadah { bottom: 62px; }
+.toast-wadah { top: 128px; z-index: 30; }
+.prompt-3d { display: flex; align-items: center; gap: 10px; white-space: nowrap; background: #fbfaf3; color: #231e16; border: 3px solid #231e16; border-radius: 999px; box-shadow: 0 4px 0 #231e16; padding: 7px 20px 8px 10px; font: 700 1.05rem 'Fredoka', system-ui; }
+.kapsul-tombol { background: #231e16; color: #fbfaf3; border-radius: 9px; padding: 2px 10px 4px; font: 0.95rem 'Lilita One', system-ui; box-shadow: 0 3px 0 #836ef9; }
+.kontrol-3d { position: absolute; left: 0; right: 0; bottom: 24px; text-align: center; z-index: 20; color: #e9e4ff; font: 500 0.85rem 'Fredoka', system-ui; text-shadow: 0 2px 0 #231e16; pointer-events: none; }
+.toast-3d { max-width: min(640px, 90vw); text-align: center; background: #fbfaf3; color: #231e16; border: 3px solid #231e16; border-radius: 16px; box-shadow: 0 5px 0 #231e16; padding: 10px 22px 12px; font: 1.3rem 'Lilita One', system-ui; }
+.toast-3d.ok { background: #5fd39a; }
+.toast-3d.kalah { background: #ef6a4c; color: #fbfaf3; -webkit-text-stroke: 0.5px #231e16; }
+.pilih-file { position: absolute; left: 50%; bottom: 118px; transform: translateX(-50%); z-index: 26; width: min(430px, 92vw); background: #2a2163; color: #fbfaf3; border: 3px solid #231e16; border-radius: 16px; box-shadow: 0 6px 0 #231e16; padding: 12px 14px; font-family: 'Fredoka', system-ui; }
+.pilih-file h4 { margin: 0 0 6px; font: 1.05rem 'Lilita One', system-ui; color: #f4b829; letter-spacing: 0.3px; }
+.pilih-file button { display: flex; align-items: center; gap: 10px; width: 100%; margin-top: 6px; padding: 8px 10px; background: #fbfaf3; color: #231e16; border: 2px solid #231e16; border-radius: 10px; font: 700 1rem 'Fredoka', system-ui; text-align: left; cursor: pointer; }
+.pilih-file button:hover { background: #fff3c4; }
+.pilih-file button b { background: #231e16; color: #fbfaf3; border-radius: 6px; padding: 0 8px 1px; font: 0.95rem 'Lilita One', system-ui; }
+.pilih-file p { margin: 8px 0 0; font-size: 0.82rem; opacity: 0.85; }
+.masuk-3d { position: absolute; inset: 0; z-index: 40; display: grid; place-items: center; background: rgba(36, 26, 82, 0.45); }
+.kartu-masuk { width: min(380px, 90vw); display: grid; gap: 10px; text-align: center; background: #fbfaf3; color: #231e16; border: 3px solid #231e16; border-radius: 22px; box-shadow: 0 8px 0 #231e16; padding: 24px 28px; font-family: 'Fredoka', system-ui; }
+.kartu-masuk h2 { margin: 0; font: 2rem 'Lilita One', system-ui; color: #836ef9; -webkit-text-stroke: 1px #231e16; }
+.kartu-masuk p { margin: 0 0 6px; }
+.kartu-masuk .tautan { color: #2a2163; }
+.status-3d { position: absolute; top: 18px; left: 50%; transform: translateX(-50%); z-index: 30; background: #231e16; color: #fbfaf3; border-radius: 999px; padding: 6px 16px; font: 700 0.9rem 'Fredoka', system-ui; }
