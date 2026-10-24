@@ -15,7 +15,7 @@ export function PenyediaAuth({ children }: { children: ReactNode }) {
       appId={PRIVY_APP_ID}
       config={{
         loginMethods: ['email', 'google'],
-        embeddedWallets: { ethereum: { createOnLogin: 'users-without-wallets' } },
+        embeddedWallets: { ethereum: { createOnLogin: 'users-without-wallets' }, showWalletUIs: false },
         appearance: { theme: 'light', accentColor: '#836ef9', logo: '/favicon.svg' },
         defaultChain: chain,
         supportedChains: [chain],
