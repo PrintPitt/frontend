@@ -1,5 +1,5 @@
 // Simulasi ringan untuk bagian Live saat belum tersambung ke kontrak. Selalu berlabel SIMULASI.
-import { HARGA_MON, BATAS_KERJA } from './config';
+import { HARGA, BATAS_KERJA, rpAngka } from './config';
 
 export type Status = 'Open' | 'Claimed' | 'Finished' | 'Expired';
 export interface Order {
@@ -13,17 +13,17 @@ export interface Tx { kind: string; id: number; t: number }
 const TEKS = [
   'Analisis Antrean Fotokopi Depan Kampus', 'Print dari WA bisa, mas?', 'Bolak-balik 3 kali ya',
   'Laporan KKN Desa Sumberan', 'Menu Warung Bu Tini', 'CV Fresh Graduate 2026', 'Undangan Nikah Dika & Sari',
-  'Bayar QRIS, sinyal ilang', 'Hardcover tinta emas', 'Proposal Skripsi Bab 1-3', 'KTP bolak-balik 10 lembar', 'Ijazah laminating',
+  'Bayar QRIS, sinyal ilang', 'Boarding JOG-CGK 05.40', 'Proposal Skripsi Bab 1-3', 'KTP bolak-balik 10 lembar', 'Ijazah laminating',
 ];
 const JENIS = [
   { label: 'Fotokopi KTP', langkah: 1 },
-  { label: 'Skripsi Hardcover', langkah: 2 },
+  { label: 'Menu Warung', langkah: 2 },
   { label: 'Laminating Ijazah', langkah: 2 },
 ];
 
 export class MockSim {
   orders = new Map<number, Order>();
-  shops: Shop[] = [{ nama: 'Fotokopi Jaya', omzet: 0, aktif: null }, { nama: 'Sinar Copy', omzet: 0, aktif: null }];
+  shops: Shop[] = [{ nama: 'Toko A', omzet: 0, aktif: null }, { nama: 'Toko B', omzet: 0, aktif: null }];
   txs: Tx[] = [];
   total = 417;
   private nextId = 418;
@@ -63,16 +63,16 @@ export class MockSim {
         const target = o.langkah * (6 + (o.id % 5)); // 6–10 dtk per langkah
         o.langkahSelesai = Math.min(o.langkah, Math.floor(kerja / (target / o.langkah)));
         if (o.id % 7 === 0 && kerja > o.batasKerja) { // 1 dari 7 dibiarkan telat → refund penuh
-          o.status = 'Expired'; o.refund = HARGA_MON; o.upah = 0; o.kerja = Math.round(kerja);
+          o.status = 'Expired'; o.refund = HARGA; o.upah = 0; o.kerja = Math.round(kerja);
           if (o.toko !== null) this.shops[o.toko].aktif = null; this.tx('OrderExpired', o.id);
         } else if (o.id % 7 !== 0 && kerja >= target) {
           o.status = 'Finished'; o.kerja = Math.round(kerja);
-          o.upah = Math.floor(HARGA_MON * (o.batasKerja - o.kerja) / o.batasKerja * 1e4) / 1e4; o.refund = Math.round((HARGA_MON - o.upah) * 1e4) / 1e4;
+          o.upah = Math.floor(HARGA * (o.batasKerja - o.kerja) / o.batasKerja); o.refund = HARGA - o.upah;
           if (o.toko !== null) { this.shops[o.toko].omzet += o.upah; this.shops[o.toko].aktif = null; }
           this.tx('OrderFinished', o.id);
         }
       }
-      if (o.status === 'Open' && now - o.dibuat > 45) { o.status = 'Expired'; o.refund = HARGA_MON; this.tx('OrderExpired', o.id); }
+      if (o.status === 'Open' && now - o.dibuat > 45) { o.status = 'Expired'; o.refund = HARGA; this.tx('OrderExpired', o.id); }
     }
     // buang yang sudah lama selesai
     for (const [id, o] of this.orders) if ((o.status === 'Finished' || o.status === 'Expired') && now - o.dibuat > 70) this.orders.delete(id);
@@ -81,8 +81,8 @@ export class MockSim {
 }
 
 export function upahSekarang(harga: number, batas: number, kerja: number) {
-  return Math.max(0, harga * (batas - kerja) / batas);
+  return Math.max(0, Math.floor(harga * (batas - kerja) / batas)); // dibulatkan ke bawah seperti _payout di kontrak
 }
-export function fmtMon(x: number, d = 4) {
-  return x.toFixed(d).replace('.', ',') + ' MON';
+export function fmtRp(x: number) {
+  return 'Rp' + rpAngka(x);
 }

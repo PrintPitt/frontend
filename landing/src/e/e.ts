@@ -9,7 +9,8 @@ import './e.css';
 import QRCode from 'qrcode';
 import type { Bagian, Ctx, FigApi, FigName } from '../ctx';
 import { t, lang } from '../i18n';
-import { MockSim, fmtMon, upahSekarang, type Order } from '../mock';
+import { rpAngka } from '../config';
+import { MockSim, fmtRp, upahSekarang, type Order } from '../mock';
 
 type K = 'front' | 'mid' | 'back';
 interface Slot {
@@ -33,8 +34,9 @@ const mod = (a: number, n: number) => ((a % n) + n) % n;
 const sstep = (a: number, b: number, x: number) => { const k = clamp((x - a) / (b - a), 0, 1); return k * k * (3 - 2 * k); };
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
 /** angka sesuai bahasa: EN 0.0133 · ID 0,0133 */
-const num = (x: number, d = 4) => { const s = x.toFixed(d); return lang === 'id' ? s.replace('.', ',') : s; };
-const mon = (x: number) => (lang === 'id' ? fmtMon(x) : `${x.toFixed(4)} MON`);
+/** Tanpa `d` = nominal Rupiah bulat ("6.666"); dengan `d` = angka desimal (detik). */
+const num = (x: number, d?: number) => { if (d === undefined) return rpAngka(x); const s = x.toFixed(d); return lang === 'id' ? s.replace('.', ',') : s; };
+const mon = (x: number) => fmtRp(x);
 const LOC = lang === 'id' ? 'id-ID' : 'en-US';
 /** teks kamus dengan placeholder {nama} */
 const tf = (key: string, v: Record<string, string | number>) => t(key).replace(/\{(\w+)\}/g, (_m, k: string) => String(v[k] ?? ''));
@@ -56,11 +58,10 @@ let secs: HTMLElement[] = [];
 
 /* ================= isi HTML ================= */
 function template(c: Ctx): string {
-  const H = c.HARGA_MON, B = c.BATAS_KERJA;
-  const H2 = num(H, 2);
+  const H = c.HARGA, B = c.BATAS_KERJA;
+  const H2 = num(H);
   const exU = upahSekarang(H, B, EX);
-  const fee = String(c.BISNIS.feeRuangan || '—'); // apa adanya dari config ([ISI] sampai trio sepakat)
-  const isi = /\[ISI\]/.test(fee);
+  const BZ = c.BISNIS;
   const live = c.MODE === 'LIVE' && !!c.URL_APP;
   const pesan = absUrl(c.URL_PESAN);
   const NM = t('e.name'), SA = t('e.shop.a'), SB = t('e.shop.b'), U = t('e.unit.s');
@@ -98,7 +99,7 @@ function template(c: Ctx): string {
 
 <section class="e-sec e-meter" id="E-rumus" aria-labelledby="E-rumus-h">
   <div class="e-head"><h2 class="e-lbl" id="E-rumus-h">${t('e.r.lbl')}</h2><span class="e-ord">${tf('e.r.order', { kind: t('e.order.kind'), title: t('e.order.title'), name: NM, h: H2 })}</span></div>
-  <div class="e-num" aria-hidden="true" title="${esc(t('e.r.numTitle'))}"><span class="e-upah">${num(H)}</span><span class="e-unit">MON</span></div>
+  <div class="e-num" aria-hidden="true" title="${esc(t('e.r.numTitle'))}"><span class="e-upah">${num(H)}</span><span class="e-unit">IDR</span></div>
   <div class="e-mbar" aria-hidden="true"><i></i><b></b></div>
   <div class="e-sides">
     <div class="e-side">${t('e.r.toShop')}<b>${SA}</b><span class="e-upahS">${mon(H)}</span></div>
@@ -165,13 +166,13 @@ function template(c: Ctx): string {
   <div class="e-biz">
     <div class="e-head"><h3 class="e-lbl">${t('e.b.lbl')}</h3><span class="e-ord">${t('e.b.sub')}</span></div>
     <div class="e-steps">
-      <div class="e-step" data-sp=".2" data-dir="1"><span class="e-step-n">01</span><span>${t('e.b.1')}</span>${ARR('')}</div>
-      <div class="e-step e-i1" data-sp=".32" data-dir="-1"><span class="e-step-n">02</span><span>${t('e.b.2')}</span>${ARR('')}</div>
-      <div class="e-step e-i2" data-sp=".16" data-dir="1"><span class="e-step-n">03</span><span>${t('e.b.3')}</span></div>
+      <div class="e-step" data-sp=".2" data-dir="1"><span class="e-step-n">01</span><span>${tf('e.b.1', { v: BZ.feePlatform })}</span>${ARR('')}</div>
+      <div class="e-step e-i1" data-sp=".32" data-dir="-1"><span class="e-step-n">02</span><span>${tf('e.b.2', { v: BZ.feeRelay })}</span>${ARR('')}</div>
+      <div class="e-step e-i2" data-sp=".16" data-dir="1"><span class="e-step-n">03</span><span>${tf('e.b.3', { v: BZ.pro })}</span></div>
     </div>
     <div class="e-fee">
-      <p>${t('e.b.p')}</p>
-      <div class="e-tix"><span>${t('e.b.fee')}</span><b class="e-fee-v${isi ? ' e-isi' : ''}">${esc(fee)}</b></div>
+      <p>${tf('e.b.p', { fee: BZ.feePlatform, relay: BZ.feeRelay, pro: BZ.pro, r: BZ.radius })}</p>
+      <div class="e-tix"><span>${t('e.b.fee')}</span><b class="e-fee-v">${esc(BZ.feePlatform)}</b></div>
     </div>
   </div>
 </section>
@@ -213,7 +214,7 @@ function mount(root: HTMLElement, c: Ctx): void {
   if (root.dataset.eMounted) return;
   root.dataset.eMounted = '1';
   const RM = c.reduced;
-  const HARGA = c.HARGA_MON, BATAS = c.BATAS_KERJA, TMAX = BATAS + 5;
+  const HARGA = c.HARGA, BATAS = c.BATAS_KERJA, TMAX = BATAS + 5;
   const wage = (x: number) => (x > BATAS ? 0 : upahSekarang(HARGA, BATAS, x));
   const HINT = t('e.fig.hint'), NM = t('e.name'), SA = t('e.shop.a'), SB = t('e.shop.b');
 
@@ -380,21 +381,21 @@ function mount(root: HTMLElement, c: Ctx): void {
   function spawnTick(u: number) { // detik berjalan: sepotong upah lepas ke pelanggan, satu digit rontok ke toko
     const o = origin();
     spawn('+' + num(DELTA), o.l + o.w * rnd(0.7, 0.95), o.t + o.h * rnd(0.3, 0.6), rnd(240, 420), rnd(-180, -40), 'e-pr', rnd(1.1, 1.6));
-    const s = num(u).replace(/[.,]/, '');
+    const s = num(u).replace(/\D/g, '');
     spawn(s.charAt((Math.random() * s.length) | 0), o.l + o.w * rnd(0.05, 0.5), o.t + o.h * rnd(0.2, 0.8), rnd(-420, -200), rnd(-160, -20), 'e-pl', rnd(0.9, 1.4));
   }
   function spawnBack(u: number) { // waktu digeser mundur: potongan kembali ke toko
     const o = origin();
     spawn('+' + num(DELTA * 2), o.l + o.w * rnd(0.3, 0.7), o.t + o.h * rnd(0.3, 0.6), rnd(-460, -260), rnd(-180, -40), 'e-pl', rnd(1.1, 1.6));
-    const s = num(HARGA - u).replace(/[.,]/, '');
+    const s = num(HARGA - Math.floor(u)).replace(/\D/g, '');
     spawn(s.charAt((Math.random() * s.length) | 0), o.l + o.w * rnd(0.6, 0.95), o.t + o.h * rnd(0.2, 0.8), rnd(200, 380), rnd(-160, -20), 'e-pr', rnd(0.9, 1.4));
   }
   let lastBurst = 0;
   function burst(u: number, r: number) { // angka pecah: upah ke kiri (toko), refund ke kanan (pelanggan)
     const now = performance.now(); if (now - lastBurst < 500) return; lastBurst = now;
     const o = origin();
-    for (let i = 0; i < 12; i++) spawn(i % 3 ? num(u).charAt(2 + (i % 4)) : num(u), o.l + o.w * rnd(0, 0.5), o.t + o.h * rnd(0.1, 0.9), rnd(-640, -220), rnd(-260, 60), i % 3 ? 'e-pl' : 'e-pl e-big', rnd(1.2, 1.9));
-    for (let i = 0; i < 12; i++) spawn(i % 3 ? num(r).charAt(2 + (i % 4)) : num(r), o.l + o.w * rnd(0.5, 1), o.t + o.h * rnd(0.1, 0.9), rnd(220, 640), rnd(-260, 60), i % 3 ? 'e-pr' : 'e-pr e-big', rnd(1.2, 1.9));
+    for (let i = 0; i < 12; i++) spawn(i % 3 ? num(u).replace(/\D/g, '').charAt(i % 4) || '0' : num(u), o.l + o.w * rnd(0, 0.5), o.t + o.h * rnd(0.1, 0.9), rnd(-640, -220), rnd(-260, 60), i % 3 ? 'e-pl' : 'e-pl e-big', rnd(1.2, 1.9));
+    for (let i = 0; i < 12; i++) spawn(i % 3 ? num(r).replace(/\D/g, '').charAt(i % 4) || '0' : num(r), o.l + o.w * rnd(0.5, 1), o.t + o.h * rnd(0.1, 0.9), rnd(220, 640), rnd(-260, 60), i % 3 ? 'e-pr' : 'e-pr e-big', rnd(1.2, 1.9));
   }
   function updateParts(dt: number) {
     const s = dt / 1000;
@@ -416,7 +417,7 @@ function mount(root: HTMLElement, c: Ctx): void {
   const lateText = () => tf('e.r.lateMsg', { max: BATAS, h: num(HARGA), name: NM });
   function writeWage(u: number) {
     const s = num(u); if (s === M.shown) return; M.shown = s;
-    upahEl.textContent = s; upahS.textContent = mon(u); refundEl.textContent = mon(HARGA - u);
+    upahEl.textContent = s; upahS.textContent = mon(u); refundEl.textContent = mon(HARGA - Math.floor(u));
   }
   function renderMeter() {
     const late = M.t > BATAS, u = wage(M.t);
@@ -427,14 +428,14 @@ function mount(root: HTMLElement, c: Ctx): void {
     if (document.activeElement !== range || M.mode === 'auto') range.value = String(M.t);
     range.setAttribute('aria-valuetext', late
       ? tf('e.r.valLate', { max: BATAS, h: num(HARGA) })
-      : tf('e.r.val', { t: num(M.t, 1), u: num(u), r: num(HARGA - u) }));
+      : tf('e.r.val', { t: num(M.t, 1), u: num(u), r: num(HARGA - Math.floor(u)) }));
     timeBox.classList.toggle('e-late', late);
     if (RM) writeWage(u);
   }
   function statusManual() {
     const u = wage(M.t);
     statusEl.textContent = M.t > BATAS ? lateText()
-      : tf('e.r.if', { t: num(M.t, 1), shop: SA, u: num(u), r: num(HARGA - u), name: NM });
+      : tf('e.r.if', { t: num(M.t, 1), shop: SA, u: num(u), r: num(HARGA - Math.floor(u)), name: NM });
   }
   function autoTick() {
     if (M.phase === 'run') {
@@ -443,7 +444,7 @@ function mount(root: HTMLElement, c: Ctx): void {
       if (fin !== null && M.t >= fin) {
         M.t = fin; M.phase = 'done'; M.hold = 0; renderMeter();
         const u = wage(fin);
-        statusEl.textContent = tf('e.r.done', { t: num(fin, 1), shop, u: num(u), r: num(HARGA - u), name: NM });
+        statusEl.textContent = tf('e.r.done', { t: num(fin, 1), shop, u: num(u), r: num(HARGA - Math.floor(u)), name: NM });
         burst(u, HARGA - u);
         act('front', 'Ambil hasil', true);
       } else if (M.t > BATAS) {
