@@ -31,6 +31,14 @@ const PESAN: Record<string, string> = {
   Late: 'Lewat batas waktu kerja',
   NotExpired: 'Belum lewat batas waktu',
   NothingToWithdraw: 'Tidak ada dana tertunda',
+  BadPages: 'Jumlah halaman tidak valid (1–500)',
+  NotReady: 'Order belum siap diserahkan',
+  BadCode: 'QR tidak cocok dengan order ini',
+  NotCustomer: 'Hanya pemesan yang bisa komplain',
+  TooLate: 'Batas waktu komplain sudah lewat',
+  NotDisputed: 'Order tidak sedang disengketakan',
+  ERC20InsufficientBalance: 'Saldo tIDRX tidak cukup',
+  ERC20InsufficientAllowance: 'Izin token (approve) kurang',
 };
 
 export class GagalTx extends Error {
@@ -91,3 +99,34 @@ export async function kirim(akun: Akun, fn: FnTulis, args: readonly unknown[], v
   });
   return { hash, receipt, events };
 }
+
+const tidur = (ms: number) => new Promise((r) => setTimeout(r, ms));
+/** Revert yang bisa terjadi karena RPC publik tertinggal beberapa blok setelah claim / langkah sebelumnya. */
+// 'Transaksi gagal' = revert yang simulasinya sekarang lolos (state RPC sudah menyusul).
+const BISA_ULANG = ['Order sudah tidak dikerjakan', 'Ini bukan order tokomu', 'Urutan langkah salah', 'Transaksi gagal'];
+
+/**
+ * completeStep yang tahan RPC lambat: tunggu sebentar sampai `getOrder` memperlihatkan order ini Claimed oleh kita
+ * (supaya tidak membayar tx yang pasti revert), lalu kirim; revert karena state tertinggal diulang maks. 2x.
+ */
+export async function kirimLangkah(akun: Akun, id: bigint, kode: number): Promise<HasilTx> {
+  for (let i = 0; i < 10; i++) {
+    try {
+      const o = await pub.readContract({ ...kontrak, functionName: 'getOrder', args: [id] });
+      if (o.status === 2 && o.toko.toLowerCase() === akun.address.toLowerCase()) break;
+      if (o.status > 2) break; // sudah lewat Claimed: biarkan tx menjelaskan alasannya
+    } catch {
+      break;
+    }
+    await tidur(400);
+  }
+  for (let coba = 0; ; coba++) {
+    try {
+      return await kirim(akun, 'completeStep', [id, kode]);
+    } catch (e) {
+      if (coba >= 2 || !(e instanceof GagalTx) || !BISA_ULANG.includes(e.message)) throw e;
+      await tidur(1000);
+    }
+  }
+}
+

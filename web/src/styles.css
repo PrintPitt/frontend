@@ -205,3 +205,11 @@ body[data-halaman='layar'] { overflow: hidden; }
 [data-halaman='layar'] .stat .muted, [data-halaman='layar'] .kartu .muted, [data-halaman='layar'] .kartu-qr .muted, [data-halaman='layar'] .omzet .muted, [data-halaman='pesan'] .kartu .muted, [data-halaman='toko'] .kartu .muted { color: var(--muted); }
 [data-halaman='layar'] .tombol-suara { background: #fbfaf3; border: 3px solid #231e16; border-radius: 14px; box-shadow: 0 4px 0 #231e16; opacity: 1; color: #231e16; }
 [data-halaman='layar'] .tombol-suara:not(.nyala) { opacity: 0.55; }
+
+/* /toko v2.1: alat toko (lokasi, Pro, pindai QR) dan daftar order Siap */
+.toko-alat { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 0; }
+.pindai-qr { max-width: 420px; margin: 10px 0; }
+.baris-manual { display: flex; gap: 8px; margin-top: 8px; }
+.baris-manual input { flex: 1; min-width: 0; font: inherit; font-family: var(--mono); font-size: 0.8rem; padding: 8px; border-radius: 10px; border: 1px solid var(--garis-2); background: var(--panel-2); color: inherit; }
+.baris-siap { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; padding: 4px 0; }
+.form-teks input[type='file'] { font-size: 0.85rem; padding: 8px; }

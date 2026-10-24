@@ -5,13 +5,16 @@ import '@fontsource/fredoka/700.css';
 import '@fontsource/lilita-one';
 import './styles.css';
 import { NAMA } from './lib/merek';
+import { RequireAuth, RUTE_PUBLIK } from './lib/auth';
 import { useJalur } from './lib/navigasi';
 import { PenyediaAuth } from './lib/privy';
 
 // Kode tiap halaman dipisah: HP penonton (/pesan) tidak ikut mengunduh /layar dan /toko.
+// Landing marketing ada di app terpisah (`landing/`, printpitt-landing.vercel.app); `/` app langsung ke lobi.
+const Lobi = lazy(() => import('./pages/Lobi'));
 const HALAMAN: Record<string, React.LazyExoticComponent<() => React.JSX.Element | null>> = {
-  '/': lazy(() => import('./pages/Landing')),
-  '/lobi': lazy(() => import('./pages/Lobi')),
+  '/': Lobi,
+  '/lobi': Lobi,
   '/main': lazy(() => import('./pages/Main')),
   '/pesan': lazy(() => import('./pages/Pesan')),
   '/toko': lazy(() => import('./pages/Toko')),
@@ -38,8 +41,9 @@ function Beranda() {
 function Router() {
   const path = useJalur();
   const Halaman = path === '/dev' ? Beranda : (HALAMAN[path] ?? Beranda);
-  document.body.dataset.halaman = document.documentElement.dataset.halaman = path.slice(1) || 'beranda';
-  return <Halaman key={path} />;
+  document.body.dataset.halaman = document.documentElement.dataset.halaman = path.slice(1) || 'lobi'; // `/` = lobi
+  // semua halaman internal lewat satu gerbang login (lib/auth.tsx); hanya /masuk yang publik
+  return RUTE_PUBLIK.has(path) ? <Halaman key={path} /> : <RequireAuth key={path}><Halaman /></RequireAuth>;
 }
 document.title = NAMA;
 

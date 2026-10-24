@@ -1,5 +1,5 @@
 // Konfigurasi chain, client viem, dan contract untuk semua halaman.
-import { createPublicClient, createWalletClient, http, webSocket, type Account, type Chain, type Hex, type WalletClient } from 'viem';
+import { createPublicClient, createWalletClient, http, webSocket, type Account, type Chain, type Hex, type Transport, type WalletClient } from 'viem';
 import { anvil, monadTestnet } from 'viem/chains';
 import { deploymentUntuk, fotokopiKilatAbi } from '../../../shared/src/index.ts';
 
@@ -17,7 +17,7 @@ export const chain: Chain = {
   rpcUrls: { default: { http: [RPC_URL], ...(WS_URL ? { webSocket: [WS_URL] } : {}) } },
 };
 
-type Deployment = { address: string; tidrx?: string; batasAntre: number; deployBlock?: number };
+type Deployment = { address: string; tidrx?: string; batasAntre: number; batasJemput?: number; batasSengketa?: number; deployBlock?: number };
 function cariDeployment(): Deployment | undefined {
   try {
     return deploymentUntuk(chain.id) as Deployment;
@@ -33,9 +33,35 @@ export const kontrak = { address: alamat, abi: fotokopiKilatAbi } as const;
 /** Token Rupiah (tIDRX) untuk pembayaran escrow. */
 export const TIDRX = (env.VITE_TIDRX_ADDRESS || dep?.tidrx) as Hex;
 export const DEPLOY_BLOCK = BigInt(dep?.deployBlock ?? 0);
+/** Detik setelah Siap sebelum order bisa ditutup tanpa serah terima (immutable di contract v2). */
+export const BATAS_JEMPUT = dep?.batasJemput ?? 600;
+/** v2.2: sengketa yang tidak diputuskan operator dalam waktu ini (setelah batas jemput) dibagi 50/50 oleh keeper (`tutupSengketa`). */
+export const BATAS_SENGKETA = dep?.batasSengketa ?? 86_400;
+
+/**
+ * RPC publik Monad membatasi 15 call/dtk per IP (error -32011, juga per call di dalam batch) dan viem tidak mengulangnya.
+ * Ulangi dengan jeda bertambah supaya muat awal halaman (katalog + toko ±15 read) tidak gagal total.
+ */
+function ulangSaatDibatasi(dasar: Transport): Transport {
+  return (opts) => {
+    const t = dasar(opts);
+    const request: typeof t.request = async (args, o) => {
+      for (let i = 0; ; i++) {
+        try {
+          return await t.request(args, o);
+        } catch (e) {
+          const dibatasi = (e as { code?: number }).code === -32011 || /requests limited/i.test(String((e as Error)?.message));
+          if (!dibatasi || i >= 4) throw e;
+          await new Promise((r) => setTimeout(r, 400 * 2 ** i + Math.random() * 300));
+        }
+      }
+    };
+    return { ...t, request };
+  };
+}
 
 /** HTTP dengan JSON-RPC batch: banyak read digabung jadi satu request (hemat rate limit). */
-export const pub = createPublicClient({ chain, transport: http(RPC_URL, { batch: { wait: 16 } }), pollingInterval: 300 });
+export const pub = createPublicClient({ chain, transport: ulangSaatDibatasi(http(RPC_URL, { batch: { wait: 16 } })), pollingInterval: 300 });
 
 /** Satu koneksi WebSocket untuk event live (/layar, /toko). Tanpa WS_URL jatuh ke polling HTTP. */
 export const pubLive = WS_URL

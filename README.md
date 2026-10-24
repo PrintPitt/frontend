@@ -25,4 +25,4 @@ React + Vite + three.js (React Three Fiber). Halaman: `/` landing, `/lobi`, `/ma
 cd web && npm install && npm run dev
 ```
 
-Catatan: `shared/` di repo ini adalah snapshot ABI lama (pembayaran MON) yang dipakai `web/` saat ini; akan diganti `@printpitt/shared` (tIDRX + permit + relayer) begitu contract final.
+Catatan: `shared/src/` di repo ini adalah salinan `@printpitt/shared` dari repo `PrintPitt/contracts` (folder `shared/src/`, contract v2.2 `0x08b7…c959`). Setelah contract di-deploy ulang, salin lagi `index.ts` dan `fotokopiKilat.generated.ts` ke sini.
