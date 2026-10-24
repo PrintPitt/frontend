@@ -141,3 +141,20 @@ body[data-halaman='layar'] { overflow: hidden; }
 .peringkat { margin: 2vw auto 1.2vw; min-width: 28vw; display: grid; gap: 0.5em; }
 .baris-peringkat { display: flex; justify-content: space-between; gap: 2em; font-family: var(--mono); font-size: 1.3vw; padding: 0.5em 1em; border: 1px solid var(--garis-2); border-radius: 10px; background: var(--panel); }
 .baris-peringkat:first-child { border-color: var(--aksen); }
+
+/* /pesan v2: saldo Rupiah, isi saldo, rincian biaya */
+.chip-saldo { cursor: pointer; color: inherit; }
+.chip-saldo .plus { color: var(--aksen); font-weight: 800; margin-left: 4px; }
+.isi-saldo { display: grid; gap: 10px; border-color: var(--aksen); }
+.isi-saldo-kepala { display: flex; justify-content: space-between; align-items: center; }
+.pilih-nominal { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.pilih-nominal button { background: var(--panel-2); border: 1px solid var(--garis-2); border-radius: 10px; padding: 10px 4px; font-weight: 700; font-family: var(--mono); color: inherit; cursor: pointer; }
+.pilih-nominal.metode button { font-family: inherit; }
+.pilih-nominal button.aktif { border-color: var(--aksen); background: var(--aksen-lembut); color: var(--aksen); }
+.tagihan { display: grid; gap: 10px; justify-items: stretch; }
+.qr-bayar { width: 11em; justify-self: center; background: #f6f6f5; border-radius: 12px; padding: 6px; }
+.qr-bayar svg { display: block; width: 100%; height: auto; }
+.va { display: grid; gap: 2px; text-align: center; }
+.va-no { font-family: var(--mono); font-size: 1.5rem; letter-spacing: 0.06em; }
+.rincian { display: grid; gap: 2px; font-family: var(--mono); margin: 8px 0 0; }
+.ok-teks { color: var(--ok); font-weight: 700; text-align: center; margin: 0; }

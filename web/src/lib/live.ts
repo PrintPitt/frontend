@@ -31,7 +31,7 @@ export type LiveState = {
   kejadian: Kejadian[];
 };
 
-const URUTAN: Record<StatusOrder, number> = { None: 0, Open: 1, Claimed: 2, Finished: 3, Expired: 3 };
+const URUTAN: Record<StatusOrder, number> = { None: 0, Open: 1, Claimed: 2, Siap: 3, Sengketa: 4, Finished: 5, Expired: 5, Diputuskan: 5 };
 
 let state: LiveState = {
   siap: false,
@@ -107,6 +107,9 @@ function terapkan(logs: LogAny[]) {
                 sesi: s.sesiId,
                 kerja: 0,
                 teks: a.teks,
+                halaman: 1,
+                siapPada: 0,
+                kodeHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
               }),
               { kunci, jenis: 'baru', id, waktu },
             ),
@@ -120,6 +123,17 @@ function terapkan(logs: LogAny[]) {
         if (!o) segarkanOrder(id);
         else ubah((s) => catat(pasangOrder(s, { ...o, status: 'Claimed', toko: a.toko, diclaimPada: Number(a.diclaimPada) }), { kunci, jenis: 'claim', id, toko: a.toko, waktu }));
         ubah((s) => ({ ...s, toko: s.toko.map((t) => (t.alamat.toLowerCase() === String(a.toko).toLowerCase() ? { ...t, orderAktif: id } : t)) }));
+        break;
+      }
+      case 'OrderDetail': {
+        const o = state.order[String(a.id)];
+        if (o) ubah((s) => pasangOrder(s, { ...o, halaman: Number(a.halaman), batasKerja: Number(a.batasKerja), kodeHash: a.kodeHash }));
+        break;
+      }
+      case 'OrderReady': {
+        const o = state.order[String(a.id)];
+        if (!o) segarkanOrder(a.id);
+        else ubah((s) => pasangOrder(s, { ...o, status: 'Siap', kerja: Number(a.kerja), siapPada: Number(a.siapPada), langkahSelesai: o.langkah.length }));
         break;
       }
       case 'StepCompleted': {
@@ -174,7 +188,17 @@ function terapkan(logs: LogAny[]) {
           ...s,
           katalog: {
             ...s.katalog,
-            [a.jenis]: { jenis: a.jenis, harga: a.harga, batasKerja: Number(a.batasKerja), langkah: bukaResep(a.langkah, a.jumlahLangkah), label: a.label },
+            [a.jenis]: {
+              jenis: a.jenis,
+              hargaDasar: a.hargaDasar,
+              hargaPerHalaman: a.hargaPerHalaman,
+              batasDasar: Number(a.batasDasar),
+              batasPerHalaman: Number(a.batasPerHalaman),
+              harga: a.hargaDasar + a.hargaPerHalaman,
+              batasKerja: Number(a.batasDasar) + Number(a.batasPerHalaman),
+              langkah: bukaResep(a.langkah, a.jumlahLangkah),
+              label: a.label,
+            },
           },
         }));
         break;

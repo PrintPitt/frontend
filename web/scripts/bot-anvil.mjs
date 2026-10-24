@@ -1,10 +1,10 @@
-// Bot order untuk anvil lokal (contract baru: bayar tIDRX). Minter (akun #6) mencetak tIDRX untuk bot (akun #4),
+// Bot order untuk anvil lokal (contract v2: bayar tIDRX). Alternatif: jalankan backend PrintPitt lokal dengan BOT=on. Minter (akun #6) mencetak tIDRX untuk bot (akun #4),
 // bot approve contract, lalu createOrder acak tiap INTERVAL_MS. Khusus dev; di testnet bot ada di backend Railway.
 //   node scripts/bot-anvil.mjs            (env opsional: INTERVAL_MS=6000, MAX_ORDERS=0, RPC_URL)
 import { createPublicClient, createWalletClient, http, maxUint256 } from 'viem';
 import { mnemonicToAccount } from 'viem/accounts';
 import { anvil } from 'viem/chains';
-import { deploymentUntuk, fotokopiKilatAbi, formatRupiah, tidrxAbi } from '../../shared/src/index.ts';
+import { deploymentUntuk, fotokopiKilatAbi, formatRupiah, NOL32, tidrxAbi } from '../../shared/src/index.ts';
 
 const RPC = process.env.RPC_URL ?? 'http://127.0.0.1:8545';
 const INTERVAL_MS = Number(process.env.INTERVAL_MS ?? 6000);
@@ -33,7 +33,7 @@ for (let n = 1; MAX_ORDERS === 0 || n <= MAX_ORDERS; n++) {
   try {
     const jenis = acak([1, 2, 3, 4]);
     const teks = acak(TEKS[jenis]);
-    const r = await tunggu(await bot.writeContract({ address: d.address, abi: fotokopiKilatAbi, functionName: 'createOrder', args: [jenis, teks] }));
+    const r = await tunggu(await bot.writeContract({ address: d.address, abi: fotokopiKilatAbi, functionName: 'createOrder', args: [jenis, teks, 1, NOL32, NOL32] })); // v2 mode demo: 1 halaman, tanpa dokumen/kode
     console.log(`#${n} jenis ${jenis} "${teks}" → ${r.status}`);
   } catch (e) {
     console.log('gagal:', e.shortMessage ?? e.message);

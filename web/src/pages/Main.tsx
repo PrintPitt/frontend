@@ -123,7 +123,8 @@ export default function Main() {
   const aktifMentah = saya && saya.orderAktif ? s.order[String(saya.orderAktif)] : undefined;
   const aktif = aktifMentah?.status === 'Claimed' && !beres.current.has(String(aktifMentah.id)) ? aktifMentah : undefined;
   const antre = Object.values(s.order)
-    .filter((o) => o.status === 'Open' && o.sesi === s.sesiId && now - o.dibuatPada < s.batasAntre)
+    // jenis 1–4 = order mini-game; jenis 5+ (dokumen nyata + serah terima QR) tidak dikerjakan di game
+    .filter((o) => o.status === 'Open' && o.jenis <= 4 && o.sesi === s.sesiId && now - o.dibuatPada < s.batasAntre)
     .sort((a, b) => a.dibuatPada - b.dibuatPada);
   const d = dunia.current;
 

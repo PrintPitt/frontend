@@ -17,7 +17,7 @@ export const chain: Chain = {
   rpcUrls: { default: { http: [RPC_URL], ...(WS_URL ? { webSocket: [WS_URL] } : {}) } },
 };
 
-type Deployment = { address: string; batasAntre: number; deployBlock?: number };
+type Deployment = { address: string; tidrx?: string; batasAntre: number; deployBlock?: number };
 function cariDeployment(): Deployment | undefined {
   try {
     return deploymentUntuk(chain.id) as Deployment;
@@ -30,6 +30,8 @@ const alamat = (env.VITE_CONTRACT_ADDRESS || dep?.address) as Hex | undefined;
 if (!alamat) throw new Error(`Belum ada alamat contract untuk chain ${chain.id}. Isi VITE_CONTRACT_ADDRESS atau ekspor deployment.`);
 
 export const kontrak = { address: alamat, abi: fotokopiKilatAbi } as const;
+/** Token Rupiah (tIDRX) untuk pembayaran escrow. */
+export const TIDRX = (env.VITE_TIDRX_ADDRESS || dep?.tidrx) as Hex;
 export const DEPLOY_BLOCK = BigInt(dep?.deployBlock ?? 0);
 
 /** HTTP dengan JSON-RPC batch: banyak read digabung jadi satu request (hemat rate limit). */

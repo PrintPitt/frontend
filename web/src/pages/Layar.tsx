@@ -91,7 +91,7 @@ export default function Layar() {
           </button>
           <Stat label="Sesi" nilai={s.sesiId ? `#${s.sesiId} ${s.sesiAktif ? 'BUKA' : 'TUTUP'}` : '—'} nyala={s.sesiAktif} />
           <Stat label="Order selesai" nilai={String(jmlSelesai)} />
-          <Stat label="Di escrow" nilai={`${mon(escrow)} MON`} refEl={refEscrow} />
+          <Stat label="Di escrow" nilai={mon(escrow)} refEl={refEscrow} />
         </div>
       </header>
 
@@ -156,14 +156,14 @@ export default function Layar() {
             <motion.div initial={{ scale: 0.8, y: 30 }} animate={{ scale: 1, y: 0 }} transition={{ type: 'spring', bounce: 0.4 }}>
               <div className="muted">Toko terkilat sesi #{s.sesiId}</div>
               <div className="nama-juara">{juara!.nama}</div>
-              <div className="omzet-juara">{mon(juara!.omzet)} MON</div>
+              <div className="omzet-juara">{mon(juara!.omzet)}</div>
               <div className="peringkat">
                 {peringkat.map((t, i) => (
                   <div key={t.alamat} className="baris-peringkat">
                     <span>
                       {i + 1}. {t.nama}
                     </span>
-                    <b>{mon(t.omzet)} MON</b>
+                    <b>{mon(t.omzet)}</b>
                   </div>
                 ))}
               </div>
@@ -310,7 +310,7 @@ function PanelToko(p: {
         <div className="omzet">
           <span className="muted kecil">Omzet</span>
           <motion.span key={String(t.omzet)} initial={{ y: -14, opacity: 0, color: '#5fd39a' }} animate={{ y: 0, opacity: 1, color: '#e9eaea' }} transition={{ duration: 0.8 }}>
-            {mon(t.omzet)} MON
+            {mon(t.omzet)}
           </motion.span>
         </div>
       </header>
@@ -339,7 +339,7 @@ function PanelToko(p: {
               ) : (
                 <>
                   <span className="muted kecil">Bayaran kalau selesai sekarang</span>
-                  <span className="angka-payout">{mon(payout, 5)} MON</span>
+                  <span className="angka-payout">{mon(payout, 5)}</span>
                 </>
               )}
               {kerja < aktif.batasKerja && (
@@ -371,7 +371,7 @@ function PanelToko(p: {
             exit={{ opacity: 0, y: -80 }}
             transition={{ duration: 0.9 }}
           >
-            +{mon(k.payout ?? 0n)} MON
+            +{mon(k.payout ?? 0n)}
             <span className="kecil"> · kembali ke pelanggan {mon(k.refund ?? 0n)}</span>
           </motion.div>
         ))}

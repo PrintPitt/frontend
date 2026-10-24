@@ -131,7 +131,7 @@ export default function Toko() {
             <div key={t.alamat} className={`skor ${sama(t.alamat, akun.address) ? 'saya' : ''}`}>
               <span className="muted kecil">{t.nama}</span>
               <motion.b key={String(t.omzet)} initial={{ scale: 1.3, color: '#5fd39a' }} animate={{ scale: 1, color: '#e9eaea' }}>
-                {mon(t.omzet)} MON
+                {mon(t.omzet)}
               </motion.b>
             </div>
           ))}
@@ -165,7 +165,7 @@ export default function Toko() {
                   <b>{s.katalog[o.jenis]?.label}</b>
                   <div className="teks-kecil">“{o.teks}”</div>
                   <div className="muted kecil">
-                    {o.langkah.map((l) => NAMA_LANGKAH[l]).join(' → ')} · {mon(o.harga)} MON
+                    {o.langkah.map((l) => NAMA_LANGKAH[l]).join(' → ')} · {mon(o.harga)}
                   </div>
                   <div className="bar tipis">
                     <div style={{ width: `${Math.max(0, ((s.batasAntre - (now - o.dibuatPada)) / s.batasAntre) * 100)}%` }} />
@@ -191,8 +191,8 @@ export default function Toko() {
           ) : hasil ? (
             <motion.div className="hasil" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
               <div className="muted">{hasil.label} selesai dalam {hasil.kerja} dtk</div>
-              <div className="angka-hasil">+{mon(hasil.payout, 5)} MON</div>
-              <div className="muted">Kembali ke pelanggan {mon(hasil.refund, 5)} MON · NFT terkirim</div>
+              <div className="angka-hasil">+{mon(hasil.payout, 5)}</div>
+              <div className="muted">Kembali ke pelanggan {mon(hasil.refund, 5)} · NFT terkirim</div>
             </motion.div>
           ) : (
             <div className="meja-kosong">{saya ? 'Rebut order dari antrean!' : 'Menunggu pendaftaran toko'}</div>

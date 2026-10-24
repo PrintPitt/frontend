@@ -1,10 +1,21 @@
 // Read ringan yang dipakai semua halaman (katalog, toko, order).
 import type { Hex } from 'viem';
-import { STATUS } from '../../../shared/src/index.ts';
+import { hitungHarga, STATUS } from '../../../shared/src/index.ts';
 import { kontrak, pub } from './chain';
 import { bukaResep } from './format';
 
-export type Katalog = { jenis: number; harga: bigint; batasKerja: number; langkah: number[]; label: string };
+/** v2: harga & batas kerja = dasar + per halaman × halaman. `harga`/`batasKerja` = nilai untuk 1 halaman (mode demo). */
+export type Katalog = {
+  jenis: number;
+  harga: bigint;
+  batasKerja: number;
+  hargaDasar: bigint;
+  hargaPerHalaman: bigint;
+  batasDasar: number;
+  batasPerHalaman: number;
+  langkah: number[];
+  label: string;
+};
 export type StatusOrder = (typeof STATUS)[number];
 export type Order = {
   id: bigint;
@@ -21,14 +32,20 @@ export type Order = {
   sesi: number;
   kerja: number;
   teks: string;
+  halaman: number;
+  siapPada: number;
+  kodeHash: Hex;
 };
 
 export async function bacaKatalog(maks = 8): Promise<Katalog[]> {
   const ids = Array.from({ length: maks }, (_, i) => i + 1);
   const rows = await Promise.all(ids.map((j) => pub.readContract({ ...kontrak, functionName: 'katalog', args: [j] })));
-  return rows.flatMap(([harga, batasKerja, langkah, jumlahLangkah, aktif, label], i) =>
-    aktif ? [{ jenis: ids[i], harga, batasKerja: Number(batasKerja), langkah: bukaResep(langkah, jumlahLangkah), label }] : [],
-  );
+  return rows.flatMap(([hargaDasar, hargaPerHalaman, batasDasar, batasPerHalaman, langkah, jumlahLangkah, aktif, label], i) => {
+    if (!aktif) return [];
+    const k = { hargaDasar, hargaPerHalaman, batasDasar: Number(batasDasar), batasPerHalaman: Number(batasPerHalaman) };
+    const satu = hitungHarga(k, 1);
+    return [{ jenis: ids[i], ...k, harga: satu.harga, batasKerja: satu.batasKerja, langkah: bukaResep(langkah, jumlahLangkah), label }];
+  });
 }
 
 export async function bacaOrder(id: bigint): Promise<Order> {
@@ -48,6 +65,9 @@ export async function bacaOrder(id: bigint): Promise<Order> {
     sesi: Number(o.sesi),
     kerja: Number(o.kerja),
     teks: o.teks,
+    halaman: Number(o.halaman),
+    siapPada: Number(o.siapPada),
+    kodeHash: o.kodeHash,
   };
 }
 
