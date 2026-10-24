@@ -10,6 +10,7 @@ import { ambilConfig, ambilTopup, bayarTopup, buatTopup, pesanTanpaGas, saldoTid
 import { kontrak, offsetChain, pub } from '../lib/chain';
 import { NAMA_LANGKAH, pendek } from '../lib/format';
 import { NAMA } from '../lib/merek';
+import { pindah } from '../lib/navigasi';
 import { bacaKatalog, bacaNft, bacaOrder, bacaToko, type Katalog, type Order } from '../lib/katalog';
 import { useJamChain } from '../lib/live';
 import { pesanError } from '../lib/tx';
@@ -223,14 +224,12 @@ export default function Pesan() {
           <p className="muted">
             Bayar pakai Rupiah digital ke escrow, tanpa biaya gas. Makin cepat toko selesai, makin besar bayarannya. Kalau lambat, sisanya kembali ke kamu, plus NFT hasil cetakan.
           </p>
-          <button className="tombol utama besar" disabled={masukJalan} onClick={() => mulai()}>
-            {masukJalan ? 'Membuka passkey…' : passkeyMungkin() ? (punyaPasskey() ? 'Lanjut dengan passkey' : 'Mulai dengan passkey') : 'Mulai'}
+          <button className="tombol utama besar" disabled={masukJalan} onClick={() => pindah('/masuk?ke=/pesan', false)}>
+            Masuk / daftar
           </button>
-          {passkeyMungkin() && (
-            <button className="tautan" disabled={masukJalan} onClick={() => mulai(true)}>
-              Pakai akun sementara (tanpa passkey)
-            </button>
-          )}
+          <button className="tautan" disabled={masukJalan} onClick={() => mulai(true)}>
+            Lanjut sebagai tamu
+          </button>
           {galatAkun && <p className="galat">{galatAkun}</p>}
           {galatAkun && punyaPasskey() && (
             <button className="tautan" onClick={() => (lupakanPasskey(), setGalatAkun(''))}>
@@ -241,7 +240,7 @@ export default function Pesan() {
       ) : (
         <>
           <section className="akun-baris muted kecil">
-            <span className={`badge ${akun.jenis}`}>{akun.jenis === 'mera' ? 'Passkey' : akun.jenis === 'dev' ? 'Dev' : 'Akun sementara'}</span>
+            <span className={`badge ${akun.jenis}`}>{akun.jenis === 'privy' ? (akun.label ?? 'Privy') : akun.jenis === 'mera' ? 'Passkey' : akun.jenis === 'dev' ? 'Dev' : 'Tamu'}</span>
             <span>{pendek(akun.address)}</span>
             <span>· tanpa gas</span>
             {DEBUG && (

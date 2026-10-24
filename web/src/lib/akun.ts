@@ -8,14 +8,19 @@ import {
   type MeraErrorCode,
 } from '@category-labs/mera';
 import { toViemAccount } from '@category-labs/mera/viem';
-import { nonceManager, type Hex, type LocalAccount } from 'viem';
+import { nonceManager, type Account, type Hex, type WalletClient } from 'viem';
 import { generatePrivateKey, mnemonicToAccount, privateKeyToAccount } from 'viem/accounts';
 import { IS_ANVIL } from './chain';
 import { NAMA } from './merek';
 
-export type JenisAkun = 'mera' | 'burner' | 'dev';
+export type JenisAkun = 'mera' | 'burner' | 'dev' | 'privy';
 export type Akun = {
-  account: LocalAccount;
+  /** Akun lokal (Mera/burner/dev) atau akun JSON-RPC (Privy: tanda tangan lewat provider di `klien`). */
+  account: Account;
+  /** Wallet client khusus (Privy embedded wallet); bila kosong, dibuat dari `account` lokal. */
+  klien?: WalletClient;
+  /** Label pengguna (email/nama Google) untuk akun Privy. */
+  label?: string;
   jenis: JenisAkun;
   address: Hex;
   /** Alasan jatuh ke burner (kode error Mera), bila ada. */

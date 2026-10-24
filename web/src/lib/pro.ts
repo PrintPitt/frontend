@@ -23,7 +23,8 @@ export async function langgananPro(akun: Akun, periode = 1, hargaPro: bigint) {
   const bayar = hargaPro * BigInt(periode);
   const izin = await pub.readContract({ address: TIDRX, abi: tidrxAbi, functionName: 'allowance', args: [akun.address, kontrak.address] });
   if (izin < bayar) {
-    const hash = await dompet(akun.account).writeContract({ address: TIDRX, abi: tidrxAbi, functionName: 'approve', args: [kontrak.address, bayar], gas: GAS_LIMIT.approve });
+    const w = dompet(akun);
+    const hash = await w.writeContract({ address: TIDRX, abi: tidrxAbi, account: akun.account, chain: w.chain, functionName: 'approve', args: [kontrak.address, bayar], gas: GAS_LIMIT.approve });
     const r = await pub.waitForTransactionReceipt({ hash, pollingInterval: 200 });
     if (r.status !== 'success') throw new Error('Approve tIDRX gagal');
   }

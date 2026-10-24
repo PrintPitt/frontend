@@ -6,9 +6,10 @@ import '@fontsource/lilita-one';
 import './styles.css';
 import { NAMA } from './lib/merek';
 import { useJalur } from './lib/navigasi';
+import { PenyediaAuth } from './lib/privy';
 
 // Kode tiap halaman dipisah: HP penonton (/pesan) tidak ikut mengunduh /layar dan /toko.
-const HALAMAN: Record<string, React.LazyExoticComponent<() => React.JSX.Element>> = {
+const HALAMAN: Record<string, React.LazyExoticComponent<() => React.JSX.Element | null>> = {
   '/': lazy(() => import('./pages/Landing')),
   '/lobi': lazy(() => import('./pages/Lobi')),
   '/main': lazy(() => import('./pages/Main')),
@@ -16,6 +17,7 @@ const HALAMAN: Record<string, React.LazyExoticComponent<() => React.JSX.Element>
   '/toko': lazy(() => import('./pages/Toko')),
   '/layar': lazy(() => import('./pages/Layar')),
   '/cari': lazy(() => import('./pages/Cari')),
+  '/masuk': lazy(() => import('./pages/Masuk')),
   '/karakter': lazy(() => import('./pages/Karakter')),
 };
 
@@ -44,7 +46,9 @@ document.title = NAMA;
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Suspense fallback={<p className="muted" style={{ padding: 24 }}>Memuat…</p>}>
-      <Router />
+      <PenyediaAuth>
+        <Router />
+      </PenyediaAuth>
     </Suspense>
   </StrictMode>,
 );

@@ -67,8 +67,8 @@ export async function biayaMaks(fn: FnTulis, value = 0n): Promise<bigint> {
 export type HasilTx = { hash: Hash; receipt: TransactionReceipt; events: { eventName: string; args: Record<string, unknown> }[] };
 
 export async function kirim(akun: Akun, fn: FnTulis, args: readonly unknown[], value?: bigint): Promise<HasilTx> {
-  const w = dompet(akun.account);
-  const hash = await w.writeContract({ ...kontrak, functionName: fn, args, value, gas: GAS_LIMIT[fn] } as never);
+  const w = dompet(akun);
+  const hash = await w.writeContract({ ...kontrak, account: akun.account, chain: w.chain, functionName: fn, args, value, gas: GAS_LIMIT[fn] } as never);
   const receipt = await pub.waitForTransactionReceipt({ hash, pollingInterval: 200 });
   if (receipt.status !== 'success') {
     // Gas limit tidak disimulasikan dulu (hemat waktu saat rebutan); cari nama error setelah revert.

@@ -1,5 +1,5 @@
 // Konfigurasi chain, client viem, dan contract untuk semua halaman.
-import { createPublicClient, createWalletClient, http, webSocket, type Account, type Chain, type Hex } from 'viem';
+import { createPublicClient, createWalletClient, http, webSocket, type Account, type Chain, type Hex, type WalletClient } from 'viem';
 import { anvil, monadTestnet } from 'viem/chains';
 import { deploymentUntuk, fotokopiKilatAbi } from '../../../shared/src/index.ts';
 
@@ -43,8 +43,8 @@ export const pubLive = WS_URL
   : pub;
 export const PAKAI_WS = !!WS_URL;
 
-export function dompet(account: Account) {
-  return createWalletClient({ chain, account, transport: http(RPC_URL), pollingInterval: 300 });
+export function dompet(akun: { account: Account; klien?: WalletClient }): WalletClient {
+  return akun.klien ?? createWalletClient({ chain, account: akun.account, transport: http(RPC_URL), pollingInterval: 300 });
 }
 
 /** Selisih detik antara jam chain (block.timestamp) dan jam lokal. */

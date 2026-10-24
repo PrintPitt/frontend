@@ -3,7 +3,7 @@
 import { decodeEventLog, parseSignature, type Hash, type Hex } from 'viem';
 import { domainPesanan, domainTidrx, fotokopiKilatAbi, NOL32, PERMIT_TYPES, PESANAN_TYPES, tidrxAbi } from '../../../shared/src/index.ts';
 import type { Akun } from './akun';
-import { chain, IS_ANVIL, kontrak, offsetChain, pub, TIDRX } from './chain';
+import { chain, dompet, IS_ANVIL, kontrak, offsetChain, pub, TIDRX } from './chain';
 
 const env = import.meta.env;
 export const BACKEND_URL: string = (env.VITE_BACKEND_URL || (IS_ANVIL ? 'http://127.0.0.1:8787' : 'https://backend-production-2b31.up.railway.app')).replace(/\/$/, '');
@@ -89,7 +89,9 @@ export async function pesanTanpaGas(akun: Akun, p: { jenis: number; teks: string
   ]);
   const deadline = BigInt(Math.floor(Date.now() / 1000 + offset) + 600);
   const pesanan = { pelanggan, jenis: p.jenis, teks: p.teks, halaman: 1, dokumen: NOL32, kodeHash: NOL32, deadline, maxFee: p.fee } as const;
-  const sig = await akun.account.signTypedData({
+  const w = dompet(akun);
+  const sig = await w.signTypedData({
+    account: akun.account,
     domain: domainPesanan(chain.id, kontrak.address),
     types: PESANAN_TYPES,
     primaryType: 'Pesanan',
@@ -98,7 +100,8 @@ export async function pesanTanpaGas(akun: Akun, p: { jenis: number; teks: string
   const nilai = p.harga + p.fee;
   let izin: Record<string, string | number> | null = null;
   if (izinAda < nilai) {
-    const sigIzin = await akun.account.signTypedData({
+    const sigIzin = await w.signTypedData({
+      account: akun.account,
       domain: domainTidrx(chain.id, TIDRX),
       types: PERMIT_TYPES,
       primaryType: 'Permit',

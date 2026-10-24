@@ -619,11 +619,11 @@ export default function Main() {
           <div className="kartu-masuk">
             <h2>Buka toko</h2>
             <p>Rebut order penonton di loket, kerjakan di mesin, serahkan secepat kilat. Makin cepat, makin cuan.</p>
-            <button className="tombol utama besar" disabled={masukJalan} onClick={() => mulai(false)}>
-              {passkeyMungkin() ? 'Masuk dengan passkey' : 'Masuk'}
+            <button className="tombol utama besar" disabled={masukJalan} onClick={() => pindah('/masuk?ke=/main', false)}>
+              Masuk / daftar
             </button>
             <button className="tautan" disabled={masukJalan} onClick={() => mulai(true)}>
-              Pakai akun sementara
+              Main sebagai tamu
             </button>
           </div>
         </div>

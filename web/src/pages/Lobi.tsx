@@ -236,11 +236,11 @@ export default function Lobi() {
                 <b>Akun</b>
                 <span>Belum masuk</span>
                 <div className="tombol-akun">
-                  <button className="tombol-game kuning kecil" disabled={masukJalan} onClick={() => mulaiMasuk(false)}>
-                    {passkeyMungkin() ? 'MASUK PASSKEY' : 'MASUK'}
+                  <button className="tombol-game kuning kecil" disabled={masukJalan} onClick={() => pindah('/masuk?ke=/lobi', false)}>
+                    MASUK / DAFTAR
                   </button>
                   <button className="tombol-game putih kecil" disabled={masukJalan} onClick={() => mulaiMasuk(true)}>
-                    AKUN SEMENTARA
+                    TAMU
                   </button>
                 </div>
               </>
@@ -250,7 +250,7 @@ export default function Lobi() {
                 <button className="alamat-akun" onClick={salinAlamat} title="Salin alamat">
                   {pendek(akun.address)} · {disalin ? 'tersalin!' : 'salin'}
                 </button>
-                <span className="kecil-akun">{akun.jenis === 'mera' ? 'Passkey' : akun.jenis === 'dev' ? 'Akun dev anvil' : 'Akun sementara'}</span>
+                <span className="kecil-akun">{akun.jenis === 'privy' ? (akun.label ?? 'Akun Privy') : akun.jenis === 'mera' ? 'Passkey' : akun.jenis === 'dev' ? 'Akun dev anvil' : 'Akun tamu'}</span>
                 {!saya && <span className="kecil-akun">Kirim alamat ini ke operator supaya didaftarkan sebagai toko.</span>}
                 {saya && pro && (
                   <div className="baris-pro">

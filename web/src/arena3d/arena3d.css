@@ -163,3 +163,29 @@
 .kartu-menu { width: min(360px, 88vw); display: grid; gap: 10px; background: #fbfaf3; color: #231e16; border: 3px solid #231e16; border-radius: 22px; box-shadow: 0 8px 0 #231e16; padding: 22px 26px; font-family: 'Fredoka', system-ui; text-align: center; }
 .kartu-menu h2 { margin: 0 0 4px; font: 2rem 'Lilita One', system-ui; color: #836ef9; -webkit-text-stroke: 1px #231e16; }
 .kartu-menu .tombol-game { text-align: center; }
+
+/* ---------- /masuk ---------- */
+.masuk-halaman { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; }
+.kartu-masuk-besar { width: min(440px, 100%); background: #fbfaf3; color: #231e16; border: 3px solid #231e16; border-radius: 24px; box-shadow: 0 10px 0 #231e16; padding: 26px 28px 22px; font-family: 'Fredoka', system-ui; display: grid; gap: 12px; }
+.logo-masuk { text-align: center; }
+.logo-masuk .logo-kecil { font-size: 1.6rem; color: #f4b829; -webkit-text-stroke: 1px #231e16; paint-order: stroke fill; text-shadow: 0 3px 0 #231e16; }
+.tab-masuk { display: grid; grid-template-columns: 1fr 1fr; background: #231e16; border-radius: 14px; padding: 4px; gap: 4px; }
+.tab-masuk button { border: 0; border-radius: 10px; padding: 8px; background: transparent; color: #fbfaf3; font: 1.05rem 'Lilita One', system-ui; cursor: pointer; }
+.tab-masuk button.aktif { background: #f4b829; color: #231e16; }
+.kartu-masuk-besar h1 { margin: 6px 0 0; font: 1.8rem 'Lilita One', system-ui; color: #836ef9; -webkit-text-stroke: 1px #231e16; }
+.sub-masuk { margin: 0; font-size: 0.95rem; opacity: 0.8; }
+.daftar-tombol-masuk { display: grid; gap: 10px; margin-top: 6px; }
+.tombol-masuk { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 12px 14px; border: 3px solid #231e16; border-radius: 14px; background: #fff; color: #231e16; font: 700 1.05rem 'Fredoka', system-ui; box-shadow: 0 4px 0 #231e16; cursor: pointer; }
+.tombol-masuk:disabled { opacity: 0.6; cursor: default; }
+.tombol-masuk:not(:disabled):active { translate: 0 3px; box-shadow: 0 1px 0 #231e16; }
+.tombol-masuk.google { background: #fff; }
+.tombol-masuk .ikon-g { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; background: #fff; border: 2px solid #231e16; font: 1rem 'Lilita One', system-ui; color: #4285f4; }
+.tombol-masuk.passkey { background: #f4b829; }
+.tombol-masuk.tamu { background: #e9e1f9; }
+.pemisah-masuk { display: flex; align-items: center; gap: 10px; font-size: 0.8rem; opacity: 0.6; }
+.pemisah-masuk::before, .pemisah-masuk::after { content: ''; flex: 1; height: 2px; background: #231e16; opacity: 0.25; }
+.catatan-masuk { font-size: 0.8rem; background: #fff3c4; border: 2px dashed #231e16; border-radius: 10px; padding: 8px 10px; }
+.catatan-masuk code { font-family: ui-monospace, monospace; }
+.galat-masuk { margin: 0; color: #ef6a4c; font-weight: 700; }
+.kecil-masuk { margin: 0; font-size: 0.75rem; opacity: 0.6; }
+.tautan-masuk { border: 0; background: none; color: #2a2163; font: 700 0.9rem 'Fredoka', system-ui; cursor: pointer; text-decoration: underline; justify-self: center; }
