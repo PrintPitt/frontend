@@ -1,24 +1,49 @@
 // /pesan — halaman penonton di HP (BLZ-09, BL-D22-08): akun → saldo Rupiah (tIDRX) → isi saldo bila perlu →
 // pilih pesanan → tanda tangan Pesanan + permit (tanpa MON, gas dibayar relayer) → status live → NFT / refund.
-// Kontrak v2 mode demo: 1 halaman, tanpa dokumen, tanpa kode serah terima (selesai di langkah terakhir).
+// Contract v2.1: jenis 1–4 = mode demo (1 halaman, tanpa dokumen, kodeHash 0, selesai di langkah terakhir).
+// Jenis 5+ = cetak dokumen nyata: unggah file → harga dari `hargaUntuk` → rahasia QR di HP → lokasi order → QR saat Siap.
 import { AnimatePresence, motion } from 'motion/react';
 import QRCode from 'qrcode';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { formatRupiah, hitungPayout, MAX_TEXT, teksValid } from '../../../shared/src/index.ts';
+import type { Hex } from 'viem';
+import { formatRupiah, hitungPayout, MAX_HALAMAN, MAX_TEXT, NOL32, teksValid } from '../../../shared/src/index.ts';
 import { akunAktif, akunBurner, lupakanPasskey, masuk, pakaiAkun, passkeyMungkin, punyaPasskey, type Akun } from '../lib/akun';
-import { ambilConfig, ambilTopup, bayarTopup, buatTopup, pesanTanpaGas, saldoTidrx, type TopUp } from '../lib/backend';
-import { kontrak, offsetChain, pub } from '../lib/chain';
+import {
+  ambilConfig,
+  ambilTopup,
+  bayarTopup,
+  buatTopup,
+  kirimLokasiOrder,
+  lokasiPerangkat,
+  mintaMon,
+  pesanTanpaGas,
+  saldoTidrx,
+  unggahDokumen,
+  type InfoDokumen,
+  type Titik,
+  type TopUp,
+} from '../lib/backend';
+import { BATAS_JEMPUT, kontrak, offsetChain, pub } from '../lib/chain';
 import { NAMA_LANGKAH, pendek } from '../lib/format';
 import { NAMA } from '../lib/merek';
-import { bacaKatalog, bacaNft, bacaOrder, bacaToko, type Katalog, type Order } from '../lib/katalog';
+import { bacaFeePlatform, bacaHarga, bacaKatalog, bacaNft, bacaOrder, bacaToko, payoutBersih, type Katalog, type Order } from '../lib/katalog';
 import { useJamChain } from '../lib/live';
-import { pesanError } from '../lib/tx';
+import { bacaRahasia, buatRahasia, hapusRahasia, isiQr, simpanRahasia } from '../lib/serah';
+import { biayaMaks, kirim, pesanError } from '../lib/tx';
 
 const POLL_MS = Number(import.meta.env.VITE_POLL_MS || 1500);
 const DEBUG = new URLSearchParams(location.search).has('debug'); // SPK-07: waktu onboarding + alasan fallback
 const KUNCI_ORDER = 'pp.order.aktif';
-/** Jenis 1–4 = order mini-game (dikerjakan di game /main). Jenis 5+ = cetak dokumen nyata (butuh upload, belum di FE). */
+/** Jenis 1–4 = order mini-game (dikerjakan di game /main). Jenis 5+ = cetak dokumen nyata (unggah file + serah terima QR). */
 const JENIS_DEMO = (k: Katalog) => k.jenis <= 4;
+/** Teks order dari nama file: hanya karakter yang lolos `teksValid`, maks. 40. */
+const teksDariFile = (nama: string) =>
+  nama
+    .replace(/\.[^.]+$/, '')
+    .replace(/[^\x20-\x7e]|[<>&"'\\]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, MAX_TEXT) || 'Dokumen';
 const CONTOH: Record<number, string> = {
   1: 'KTP Budi bolak-balik 10x',
   2: 'Boarding JOG-CGK 05.40',
@@ -53,6 +78,13 @@ export default function Pesan() {
   const [katalog, setKatalog] = useState<Katalog[]>([]);
   const [namaToko, setNamaToko] = useState<Record<string, string>>({});
   const [batasAntre, setBatasAntre] = useState(45);
+  // order dokumen nyata (jenis 5+)
+  const [dok, setDok] = useState<InfoDokumen | null>(null);
+  const [mengunggah, setMengunggah] = useState(false);
+  const [halaman, setHalaman] = useState(1);
+  const [hargaDok, setHargaDok] = useState<{ harga: bigint; batasKerja: number } | null>(null);
+  const [titik, setTitik] = useState<Titik | null>(null);
+  const [infoLokasi, setInfoLokasi] = useState('');
   const [offset, setOffset] = useState(0);
   const [pilih, setPilih] = useState<number | null>(null);
   const [teks, setTeks] = useState('');
@@ -80,12 +112,13 @@ export default function Pesan() {
         offsetChain(),
         ambilConfig(),
       ]);
-      setKatalog(k.filter(JENIS_DEMO));
+      setKatalog(k);
       setNamaToko(Object.fromEntries(t.map((x) => [x.alamat.toLowerCase(), x.nama])));
       setBatasAntre(b);
+      // fee platform dari /config (backend membacanya dari contract); hemat satu read RPC
+      setFeeBps(cfg.platformFeeBps ?? (await bacaFeePlatform()));
       setOffset(off);
       setFee(BigInt(cfg.feeRelay));
-      if (cfg.platformFeeBps !== undefined) setFeeBps(Number(cfg.platformFeeBps));
       setGalatMuat('');
     } catch (e) {
       setGalatMuat(pesanGalat(e));
@@ -123,11 +156,13 @@ export default function Pesan() {
         setOrder(o);
         setGagalPoll(0);
         if (o.status === 'Finished' || o.status === 'Diputuskan') {
-          bacaNft(orderId).then(setNft).catch(() => {});
+          if (BigInt(o.kodeHash) !== 0n) hapusRahasia(o.kodeHash);
+          if (o.status === 'Finished') bacaNft(orderId).then(setNft).catch(() => {});
           if (akun) segarkanSaldo(akun).catch(() => {});
           return;
         }
         if (o.status === 'Expired') {
+          if (BigInt(o.kodeHash) !== 0n) hapusRahasia(o.kodeHash);
           if (akun) segarkanSaldo(akun).catch(() => {});
           return;
         }
@@ -159,21 +194,69 @@ export default function Pesan() {
   }
 
   const k = katalog.find((x) => x.jenis === pilih);
-  const total = k && fee !== null ? k.harga + fee : null;
+  const nyata = !!k && !JENIS_DEMO(k);
+  // Harga order dokumen dibaca dari contract (`hargaUntuk`) untuk jumlah halaman yang dibayar.
+  useEffect(() => {
+    if (!k || JENIS_DEMO(k)) return setHargaDok(null);
+    let batal = false;
+    setHargaDok(null);
+    bacaHarga(k.jenis, halaman)
+      .then((h) => !batal && setHargaDok(h))
+      .catch((e) => !batal && setGalat(pesanGalat(e)));
+    return () => void (batal = true);
+  }, [k, halaman]);
+  const harga = !k ? null : nyata ? (hargaDok?.harga ?? null) : k.harga;
+  const total = harga !== null && fee !== null ? harga + fee : null;
   const kurang = total !== null && saldo !== null && saldo < total;
 
+  async function pilihFile(f: File | undefined) {
+    if (!f) return;
+    setGalat('');
+    setMengunggah(true);
+    try {
+      const d = await unggahDokumen(f);
+      setDok(d);
+      setHalaman(Math.min(MAX_HALAMAN, Math.max(1, d.halaman)));
+      if (!teks) setTeks(teksDariFile(f.name));
+    } catch (e) {
+      setGalat(pesanGalat(e));
+    } finally {
+      setMengunggah(false);
+    }
+  }
+
+  async function ambilLokasi() {
+    setInfoLokasi('Membaca lokasi…');
+    try {
+      setTitik(await lokasiPerangkat());
+      setInfoLokasi('');
+    } catch (e) {
+      setInfoLokasi(pesanGalat(e));
+    }
+  }
+
   async function bayar() {
-    if (!akun || !k || fee === null) return;
+    if (!akun || !k || fee === null || harga === null) return;
     if (!teksValid(teks)) return setGalat('Teks 1–40 huruf biasa (tanpa emoji dan tanpa < > & " \' \\)');
+    if (nyata && !dok) return setGalat('Unggah dokumen dulu');
     setGalat('');
     try {
       const s = await segarkanSaldo(akun);
-      if (s < k.harga + fee) {
+      if (s < harga + fee) {
         setIsiSaldo(true);
-        throw new Error(`Saldo kurang: butuh ${formatRupiah(k.harga + fee)}, ada ${formatRupiah(s)}`);
+        throw new Error(`Saldo kurang: butuh ${formatRupiah(harga + fee)}, ada ${formatRupiah(s)}`);
       }
       setTahap('tanda');
-      const jalan = pesanTanpaGas(akun, { jenis: k.jenis, teks, harga: k.harga, fee });
+      // Order dokumen: rahasia QR disimpan di HP SEBELUM dikirim; hanya kodeHash yang masuk chain.
+      let dokumen: Hex = NOL32;
+      let kodeHash: Hex = NOL32;
+      if (nyata && dok) {
+        const r = buatRahasia();
+        simpanRahasia(r.kodeHash, r.rahasia);
+        dokumen = dok.dokumen;
+        kodeHash = r.kodeHash;
+      }
+      const jalan = pesanTanpaGas(akun, { jenis: k.jenis, teks, harga, fee, halaman: nyata ? halaman : 1, dokumen, kodeHash });
       setTahap('kirim');
       const { id } = await jalan;
       tulis(KUNCI_ORDER, String(id));
@@ -182,6 +265,13 @@ export default function Pesan() {
       setOrderId(id);
       setTeks('');
       setPilih(null);
+      setDok(null);
+      setHalaman(1);
+      // Lokasi kasar order (±110 m) supaya muncul di feed toko dalam radius; hanya selama order masih Open.
+      if (nyata && titik)
+        kirimLokasiOrder(akun, id, titik)
+          .then(() => setInfoLokasi('Lokasi terkirim: toko terdekat bisa melihat ordermu'))
+          .catch((e) => setInfoLokasi(`Lokasi gagal dikirim: ${pesanGalat(e)}`));
     } catch (e) {
       setGalat(pesanGalat(e));
     } finally {
@@ -192,6 +282,7 @@ export default function Pesan() {
 
   function pesanLagi() {
     tulis(KUNCI_ORDER, null);
+    setInfoLokasi('');
     setOrderId(null);
     setOrder(null);
     setNft(null);
@@ -268,30 +359,57 @@ export default function Pesan() {
               <motion.section key="status" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
                 <StatusPesanan
                   id={orderId}
+                  akun={akun}
                   order={order}
+                  feeBps={feeBps}
+                  batasJemput={BATAS_JEMPUT}
+                  infoLokasi={infoLokasi}
                   katalog={katalog}
                   namaToko={namaToko}
                   batasAntre={batasAntre}
                   offset={offset}
                   nft={nft}
                   putus={gagalPoll >= 3}
-                  feeBps={feeBps}
                   onLagi={pesanLagi}
                 />
               </motion.section>
             ) : (
               <motion.section key="form" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-                <h3 className="judul-bagian">Pilih pesanan</h3>
-                <div className="katalog">
-                  {katalog.map((x) => (
-                    <button key={x.jenis} className={`item-katalog ${pilih === x.jenis ? 'aktif' : ''}`} onClick={() => setPilih(x.jenis)}>
-                      <span className="label">{x.label}</span>
-                      <span className="resep">{x.langkah.map((l) => NAMA_LANGKAH[l]).join(' → ')}</span>
-                      <span className="harga">{formatRupiah(x.harga)}</span>
-                      <span className="muted kecil">maks. {x.batasKerja} dtk</span>
-                    </button>
-                  ))}
-                </div>
+                {(
+                  [
+                    ['Pilih pesanan', katalog.filter(JENIS_DEMO)],
+                    ['Cetak dokumenmu', katalog.filter((x) => !JENIS_DEMO(x))],
+                  ] as const
+                ).map(([judul, daftar]) =>
+                  daftar.length === 0 ? null : (
+                    <div key={judul}>
+                      <h3 className="judul-bagian">{judul}</h3>
+                      <div className="katalog">
+                        {daftar.map((x) => (
+                          <button key={x.jenis} className={`item-katalog ${pilih === x.jenis ? 'aktif' : ''}`} onClick={() => setPilih(x.jenis)}>
+                            <span className="label">{x.label}</span>
+                            <span className="resep">{x.langkah.map((l) => NAMA_LANGKAH[l]).join(' → ')}</span>
+                            {JENIS_DEMO(x) ? (
+                              <>
+                                <span className="harga">{formatRupiah(x.harga)}</span>
+                                <span className="muted kecil">maks. {x.batasKerja} dtk</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="harga">
+                                  {formatRupiah(x.hargaDasar)} + {formatRupiah(x.hargaPerHalaman)}/hlm
+                                </span>
+                                <span className="muted kecil">
+                                  maks. {x.batasDasar} + {x.batasPerHalaman} dtk/hlm
+                                </span>
+                              </>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ),
+                )}
                 {katalog.length === 0 &&
                   (galatMuat ? (
                     <div className="kartu galat-kartu">
@@ -307,7 +425,44 @@ export default function Pesan() {
 
                 {k && (
                   <div className="kartu form-teks">
-                    <label htmlFor="teks">Teks di hasil cetakan</label>
+                    {nyata && (
+                      <>
+                        <label htmlFor="dok">Dokumen (PDF, PNG, JPEG)</label>
+                        <input id="dok" type="file" accept="application/pdf,image/png,image/jpeg" disabled={mengunggah || !!tahap} onChange={(e) => pilihFile(e.target.files?.[0])} />
+                        <div className="kecil muted">
+                          {mengunggah
+                            ? 'Mengunggah & mengenkripsi…'
+                            : dok
+                              ? `Terunggah · perkiraan ${dok.halaman} halaman · file dihapus otomatis setelah order selesai`
+                              : 'File disimpan terenkripsi; hanya kamu dan toko yang mengambil order bisa mengunduh'}
+                        </div>
+                        {dok && (
+                          <>
+                            <label htmlFor="hlm">Jumlah halaman yang dibayar</label>
+                            <input
+                              id="hlm"
+                              type="number"
+                              inputMode="numeric"
+                              min={1}
+                              max={MAX_HALAMAN}
+                              value={halaman}
+                              onChange={(e) => setHalaman(Math.min(MAX_HALAMAN, Math.max(1, Math.floor(Number(e.target.value) || 1))))}
+                            />
+                          </>
+                        )}
+                        <div className="kecil">
+                          {titik ? (
+                            <span className="muted">Lokasi ±110 m siap dikirim ke toko terdekat ✓</span>
+                          ) : (
+                            <button className="tautan inline" onClick={ambilLokasi}>
+                              Bagikan lokasi kasar (supaya toko terdekat melihat ordermu)
+                            </button>
+                          )}
+                          {infoLokasi && <div className="muted">{infoLokasi}</div>}
+                        </div>
+                      </>
+                    )}
+                    <label htmlFor="teks">{nyata ? 'Judul pesanan (tercetak di NFT)' : 'Teks di hasil cetakan'}</label>
                     <input
                       id="teks"
                       value={teks}
@@ -320,11 +475,19 @@ export default function Pesan() {
                       {teksOk ? `${teks.length}/${MAX_TEXT}` : 'Hanya huruf biasa, tanpa emoji dan tanpa < > & " \' \\'}
                     </div>
                     <div className="rincian kecil">
-                      <span>Harga {formatRupiah(k.harga)}</span>
+                      <span>
+                        Harga {harga === null ? '…' : formatRupiah(harga)}
+                        {nyata && hargaDok ? ` · ${halaman} hlm · maks. ${hargaDok.batasKerja} dtk` : ''}
+                      </span>
                       <span>Biaya layanan {fee === null ? '…' : formatRupiah(fee)}</span>
                       <span className="muted">Gas Monad dibayar relayer</span>
                     </div>
-                    <button className="tombol utama besar" disabled={!!tahap || !teks || !teksOk || fee === null} onClick={kurang ? () => setIsiSaldo(true) : bayar}>
+                    {nyata && <span className="muted kecil">Saat siap, tunjukkan QR dari HP ini ke toko. Dana baru cair ke toko setelah QR dipindai.</span>}
+                    <button
+                      className="tombol utama besar"
+                      disabled={!!tahap || !teks || !teksOk || fee === null || harga === null || (nyata && !dok) || mengunggah}
+                      onClick={kurang ? () => setIsiSaldo(true) : bayar}
+                    >
                       {kurang ? `Saldo kurang · isi saldo dulu` : labelTombol}
                     </button>
                   </div>
@@ -468,18 +631,50 @@ function IsiSaldo({ akun, onMasuk, onTutup }: { akun: Akun; onMasuk: () => void;
 
 function StatusPesanan(p: {
   id: bigint;
+  akun: Akun;
   order: Order | null;
+  feeBps: number;
+  batasJemput: number;
+  infoLokasi: string;
   katalog: Katalog[];
   namaToko: Record<string, string>;
   batasAntre: number;
   offset: number;
   nft: { name: string; image: string } | null;
   putus: boolean;
-  feeBps: number;
   onLagi: () => void;
 }) {
   const now = Math.floor(useJamChain(p.offset, 500));
   const o = p.order;
+  const [qr, setQr] = useState('');
+  const [komplainJalan, setKomplainJalan] = useState(false);
+  const [galat, setGalat] = useState('');
+  const pakaiKode = !!o && BigInt(o.kodeHash) !== 0n;
+  const rahasia = pakaiKode && o ? bacaRahasia(o.kodeHash) : null;
+  const qrSiap = o?.status === 'Siap' && rahasia ? isiQr(o.id, rahasia) : '';
+  useEffect(() => {
+    if (!qrSiap) return setQr('');
+    QRCode.toString(qrSiap, { type: 'svg', margin: 1, errorCorrectionLevel: 'M', color: { dark: '#141516', light: '#f6f6f5' } }).then(setQr);
+  }, [qrSiap]);
+
+  /** Komplain dibayar sendiri (butuh MON gas): minta saldo awal MON dari faucet backend bila belum cukup. */
+  async function komplain() {
+    if (!o) return;
+    setGalat('');
+    setKomplainJalan(true);
+    try {
+      const [mon, perlu] = await Promise.all([pub.getBalance({ address: p.akun.address }), biayaMaks('komplain')]);
+      if (mon < perlu) {
+        const { hash } = await mintaMon(p.akun.address);
+        await pub.waitForTransactionReceipt({ hash, timeout: 60_000 });
+      }
+      await kirim(p.akun, 'komplain', [o.id]);
+    } catch (e) {
+      setGalat(pesanGalat(e));
+    } finally {
+      setKomplainJalan(false);
+    }
+  }
   const label = o ? (p.katalog.find((k) => k.jenis === o.jenis)?.label ?? `Order #${p.id}`) : `Order #${p.id}`;
   const toko = o ? (p.namaToko[o.toko.toLowerCase()] ?? pendek(o.toko)) : '';
 
@@ -495,8 +690,9 @@ function StatusPesanan(p: {
   const kerja = Math.max(0, now - o.diclaimPada);
   const payout = o.status === 'Claimed' ? hitungPayout(o.harga, o.batasKerja, kerja) : 0n;
   const selesai = o.status === 'Finished' || o.status === 'Diputuskan';
-  // v2.1: payout kotor dari rumus; platform memotong feeBps dari payout toko (cashback pelanggan tetap utuh)
-  const payoutAkhir = selesai || o.status === 'Siap' ? hitungPayout(o.harga, o.batasKerja, o.kerja) : 0n;
+  // Kotor = yang keluar dari escrow ke toko + platform; kembalian pelanggan = harga − kotor (utuh, tidak dipotong).
+  const payoutAkhir = o.status === 'Finished' || o.status === 'Siap' ? hitungPayout(o.harga, o.batasKerja, o.kerja) : 0n;
+  const sisaJemput = Math.max(0, o.siapPada + p.batasJemput - now);
   const feePlatform = (payoutAkhir * BigInt(p.feeBps)) / 10_000n;
 
   return (
@@ -524,17 +720,40 @@ function StatusPesanan(p: {
             <li className="jalan">
               Dikerjakan: {o.langkah.map((l, i) => (i < o.langkahSelesai ? '✓ ' : i === o.langkahSelesai ? '▸ ' : '') + NAMA_LANGKAH[l]).join(' · ')}
               <div className="muted kecil">
-                Bayaran toko kalau selesai sekarang {formatRupiah(payout)} · kembalianmu {formatRupiah(o.harga - payout)}
+                Bayaran toko kalau selesai sekarang {formatRupiah(payoutBersih(payout, p.feeBps))} · kembalianmu {formatRupiah(o.harga - payout)}
               </div>
             </li>
           )}
-          {o.status === 'Siap' && <li className="jalan">Siap diambil di loket {toko}</li>}
+          {o.status === 'Siap' && (
+            <li className="jalan">
+              Siap diambil di loket {toko} · kembalianmu {formatRupiah(o.harga - payoutAkhir)}
+              {pakaiKode && <div className="muted kecil">Tunjukkan QR di bawah ke toko. Tanpa QR, order ditutup otomatis dalam {Math.ceil(sisaJemput / 60)} menit.</div>}
+            </li>
+          )}
           {o.status === 'Sengketa' && <li className="refund">Komplain diterima, menunggu keputusan panitia</li>}
+          {o.status === 'Diputuskan' && <li className="ok">Sengketa diputuskan panitia. Bagianmu sudah dikembalikan ke saldo</li>}
           {o.status === 'Expired' && <li className="refund">Tidak keburu. Dana {formatRupiah(o.harga)} dikembalikan penuh.</li>}
         </ol>
+        {o.status === 'Open' && p.infoLokasi && <div className="muted kecil">{p.infoLokasi}</div>}
       </div>
 
-      {selesai && (
+      {o.status === 'Siap' && pakaiKode && (
+        <div className="kartu">
+          {qr ? (
+            <div className="qr-bayar" dangerouslySetInnerHTML={{ __html: qr }} />
+          ) : (
+            <p className="galat kecil">Kode QR tidak ada di perangkat ini. Order akan ditutup otomatis setelah batas jemput, dana tetap aman.</p>
+          )}
+          {sisaJemput > 0 && (
+            <button className="tautan" disabled={komplainJalan} onClick={komplain}>
+              {komplainJalan ? 'Mengirim komplain…' : 'Hasil tidak sesuai? Komplain (dana ditahan sampai panitia memutuskan)'}
+            </button>
+          )}
+          {galat && <p className="galat kecil">{galat}</p>}
+        </div>
+      )}
+
+      {o.status === 'Finished' && (
         <motion.div className="kartu nft" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
           {p.nft ? <img src={p.nft.image} alt={p.nft.name} /> : <div className="muted">Memuat NFT…</div>}
           <div className="angka">

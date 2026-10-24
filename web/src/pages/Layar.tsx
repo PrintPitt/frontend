@@ -8,7 +8,7 @@ import MesinFigur from '../components/MesinFigur';
 import { sfx } from '../game/sfx';
 import { mon, NAMA_LANGKAH } from '../lib/format';
 import { NAMA } from '../lib/merek';
-import type { Katalog, Order } from '../lib/katalog';
+import { payoutBersih, type Katalog, type Order } from '../lib/katalog';
 import { useJamChain, useLive, type Kejadian, type TokoLive } from '../lib/live';
 
 const sama = (a?: string, b?: string) => !!a && !!b && a.toLowerCase() === b.toLowerCase();
@@ -121,6 +121,7 @@ export default function Layar() {
               urut={i}
               o={t.orderAktif ? s.order[String(t.orderAktif)] : undefined}
               katalog={s.katalog}
+              feeBps={s.feeBps}
               now={now}
               kejadian={s.kejadian}
               refEl={(el) => (refToko.current[t.alamat.toLowerCase()] = el)}
@@ -290,6 +291,7 @@ function PanelToko(p: {
   urut: number;
   o?: Order;
   katalog: Record<number, Katalog>;
+  feeBps: number;
   now: number;
   kejadian: Kejadian[];
   refEl: (el: HTMLElement | null) => void;
@@ -298,8 +300,9 @@ function PanelToko(p: {
   const { t, o, now } = p;
   const aktif = o && o.status === 'Claimed' ? o : undefined;
   const kerja = aktif ? Math.max(0, now - aktif.diclaimPada) : 0;
-  const payout = aktif ? hitungPayout(aktif.harga, aktif.batasKerja, kerja) : 0n;
-  const frac = aktif ? Number((payout * 1000n) / aktif.harga) / 1000 : 0;
+  const kotor = aktif ? hitungPayout(aktif.harga, aktif.batasKerja, kerja) : 0n;
+  const payout = payoutBersih(kotor, p.feeBps); // yang diterima toko (v2.1: setelah potongan platform)
+  const frac = aktif ? Number((kotor * 1000n) / aktif.harga) / 1000 : 0;
   const kodeSekarang = aktif ? aktif.langkah[Math.min(aktif.langkahSelesai, aktif.langkah.length - 1)] : 0;
   const kilatan = p.kejadian.filter((k) => k.jenis === 'selesai' && sama(k.toko, t.alamat) && Date.now() - k.waktu < 3500);
 

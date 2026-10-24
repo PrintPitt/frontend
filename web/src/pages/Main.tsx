@@ -37,9 +37,9 @@ import { akunAktif, akunBurner, masuk, pakaiAkun, passkeyMungkin, type Akun } fr
 import { pindah } from '../lib/navigasi';
 import { bacaProfil, namaTampil } from '../lib/profil';
 import { NAMA_LANGKAH, ZERO } from '../lib/format';
-import type { Order } from '../lib/katalog';
+import { payoutBersih, type Order } from '../lib/katalog';
 import { bacaLive, useJamChain, useLive } from '../lib/live';
-import { kirim, pesanError } from '../lib/tx';
+import { kirim, kirimLangkah, pesanError } from '../lib/tx';
 
 const TokoStatis = memo(Toko3D);
 const sama = (a?: string, b?: string) => !!a && !!b && a.toLowerCase() === b.toLowerCase();
@@ -126,8 +126,8 @@ export default function Main() {
   const aktifMentah = saya && saya.orderAktif ? s.order[String(saya.orderAktif)] : undefined;
   const aktif = aktifMentah?.status === 'Claimed' && !beres.current.has(String(aktifMentah.id)) ? aktifMentah : undefined;
   const antre = Object.values(s.order)
-    // jenis 1–4 = order mini-game; jenis 5+ (dokumen nyata + serah terima QR) tidak dikerjakan di game
-    .filter((o) => o.status === 'Open' && o.jenis <= 4 && o.sesi === s.sesiId && now - o.dibuatPada < s.batasAntre)
+    // jenis 1–4 tanpa kode QR = order mini-game (mode demo, selesai di langkah terakhir); dokumen nyata dikerjakan di /toko
+    .filter((o) => o.status === 'Open' && o.jenis <= 4 && BigInt(o.kodeHash) === 0n && o.sesi === s.sesiId && now - o.dibuatPada < s.batasAntre)
     .sort((a, b) => a.dibuatPada - b.dibuatPada);
   const d = dunia.current;
 
@@ -157,7 +157,7 @@ export default function Main() {
         let hasil: { payout: bigint; refund: bigint } | undefined;
         const mulai = Math.max(bacaLive().order[kunci]?.langkahSelesai ?? 0, terkirim.current.get(kunci) ?? 0);
         for (let i = mulai; i < sampai; i++) {
-          const r = await kirim(akun, 'completeStep', [it.id, it.langkah[i]]);
+          const r = await kirimLangkah(akun, it.id, it.langkah[i]); // tunggu/ulang sebentar kalau RPC tertinggal setelah claim
           terkirim.current.set(kunci, i + 1);
           const f = r.events.find((e) => e.eventName === 'OrderFinished');
           if (f) hasil = { payout: f.args.payout as bigint, refund: f.args.refund as bigint };
@@ -400,7 +400,8 @@ export default function Main() {
   ];
   const kerja = aktif ? Math.max(0, now - aktif.diclaimPada) : 0;
   const sisaDetik = aktif ? Math.max(0, Math.ceil(aktif.batasKerja - kerja)) : 0;
-  const payoutKini = aktif ? hitungPayout(aktif.harga, aktif.batasKerja, Math.floor(kerja)) : 0n;
+  // bersih setelah potongan platform (v2.1), sama dengan yang diterima toko di OrderFinished
+  const payoutKini = aktif ? payoutBersih(hitungPayout(aktif.harga, aktif.batasKerja, Math.floor(kerja)), s.feeBps) : 0n;
 
   const m2 = adalahMesin(fokus) && MESIN[fokus].kode === 2 ? d.mesin[fokus] : null;
   const pilihTerbuka = !!m2 && m2.status === 'pilih' && !!m2.item;
