@@ -69,7 +69,10 @@ const HERO_LOOP = ['Taruh dokumen', 'Copy!', 'Ambil hasil'];
 let heroStep = 0;
 if (!reduced) setInterval(() => { const f = figs.figHero; if (!f || heroTouched || !heroSeen || document.hidden) return; f.act(HERO_LOOP[heroStep++ % HERO_LOOP.length]); }, 4200);
 const idle = (fn: () => void) => ('requestIdleCallback' in window ? (window as any).requestIdleCallback(fn, { timeout: 1500 }) : setTimeout(fn, 600));
-addEventListener('load', () => idle(() => mountFig($('figHero'))));
+// figur hero (render SVG berat) dipasang setelah halaman tenang: interaksi pertama atau 2,5 dtk setelah load
+const mountHero = () => mountFig($('figHero'));
+addEventListener('load', () => setTimeout(() => idle(mountHero), 2500));
+['pointerdown', 'keydown', 'wheel', 'touchstart'].forEach(ev => addEventListener(ev, mountHero, { once: true, passive: true }));
 const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { mountFig(e.target as HTMLElement); io.unobserve(e.target); } }), { rootMargin: '120% 0px' });
 document.querySelectorAll<HTMLElement>('[data-lazy]').forEach(el => io.observe(el));
 
