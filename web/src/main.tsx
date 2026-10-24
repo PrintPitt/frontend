@@ -6,6 +6,7 @@ import '@fontsource/lilita-one';
 import './styles.css';
 import { NAMA } from './lib/merek';
 import LencanaJaringan from './components/LencanaJaringan';
+import TombolAkun from './components/TombolAkun';
 import { RequireAuth, RUTE_PUBLIK } from './lib/auth';
 import { useJalur } from './lib/navigasi';
 import { PenyediaAuth } from './lib/privy';
@@ -23,6 +24,7 @@ const HALAMAN: Record<string, React.LazyExoticComponent<() => React.JSX.Element 
   '/layar': lazy(() => import('./pages/Layar')),
   '/cari': lazy(() => import('./pages/Cari')),
   '/masuk': lazy(() => import('./pages/Masuk')),
+  '/akun': lazy(() => import('./pages/Akun')),
   '/karakter': lazy(() => import('./pages/Karakter')),
 };
 
@@ -45,9 +47,18 @@ function Router() {
   const Halaman = path === '/dev' ? Beranda : (HALAMAN[path] ?? Beranda);
   document.body.dataset.halaman = document.documentElement.dataset.halaman = path.slice(1) || 'lobi'; // `/` = lobi
   // semua halaman internal lewat satu gerbang login (lib/auth.tsx); hanya /masuk yang publik
-  return RUTE_PUBLIK.has(path) ? <Halaman key={path} /> : <RequireAuth key={path}><Halaman /></RequireAuth>;
+  const isi = RUTE_PUBLIK.has(path) ? <Halaman key={path} /> : <RequireAuth key={path}><Halaman /></RequireAuth>;
+  return (
+    <>
+      {isi}
+      <TombolAkun jalur={path} />
+    </>
+  );
 }
 document.title = NAMA;
+
+// PWA: service worker hanya di build produksi (dev server Vite tidak butuh cache)
+if ('serviceWorker' in navigator && import.meta.env.PROD) addEventListener('load', () => void navigator.serviceWorker.register('/sw.js').catch(() => {}));
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -241,3 +241,17 @@ body[data-halaman='layar'] { overflow: hidden; }
 .lencana-jaringan.mainnet { background: #5fd39a; }
 .lencana-jaringan span { font-weight: 400; opacity: 0.7; margin-left: 4px; }
 .lencana-jaringan:hover { opacity: 1; }
+/* /akun panel + tombol akun mengambang */
+[data-halaman='akun'] { --bg: #2c2170; --panel: #fbfaf3; --panel-2: #f1e8d4; --garis: #231e16; --garis-2: #231e16; --teks: #231e16; --muted: #6b6457; --aksen: #836ef9; color-scheme: light; background: var(--bg); }
+[data-halaman='akun'] .kartu { border-width: 3px; border-radius: 16px; box-shadow: 0 5px 0 #231e16; margin-bottom: 12px; }
+[data-halaman='akun'] .brand { color: #f4b829; font-family: 'Lilita One', system-ui; }
+[data-halaman='akun'] .pesan-head .tautan { color: #fbfaf3; }
+.akun-profil { display: flex; gap: 14px; align-items: center; }
+.akun-avatar { width: 56px; height: 56px; border-radius: 50%; background: #836ef9; color: #fbfaf3; display: grid; place-items: center; font: 1.6rem 'Lilita One', system-ui; border: 3px solid #231e16; flex-shrink: 0; }
+.alamat-akun-kecil { margin-top: 4px; font: inherit; font-size: 0.8rem; background: none; border: 0; padding: 0; color: #6b6457; text-decoration: underline; cursor: pointer; }
+.akun-baris-info { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.akun-baris-info > div { display: grid; gap: 2px; }
+@media (max-width: 420px) { .akun-baris-info { grid-template-columns: 1fr 1fr; } }
+.tombol-akun-apung { position: fixed; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 50; font: 600 13px/1 system-ui, sans-serif; padding: 9px 13px; border-radius: 999px; border: 2px solid #231e16; background: #fbfaf3; color: #231e16; box-shadow: 0 3px 0 #231e16; cursor: pointer; }
+.tombol-akun-apung.masuk { background: #f4b829; }
+.lencana-jaringan { bottom: calc(10px + env(safe-area-inset-bottom)); }

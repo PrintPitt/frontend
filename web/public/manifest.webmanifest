@@ -1,0 +1,24 @@
+{
+  "name": "PrintPitt — fotokopi kilat onchain",
+  "short_name": "PrintPitt",
+  "description": "Pesan cetak dari HP, toko fotokopi terdekat rebutan order. Bayar Rupiah di Monad, tanpa gas.",
+  "lang": "id",
+  "start_url": "/?sumber=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#2c2170",
+  "theme_color": "#2c2170",
+  "categories": ["shopping", "business", "productivity"],
+  "icons": [
+    { "src": "/ikon/ikon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/ikon/ikon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/ikon/ikon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Pesan cetak", "url": "/pesan", "icons": [{ "src": "/ikon/ikon-192.png", "sizes": "192x192" }] },
+    { "name": "Dashboard toko", "url": "/toko", "icons": [{ "src": "/ikon/ikon-192.png", "sizes": "192x192" }] },
+    { "name": "Akun", "url": "/akun", "icons": [{ "src": "/ikon/ikon-192.png", "sizes": "192x192" }] }
+  ]
+}
