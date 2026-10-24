@@ -64,7 +64,6 @@ Revenue model (live since contract v2.1): 3% platform fee on the shop's payout f
 | `contracts` | `FotokopiKilat` + `TestIDRX` (Foundry, OpenZeppelin), unit + invariant tests, package `@printpitt/shared` (ABI, addresses, helpers) |
 | `backend` | Railway service: faucet, simulated Rupiah top-up, relayer (gasless orders), keeper (auto `expire`), order bot |
 | `indexer` | Envio HyperIndex: orders, shops, sessions, leaderboard, top-ups (GraphQL) |
-| `vault` | Design docs, decisions, spikes, backlog, flow diagrams |
 
 ## Judging checklist
 
@@ -80,7 +79,7 @@ Revenue model (live since contract v2.1): 3% platform fee on the shop's payout f
 
 ## Built during the event vs prepared before
 
-**[TEAM TO CONFIRM BEFORE SUBMIT]** Before 24 October: idea, research, spikes and design documents (`vault`). On 24 October: the repos in this org were created and the code was pushed (first commits 11:13 WIB). This includes contracts v2 to v2.3 (testnet and mainnet), the relayer and backend, the indexer, the web app with the game, and the landing page.
+**[TEAM TO CONFIRM BEFORE SUBMIT]** Before 24 October: idea, research, spikes and design documents. On 24 October: the repos in this org were created and the code was pushed (first commits 11:13 WIB). This includes contracts v2 to v2.3 (testnet and mainnet), the relayer and backend, the indexer, the web app with the game, and the landing page.
 
 ## Limits and what breaks first
 
@@ -109,11 +108,10 @@ The frontend is deployed on Vercel. This repo also holds the machine figures and
 | Need | Source |
 |---|---|
 | ABI, addresses, helpers (`teksValid`, `hitungPayout`, `formatRupiah`, `PESANAN_TYPES`, `PERMIT_TYPES`, `domainPesanan`, `domainTidrx`) | package `@printpitt/shared` from repo `PrintPitt/contracts` (folder `shared/`). While private: install the tarball `npm i ./vendor/printpitt-shared-0.1.0.tgz` (copy it from the backend repo's `vendor/`) |
-| Backend API: `/faucet`, `/topup`, `/topup/:id`, `/bayar/:id`, `/relay/order`, `/config`, `/status` | repo `PrintPitt/backend`; spec in the vault, `04-Architecture/Desain Backend.md` |
+| Backend API: `/faucet`, `/topup`, `/topup/:id`, `/bayar/:id`, `/relay/order`, `/config`, `/status` | repo `PrintPitt/backend` |
 | Snapshots, history, leaderboard (GraphQL) | repo `PrintPitt/indexer`; example queries in its README |
-| Live game events | WebSocket straight to the Monad RPC (decision D-16) |
+| Live game events | WebSocket straight to the Monad RPC |
 
-Frontend flows, rules and backlog: repo `PrintPitt/vault` → `06-FE-vault/`.
 
 ### App `web/` (frontend + game)
 
