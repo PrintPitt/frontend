@@ -80,7 +80,7 @@ export const DICT: Record<string, Entry> = {
   'd.btn.copy': { en: 'Copy!', id: 'Copy!' },
   'd.btn.pouch': { en: 'Feed pouch', id: 'Masukkan pouch' },
   'd.claim': { en: 'CLAIM!', id: 'KLAIM!' },
-  'd.claim.sub': { en: 'Monad decides · 1 block ~0.3 s', id: 'Monad memutuskan · 1 blok ±0,3 dtk' },
+  'd.claim.sub': { en: 'Monad decides · 1 block ~0.4 s', id: 'Monad memutuskan · 1 blok ±0,4 dtk' },
   'd.late': { en: '1 block late', id: 'Telat 1 blok' },
   'd.board.rib': { en: 'Round complete!', id: 'Ronde selesai!' },
   'd.board.sample': { en: 'example round', id: 'contoh alur' },

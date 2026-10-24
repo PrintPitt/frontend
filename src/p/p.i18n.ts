@@ -3,7 +3,7 @@ import { addDict } from '../i18n';
 
 export const P_DICT = {
   'p.word': { en: 'PRINTPITT', id: 'PRINTPITT' },
-  'p.block': { en: '<b>~0.3 s</b> per block (measured on testnet)', id: '<b>±0,3 detik</b> per blok (diukur di testnet)' },
+  'p.block': { en: '<b>~0.4 s</b> blocks · <b>~0.8 s</b> finality (Monad docs)', id: 'blok <b>±0,4 detik</b> · final <b>±0,8 detik</b> (docs Monad)' },
   'p.tag': { en: 'The onchain print shop on Monad', id: 'Toko fotokopi onchain di Monad' },
   'p.cue': { en: 'Scroll to enter the arena', id: 'Gulir untuk masuk arena' },
   'p.hint': { en: 'Drag to rotate · double-tap to reset', id: 'Seret untuk memutar · ketuk 2× untuk kembali' },

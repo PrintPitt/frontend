@@ -697,7 +697,8 @@ function mount(root: HTMLElement, c: Ctx): void {
     updateParts(dt);
     meterFrame(now, dt);
     blokAcc += dt;
-    if (blokAcc >= 300) { blokAcc = 0; const r1 = eTop + (secTop[2] || 0); if (sy + H > r1 && sy < r1 + (secH[2] || 0)) { blokN++; blokEl.textContent = tf('e.m.blok', { n: blokN.toLocaleString(LOC) }); } }
+    if (blokAcc >= 400) { // ±400 ms per blok (docs Monad)
+ blokAcc = 0; const r1 = eTop + (secTop[2] || 0); if (sy + H > r1 && sy < r1 + (secH[2] || 0)) { blokN++; blokEl.textContent = tf('e.m.blok', { n: blokN.toLocaleString(LOC) }); } }
     copyAcc += dt;
     if (copyAcc > 9000) { copyAcc = 0; if (ls > -H * 0.5 && ls < (secTop[2] || 0)) act('front', 'Copy!'); }
     if (liveVis && ups.length) { liveAcc += dt; if (liveAcc >= 200) { liveAcc = 0; updateUps(); } }

@@ -18,7 +18,7 @@ export const E_DICT = {
   'e.fig.held': { en: 'Paused — let go to continue', id: 'Ditahan — lepas untuk lanjut' },
 
   // ---------- 1 · BLITZ (pembuka) ----------
-  'e.k.block': { en: '<b>~0.3 s</b> per block (measured on testnet)', id: '<b>±0,3 detik</b> per blok (diukur di testnet)' },
+  'e.k.block': { en: '<b>~0.4 s</b> blocks · <b>~0.8 s</b> finality (Monad docs)', id: 'blok <b>±0,4 detik</b> · final <b>±0,8 detik</b> (docs Monad)' },
   'e.k.title': { en: 'Why this has to be onchain — and why it has to be Monad.', id: 'Kenapa ini harus onchain, dan harus di Monad.' },
 
   // ---------- 2 · rumus upah ----------
@@ -47,13 +47,13 @@ export const E_DICT = {
   'e.btn.take': { en: 'Collect', id: 'Ambil hasil' },
 
   // ---------- 3 · kenapa Monad ----------
-  'e.m.bg': { en: '0.3 s · Monad · 0.3 s · Monad · 0.3 s · Monad', id: '0,3 detik · Monad · 0,3 detik · Monad · 0,3 detik' },
+  'e.m.bg': { en: '0.4 s · Monad · 0.4 s · Monad · 0.4 s · Monad', id: '0,4 detik · Monad · 0,4 detik · Monad · 0,4 detik' },
   'e.m.lbl': { en: 'Why Monad', id: 'Kenapa Monad' },
   'e.m.sub': { en: 'three numbers that make this shop work', id: 'tiga angka yang bikin toko ini jalan' },
-  'e.m.1.a': { en: '<span class="e-hl">~0.3</span> s', id: '<span class="e-hl">±0,3</span> detik' },
+  'e.m.1.a': { en: '<span class="e-hl">~0.4</span> s', id: '<span class="e-hl">±0,4</span> detik' },
   'e.m.1.b': { en: 'per block', id: 'per blok' },
   'e.m.1.p': { en: 'One block decides who claimed first. Per-second pay lands instantly — no waiting on confirmations.', id: 'Rebutan order diputus dalam satu blok. Upah per detik terasa langsung, bukan nunggu konfirmasi.' },
-  'e.m.1.s': { en: 'first claim wins · {blok} · ~0.3 s (measured on testnet)', id: 'klaim pertama menang · {blok} · ±0,3 dtk (diukur di testnet)' },
+  'e.m.1.s': { en: 'first claim wins · {blok} · final ~0.8 s (Monad docs)<br>team-measured on testnet: 0.303 s/block', id: 'klaim pertama menang · {blok} · final ±0,8 dtk (docs Monad)<br>diukur tim di testnet: 0,303 dtk/blok' },
   'e.m.blok': { en: 'block #{n}', id: 'blok #{n}' },
   'e.m.2.a': { en: '100% refund', id: '100% refund' },
   'e.m.2.b': { en: 'if it’s late', id: 'kalau telat' },
