@@ -9,9 +9,9 @@ import {
   type Hash,
   type TransactionReceipt,
 } from 'viem';
-import { GAS_LIMIT, tidrxAbi } from '../../../shared/src/index.ts';
+import { GAS_LIMIT } from '../../../shared/src/index.ts';
 import type { Akun } from './akun';
-import { dompet, kontrak, pub, TIDRX } from './chain';
+import { dompet, kontrak, pub } from './chain';
 
 export type FnTulis = keyof typeof GAS_LIMIT;
 
@@ -130,12 +130,3 @@ export async function kirimLangkah(akun: Akun, id: bigint, kode: number): Promis
   }
 }
 
-/** Approve tIDRX ke contract (untuk langgananPro). Lewati bila allowance sudah cukup. */
-export async function izinkanToken(akun: Akun, nilai: bigint) {
-  const ada = await pub.readContract({ address: TIDRX, abi: tidrxAbi, functionName: 'allowance', args: [akun.address, kontrak.address] });
-  if (ada >= nilai) return;
-  const w = dompet(akun.account);
-  const hash = await w.writeContract({ address: TIDRX, abi: tidrxAbi, functionName: 'approve', args: [kontrak.address, nilai], gas: GAS_LIMIT.approve });
-  const r = await pub.waitForTransactionReceipt({ hash, pollingInterval: 200 });
-  if (r.status !== 'success') throw new GagalTx('Approve tIDRX gagal', hash);
-}

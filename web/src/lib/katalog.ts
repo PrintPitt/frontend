@@ -83,15 +83,6 @@ export async function bacaHarga(jenis: number, halaman: number): Promise<{ harga
 export const bacaFeePlatform = () => pub.readContract({ ...kontrak, functionName: 'platformFeeBps' });
 export const payoutBersih = (kotor: bigint, feeBps: number) => kotor - (kotor * BigInt(feeBps)) / 10_000n;
 
-/** Toko Pro (v2.1): aktif sampai `proSampai` (detik chain). */
-export async function bacaPro(toko: Hex): Promise<{ pro: boolean; sampai: number; harga: bigint }> {
-  const [pro, sampai, harga] = await Promise.all([
-    pub.readContract({ ...kontrak, functionName: 'isPro', args: [toko] }),
-    pub.readContract({ ...kontrak, functionName: 'proSampai', args: [toko] }),
-    pub.readContract({ ...kontrak, functionName: 'hargaPro' }),
-  ]);
-  return { pro, sampai: Number(sampai), harga };
-}
 
 export type TokoInfo = { alamat: Hex; nama: string; orderAktif: bigint };
 

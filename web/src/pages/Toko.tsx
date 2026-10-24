@@ -17,10 +17,11 @@ import { akunBurner, masuk, passkeyMungkin, type Akun } from '../lib/akun';
 import { mon, NAMA_LANGKAH, pendek, ZERO } from '../lib/format';
 import { NAMA } from '../lib/merek';
 import { ambilFeed, infoDokumen, kirimLokasiToko, lokasiPerangkat, unduhDokumen, type Feed } from '../lib/backend';
-import { bacaPro, payoutBersih, type Katalog, type Order } from '../lib/katalog';
+import { payoutBersih, type Katalog, type Order } from '../lib/katalog';
 import { bacaLive, useJamChain, useLive } from '../lib/live';
+import { bacaPro, langgananPro, tanggalPro, type InfoPro } from '../lib/pro';
 import { bacaQr, cocok } from '../lib/serah';
-import { izinkanToken, kirim, kirimLangkah, pesanError } from '../lib/tx';
+import { kirim, kirimLangkah, pesanError } from '../lib/tx';
 
 const MINIGAME: Record<number, (p: PropsMiniGame) => React.JSX.Element> = { 1: Fotokopi, 2: Print, 3: Laminating };
 const sama = (a?: string, b?: string) => !!a && !!b && a.toLowerCase() === b.toLowerCase();
@@ -44,7 +45,7 @@ export default function Toko() {
   const dingTerakhir = useRef('');
   // feed radius dari backend + id order tertinggi saat feed diambil (order lebih baru belum terindeks: tetap tampil)
   const [feed, setFeed] = useState<{ f: Feed; batas: bigint } | null>(null);
-  const [pro, setPro] = useState<{ pro: boolean; sampai: number; harga: bigint } | null>(null);
+  const [pro, setPro] = useState<InfoPro | null>(null);
   const [alatJalan, setAlatJalan] = useState('');
   const [pindai, setPindai] = useState(false);
   const [halamanFile, setHalamanFile] = useState<Record<string, number>>({});
@@ -135,8 +136,7 @@ export default function Toko() {
     if (!akun || !pro) return;
     setAlatJalan('pro');
     try {
-      await izinkanToken(akun, pro.harga);
-      await kirim(akun, 'langgananPro', [1]);
+      await langgananPro(akun, 1, pro.hargaPro);
       setPro(await bacaPro(akun.address));
       tampil({ teks: 'Toko Pro aktif 30 hari · radius feed 3 km', jenis: 'ok' });
     } catch (e) {
@@ -270,12 +270,12 @@ export default function Toko() {
             {alatJalan === 'lokasi' ? 'Membaca lokasi…' : feed?.f.toko ? 'Perbarui lokasi' : 'Atur lokasi toko'}
           </button>
           {pro &&
-            (pro.pro ? (
-              <span className="badge mera">PRO s.d. {new Date(pro.sampai * 1000).toLocaleDateString('id-ID')}</span>
+            (pro.proSampai > now ? (
+              <span className="badge mera">PRO s.d. {tanggalPro(pro.proSampai)}</span>
             ) : (
-              pro.harga > 0n && (
+              pro.hargaPro > 0n && (
                 <button className="tombol" disabled={!!alatJalan} onClick={langganan} title="Radius feed 3 km, dibayar tIDRX dari saldo toko">
-                  {alatJalan === 'pro' ? 'Memproses…' : `Toko Pro ${formatRupiah(pro.harga)}/30 hari`}
+                  {alatJalan === 'pro' ? 'Memproses…' : `Toko Pro ${formatRupiah(pro.hargaPro)}/30 hari`}
                 </button>
               )
             ))}
